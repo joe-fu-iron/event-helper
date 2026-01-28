@@ -156,4 +156,94 @@
             const staffSelect = row.querySelectorAll(".staff-s")[index];
             const currentHost = document.getElementById("headerHost").value;
 
-            if (select.
+            if (select.value === "主持人") {
+                // 檢查人員選單中是否有主持人的名字，沒有就動態加入
+                if (![...staffSelect.options].some(opt => opt.value === currentHost)) {
+                    staffSelect.add(new Option(currentHost, currentHost), 0);
+                }
+                staffSelect.value = currentHost;
+            }
+            checkManual(select);
+        }
+
+        function syncHostName() {
+            const currentHost = document.getElementById("headerHost").value;
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                const jobSels = row.querySelectorAll(".job-s");
+                const staffSels = row.querySelectorAll(".staff-s");
+                jobSels.forEach((jobSel, i) => {
+                    if (jobSel.value === "主持人") {
+                        if (![...staffSels[i].options].some(opt => opt.value === currentHost)) {
+                            staffSels[i].add(new Option(currentHost, currentHost), 0);
+                        }
+                        staffSels[i].value = currentHost;
+                    }
+                });
+            });
+            updateDayOfWeek();
+        }
+
+        function initSelectVisibility(row) {
+            const jobSels = row.querySelectorAll('.job-s');
+            const staffSels = row.querySelectorAll('.staff-s');
+            const refresh = () => {
+                jobSels.forEach((sel, i) => { if (i > 0) sel.style.display = (jobSels[i-1].value !== "") ? 'block' : 'none'; });
+                staffSels.forEach((sel, i) => { if (i > 0) sel.style.display = (staffSels[i-1].value !== "") ? 'block' : 'none'; });
+            };
+            row.addEventListener('change', refresh);
+            refresh();
+        }
+
+        function calculateAllTimes() {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            let nextStart = "";
+            rows.forEach((row, i) => {
+                const duration = parseInt(row.querySelector(".duration").value) || 0;
+                let startStr = (i === 0) ? row.querySelector(".start-time").value : nextStart;
+                if (startStr) {
+                    let [h, m] = startStr.split(":").map(Number);
+                    let endM = m + duration;
+                    let endH = (h + Math.floor(endM/60)) % 24;
+                    endM %= 60;
+                    const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+                    if (i === 0) document.getElementById("endTime0").innerText = `${startStr}-${endStr}`;
+                    else row.querySelector(".time-display").innerText = `${startStr}-${endStr}`;
+                    nextStart = endStr;
+                }
+            });
+        }
+
+        function updateDayOfWeek() {
+            const dateVal = document.getElementById('eventDate').value;
+            if (!dateVal) return;
+            const d = new Date(dateVal);
+            document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+        }
+
+        function deleteRow(btn) { if(confirm("確定刪除？")) { btn.closest("tr").remove(); calculateAllTimes(); } }
+
+        function checkManual(sel) {
+            if (sel.value === "manual") {
+                const v = prompt("請輸入內容：");
+                if (v) { const opt = new Option(v, v); sel.add(opt, sel[0]); sel.value = v; sel.dispatchEvent(new Event('change')); }
+                else { sel.selectedIndex = 0; }
+            }
+        }
+
+        function manualCheck(input) {
+            if (input.checked) {
+                const v = prompt("請輸入器材名稱：");
+                if (v) { input.closest('label').innerHTML = `<input type="checkbox" checked> 囗 ${v} <input type="number" class="num-input" placeholder="數量">`; }
+                else { input.checked = false; }
+            }
+        }
+        
+        function addListRow() {
+            const tbody = document.getElementById("itemListBody");
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td contenteditable="true" class="p-2 border"></td><td contenteditable="true" class="p-2 border"></td><td contenteditable="true" class="p-2 border"></td>`;
+            tbody.appendChild(tr);
+        }
+    </script>
+</body>
+</html>
