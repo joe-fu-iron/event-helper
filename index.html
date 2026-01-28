@@ -62,7 +62,7 @@
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbz4xqspaLWivSW5lqjf6Nn4pT_MJhTuajs62HS5j2R0Tr4ynLZArlBMLBxS-SpmGjBH/exec"; // <--- 替換成您的部署網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwBs_9uUdH6ac1z28wX6nIidT2xjqey6X_zm6PAoaLOyw4mMvNbwXlmr8Q-Z3pRd985/exec"; // <--- 替換成您的部署網址
         const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋"];
         const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "攝影"];
         let jobMapping = {}; 
@@ -94,7 +94,7 @@
             });
 
             try {
-                await fetch(https://script.google.com/macros/s/AKfycbz4xqspaLWivSW5lqjf6Nn4pT_MJhTuajs62HS5j2R0Tr4ynLZArlBMLBxS-SpmGjBH/exec, { method: "POST", body: JSON.stringify(data) });
+                await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
                 alert("✅ 雲端同步成功！另一台設備重新整理即可看見。");
             } catch (e) { alert("❌ 同步失敗，請檢查網路或 GAS 權限。"); }
             showLoading(false);
