@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行大表 - 2026 專業雲端整合版</title>
+    <title>活動執行大表 - 2026 專業雲端儲存列印版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -20,8 +20,8 @@
         .col-time { width: 100px; text-align: center; }
         .col-len { width: 55px; text-align: center; }
         .col-unit { width: 150px; } 
-        .col-desc { width: 150px; } 
-        .col-job, .col-staff { width: 75px; } 
+        .col-desc { width: 180px; } 
+        .col-job, .col-staff { width: 80px; } 
         
         .del-btn { position: absolute; right: -25px; top: 15px; color: #ccc; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; }
         tr:hover .del-btn { color: #ef4444; }
@@ -48,8 +48,8 @@
                 </select>
             </div>
             <div class="flex-1 text-right flex justify-end gap-2 no-print">
-                <button onclick="syncToCloud()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs shadow font-bold hover:bg-blue-700">💾 儲存並同步雲端</button>
-                <button onclick="exportToPDF()" class="bg-amber-500 text-white px-3 py-1.5 rounded text-xs shadow font-bold hover:bg-amber-600">📄 PDF & LINE 分享</button>
+                <button onclick="syncToCloud()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs shadow font-bold hover:bg-blue-700">💾 更新並同步雲端</button>
+                <button onclick="exportToPDF()" class="bg-amber-500 text-white px-3 py-1.5 rounded text-xs shadow font-bold hover:bg-amber-600">📄 轉PDF並分享</button>
                 <button onclick="clearStorage()" class="text-gray-400 text-[10px] hover:underline">重置表格</button>
             </div>
         </div>
@@ -58,7 +58,7 @@
             <table id="rundownTable" class="rundown-table">
                 <thead>
                     <tr class="bg-gray-header text-xs text-center">
-                        <th class="col-time">時間</th><th class="col-len">長度</th><th class="col-unit">單元</th><th class="col-desc">工作說明</th><th class="col-job">分工</th><th class="col-staff">人員</th>
+                        <th class="col-time">時間</th><th class="col-len">長度</th><th class="col-unit">單元</th><th class="col-desc">工作說明</th><th colspan="2">分工與人員 (自動記憶連動)</th>
                     </tr>
                 </thead>
                 <tbody id="rundownBody"></tbody>
@@ -72,8 +72,8 @@
                 <thead><tr class="bg-gray-800 text-white text-center"><th class="w-1/2 py-2">服務台相關</th><th class="w-1/2 py-2">舞台相關</th></tr></thead>
                 <tbody>
                     <tr>
-                        <td><div id="serviceDeskItems"></div><span class="no-print text-blue-500 cursor-pointer text-[10px]" onclick="addManualItem('serviceDeskItems')">+ 增加項目</span></td>
-                        <td><div id="stageItems"></div><span class="no-print text-blue-500 cursor-pointer text-[10px]" onclick="addManualItem('stageItems')">+ 增加項目</span></td>
+                        <td><div id="serviceDeskItems"></div><span class="no-print text-blue-500 cursor-pointer text-[10px] p-2 inline-block" onclick="addManualItem('serviceDeskItems')">+ 增加服務台項目</span></td>
+                        <td><div id="stageItems"></div><span class="no-print text-blue-500 cursor-pointer text-[10px] p-2 inline-block" onclick="addManualItem('stageItems')">+ 增加舞台項目</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -83,11 +83,12 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwBs_9uUdH6ac1z28wX6nIidT2xjqey6X_zm6PAoaLOyw4mMvNbwXlmr8Q-Z3pRd985/exec";
         const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋", "工讀1", "工讀2"];
-        const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "上道具", "攝影", "服務台"];
+        const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "上道具", "攝影", "報到區"];
         let jobMapping = {};
 
         window.onload = () => loadFromCloud();
 
+        // 雲端儲存
         async function syncToCloud() {
             showLoading(true);
             calculateAllTimes();
@@ -114,8 +115,8 @@
 
             try {
                 await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
-                alert("✅ 雲端同步成功！");
-            } catch (e) { alert("❌ 同步失敗，請檢查網路。"); }
+                alert("✅ 資料已同步至雲端！");
+            } catch (e) { alert("❌ 同步失敗，請確認網址。"); }
             showLoading(false);
         }
 
@@ -126,9 +127,7 @@
                 const data = await response.json();
                 if (data && data.rundown && data.rundown.length > 0) {
                     renderPage(data);
-                } else {
-                    initDefault();
-                }
+                } else { initDefault(); }
             } catch (e) { initDefault(); }
             showLoading(false);
         }
@@ -138,8 +137,8 @@
             const tbody = document.getElementById("rundownBody");
             tbody.innerHTML = "";
             for (let i = 0; i < 7; i++) addRow(i === 0);
-            renderList('serviceDeskItems', [{n:"服務台箱", q:1}, {n:"簽到表", q:2}, {n:"餐盒", q:0}, {n:"瓶水", q:0}]);
-            renderList('stageItems', [{n:"TRUSS結構", q:1}, {n:"沙包", q:4}, {n:"無線麥克風", q:4}]);
+            renderList('serviceDeskItems', [{n:"簽到表", q:2}, {n:"餐盒", q:0}, {n:"瓶水", q:0}]);
+            renderList('stageItems', [{n:"TRUSS結構", q:1}, {n:"沙包", q:4}, {n:"麥克風", q:4}]);
             calculateAllTimes();
             updateDayOfWeek();
             initSortable();
@@ -160,6 +159,7 @@
             initSortable();
         }
 
+        // 智慧連動邏輯
         function handleJobChange(select, index) {
             const row = select.closest("tr");
             const staffSelect = row.querySelectorAll(".staff-s")[index];
@@ -190,7 +190,7 @@
                 jobHTML += `<select class="job-s no-print" onchange="handleJobChange(this, ${i})"><option value="">-</option>${jobs.map(j=>`<option value="${j}" ${j===jV?'selected':''}>${j}</option>`).join('')}<option value="manual">手動</option></select>`;
                 staffHTML += `<select class="staff-s no-print" onchange="handleStaffChange(this, ${i})"><option value="">-</option>${staffs.map(s=>`<option value="${s}" ${s===sV?'selected':''}>${s}</option>`).join('')}<option value="manual">手動</option></select>`;
             }
-            tr.innerHTML = `<td class="col-time">${isFirst ? `<input type="time" class="start-time font-bold w-full text-center text-xs" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500 font-bold block text-center"></span>` : '<span class="time-display text-xs"></span>'}</td>
+            tr.innerHTML = `<td class="col-time">${isFirst ? `<div class="flex flex-col items-center"><input type="time" class="start-time font-bold w-full text-center text-xs" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500 font-bold"></span></div>` : '<span class="time-display text-xs"></span>'}</td>
                 <td class="col-len"><input type="number" class="duration text-center w-full font-bold text-xs" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
                 <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-900 text-center">${saved?.unit||'單元'}</div></td>
                 <td class="col-desc"><div contenteditable="true" class="auto-height-cell text-gray-600">${saved?.desc||'工作說明'}</div></td>
@@ -216,13 +216,17 @@
             });
         }
 
-        function renderList(id, items) {
-            document.getElementById(id).innerHTML = items.map(i => `<div class="checkbox-item"><span class="text-gray-300">☰</span><input type="checkbox" ${i.checked?'checked':''}> <span contenteditable="true" class="flex-1">${i.n}</span><input type="number" class="num-input" value="${i.q||''}" placeholder="0"></div>`).join('');
-        }
         function initSelectVisibility(row) { const js = row.querySelectorAll('.job-s'), ss = row.querySelectorAll('.staff-s'); js.forEach((s, i) => { if (i > 0) s.style.display = (js[i-1].value !== "") ? 'block' : 'none'; }); ss.forEach((s, i) => { if (i > 0) s.style.display = (ss[i-1].value !== "") ? 'block' : 'none'; }); }
+        function renderList(id, items) { document.getElementById(id).innerHTML = items.map(i => `<div class="checkbox-item"><span class="text-gray-300">☰</span><input type="checkbox" ${i.checked?'checked':''}> <span contenteditable="true" class="flex-1">${i.n}</span><input type="number" class="num-input" value="${i.q||''}" placeholder="0"></div>`).join(''); }
         function syncHostName() { const h = document.getElementById("headerHost").value; document.querySelectorAll("#rundownBody tr").forEach(row => { row.querySelectorAll(".job-s").forEach((js, i) => { if(js.value === "主持人") { const ss = row.querySelectorAll(".staff-s")[i]; ensureOption(ss, h); ss.value = h; } }); }); }
         function handleManual(sel) { const v = prompt("請輸入自定義名稱："); if (v) { ensureOption(sel, v); sel.value = v; } else sel.selectedIndex = 0; }
         function ensureOption(s, v) { if(![...s.options].some(o => o.value === v)) s.add(new Option(v, v), 0); }
         function showLoading(s) { document.getElementById('loading').style.display = s ? 'flex' : 'none'; }
         function updateDayOfWeek() { const d = new Date(document.getElementById('eventDate').value); if(!isNaN(d.getTime())) document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`; }
-        function initSortable() { Sortable.create(document.
+        function initSortable() { Sortable.create(document.getElementById('serviceDeskItems'),{animation:150}); Sortable.create(document.getElementById('stageItems'),{animation:150}); }
+        function addManualItem(id) { const div = document.createElement('div'); div.className = 'checkbox-item'; div.innerHTML = `<span class="text-gray-300">☰</span><input type="checkbox"> <span contenteditable="true" class="flex-1">新項目</span> <input type="number" class="num-input" placeholder="0">`; document.getElementById(id).appendChild(div); }
+        function exportToPDF() { syncToCloud(); const element = document.getElementById('capture-area'); html2pdf().set({ margin: 5, filename: 'Rundown.pdf', jsPDF: { format: 'a3', orientation: 'landscape' } }).from(element).save(); }
+        function clearStorage() { if(confirm("確定重置表格？")) { fetch(GAS_URL, { method: "POST", body: JSON.stringify({rundown:[]}) }).then(() => location.reload()); } }
+    </script>
+</body>
+</html>
