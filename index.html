@@ -3,183 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行系統</title>
+    <title>活動執行大表</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; }
-        .tab-panel { display: none; }
-        .tab-panel.active { display: block; }
         .rundown-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; }
-        .rundown-table th, .rundown-table td { border: 1.5px solid black; padding: 10px; }
+        .rundown-table th, .rundown-table td { border: 1.5px solid black; padding: 8px; }
         .bg-gray-header { background-color: #f3f4f6; }
         .input-line { border: none; border-bottom: 1px solid black; outline: none; padding: 0 4px; background: transparent; }
-        
-        /* 簽到卡窄版樣式 */
-        .vip-container { max-width: 450px; margin: 0 auto; }
-        .vip-card { background: white; border: 1px solid #e2e8f0; border-left: 8px solid #94a3b8; border-radius: 8px; margin-bottom: 12px; padding: 12px; }
-        .vip-card.signed { border-left-color: #22c55e; background-color: #f0fdf4; }
+        select { background: transparent; outline: none; width: 100%; cursor: pointer; }
+        .time-auto { background-color: #f9fafb; color: #1d4ed8; font-weight: bold; text-align: center; }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 md:p-8">
 
-    <div class="max-w-[1100px] mx-auto">
+    <div class="max-w-[1200px] mx-auto">
         
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4 flex flex-wrap gap-4 font-bold">
-            <div>主題：<input type="text" class="input-line w-48"></div>
-            <div>時間：<input type="text" class="input-line w-32"></div>
-            <div>地點：<input type="text" class="input-line w-40"></div>
-            <div>主持人：<input type="text" class="input-line w-24"></div>
+        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-6 flex flex-wrap gap-6 items-center font-bold">
+            <div class="flex items-center">主題：<input type="text" class="input-line w-48" value="記者會"></div>
+            <div class="flex items-center">日期：<input type="date" class="input-line"></div>
+            <div class="flex items-center">地點：<input type="text" class="input-line w-40"></div>
+            <div class="flex items-center">
+                主持人：
+                <select class="input-line w-32 ml-1" onchange="checkManual(this)">
+                    <option value="Yin">Yin</option>
+                    <option value="小巫">小巫</option>
+                    <option value="Peter">Peter</option>
+                    <option value="小柔">小柔</option>
+                    <option value="manual">手動輸入...</option>
+                </select>
+            </div>
         </div>
 
         <div class="flex gap-2 mb-4">
-            <button id="btn1" onclick="switchTab(1)" class="flex-1 py-4 rounded-xl font-black text-xl bg-blue-700 text-white shadow-md">
+            <div class="flex-1 py-4 rounded-xl font-black text-xl bg-blue-700 text-white shadow-md text-center">
                 流程表
-            </button>
-            <button id="btn2" onclick="switchTab(2)" class="flex-1 py-4 rounded-xl font-black text-xl bg-white text-blue-700 border-2 border-blue-700 shadow-sm">
-                長官簽到
-            </button>
-        </div>
-
-        <div id="panel1" class="tab-panel active">
-            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                <div class="flex justify-end mb-4">
-                    <button onclick="addRow()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 shadow-md">
-                        + 新增行列
-                    </button>
-                </div>
-                <table id="rundownTable" class="rundown-table">
-                    <thead>
-                        <tr class="bg-gray-header">
-                            <th class="w-32">時間</th>
-                            <th class="w-20">長度</th>
-                            <th>單元項目</th>
-                            <th class="w-32">分工</th>
-                            <th>重點工作內容</th>
-                            <th class="w-16">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rundownBody">
-                        <tr>
-                            <td contenteditable="true" class="text-center">09:40</td>
-                            <td contenteditable="true" class="text-center">20m</td>
-                            <td contenteditable="true" class="font-bold">長官到場簽到</td>
-                            <td><select class="w-full"><option>場控</option><option>執行</option></select></td>
-                            <td contenteditable="true">確認簽到表、瓶水</td>
-                            <td class="text-center"><button onclick="deleteRow(this)" class="text-red-500">✕</button></td>
-                        </tr>
-                    </tbody>
-                </table>
+            </div>
+            <div class="flex-1 py-4 rounded-xl font-black text-xl bg-gray-200 text-gray-500 shadow-sm text-center cursor-not-allowed">
+                長官簽到 (暫停使用)
             </div>
         </div>
 
-        <div id="panel2" class="tab-panel">
-            <div class="vip-container">
-                <div class="flex gap-2 mb-4">
-                    <select id="unitSelect" onchange="fetchVips()" class="flex-1 p-3 rounded-lg border-2 border-blue-500 font-bold">
-                        <option value="頭份市公所">頭份市公所</option>
-                        <option value="苗栗縣政府">苗栗縣政府</option>
-                    </select>
-                    <button onclick="fetchVips()" class="bg-blue-600 text-white px-6 rounded-lg font-bold shadow-md">連線同步</button>
-                </div>
-                <div id="vipListArea" class="space-y-3">
-                    <div class="text-center py-10 text-gray-400">請按「連線同步」讀取名單</div>
-                </div>
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <p class="text-sm text-blue-600 font-bold">※ 只要輸入第一列的「開始時間」與各列「長度」，系統會自動計算後續時間。</p>
+                <button onclick="addRow()" class="bg-green-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-green-700 shadow-md transition-all">
+                    + 新增行列
+                </button>
             </div>
-        </div>
 
+            <table id="rundownTable" class="rundown-table">
+                <thead>
+                    <tr class="bg-gray-header">
+                        <th class="w-28">開始時間</th>
+                        <th class="w-24">長度(min)</th>
+                        <th>單元項目</th>
+                        <th class="w-32">分工</th>
+                        <th class="w-32">人員</th>
+                        <th>重點工作內容</th>
+                        <th class="w-16">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="rundownBody">
+                    <tr>
+                        <td class="text-center"><input type="time" class="start-time text-center font-bold w-full" value="09:00" oninput="calculateAllTimes()"></td>
+                        <td class="text-center"><input type="number" class="duration text-center w-full" value="10" oninput="calculateAllTimes()"></td>
+                        <td contenteditable="true" class="font-bold">活動準備與場整</td>
+                        <td>
+                            <select onchange="checkManual(this)">
+                                <option>控場</option><option>音響</option><option>主持人</option><option>遞mic</option><option>上手板</option><option>上道具</option><option value="manual">手動輸入</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select onchange="checkManual(this)">
+                                <option>鐵仁</option><option>柏緯</option><option>江哥</option><option>瑩驊</option><option>露比</option><option>芳瑜</option><option>崧瑋</option><option>工讀1</option><option>工讀2</option><option value="manual">手動輸入</option>
+                            </select>
+                        </td>
+                        <td contenteditable="true" class="text-sm">確認物資、音響測試</td>
+                        <td class="text-center"><button onclick="deleteRow(this)" class="text-red-500 font-bold">✕</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbz1IXEG3lmpDyDx8Xd7iga27HnM_F36f5A7jcnWfc3KH70OLsahGOxRVD8EApNWOYiW8g/exec";
-
-        // 切換分頁
-        function switchTab(n) {
-            const p1 = document.getElementById('panel1');
-            const p2 = document.getElementById('panel2');
-            const b1 = document.getElementById('btn1');
-            const b2 = document.getElementById('btn2');
-
-            if (n === 1) {
-                p1.classList.add('active');
-                p2.classList.remove('active');
-                b1.className = "flex-1 py-4 rounded-xl font-black text-xl bg-blue-700 text-white shadow-md";
-                b2.className = "flex-1 py-4 rounded-xl font-black text-xl bg-white text-blue-700 border-2 border-blue-700 shadow-sm";
-            } else {
-                p1.classList.remove('active');
-                p2.classList.add('active');
-                b1.className = "flex-1 py-4 rounded-xl font-black text-xl bg-white text-blue-700 border-2 border-blue-700 shadow-sm";
-                b2.className = "flex-1 py-4 rounded-xl font-black text-xl bg-blue-700 text-white shadow-md";
-                fetchVips(); // 切換時自動載入
-            }
-        }
-
-        // 新增列 (修復無反應)
+        // 自動新增行列
         function addRow() {
             const tbody = document.getElementById("rundownBody");
-            const newRow = document.createElement("tr");
-            newRow.innerHTML = `
-                <td contenteditable="true" class="text-center">--:--</td>
-                <td contenteditable="true" class="text-center">--m</td>
-                <td contenteditable="true">新單元</td>
-                <td><select class="w-full"><option>場控</option><option>執行</option></select></td>
-                <td contenteditable="true"></td>
-                <td class="text-center"><button onclick="deleteRow(this)" class="text-red-500">✕</button></td>
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td class="time-auto">--:--</td>
+                <td class="text-center"><input type="number" class="duration text-center w-full" value="5" oninput="calculateAllTimes()"></td>
+                <td contenteditable="true">新單元項目</td>
+                <td>
+                    <select onchange="checkManual(this)">
+                        <option>控場</option><option>音響</option><option>主持人</option><option>遞mic</option><option>上手板</option><option>上道具</option><option value="manual">手動輸入</option>
+                    </select>
+                </td>
+                <td>
+                    <select onchange="checkManual(this)">
+                        <option>鐵仁</option><option>柏緯</option><option>江哥</option><option>瑩驊</option><option>露比</option><option>芳瑜</option><option>崧瑋</option><option>工讀1</option><option>工讀2</option><option value="manual">手動輸入</option>
+                    </select>
+                </td>
+                <td contenteditable="true" class="text-sm">內容詳述...</td>
+                <td class="text-center"><button onclick="deleteRow(this)" class="text-red-500 font-bold">✕</button></td>
             `;
-            tbody.appendChild(newRow);
+            tbody.appendChild(tr);
+            calculateAllTimes();
         }
 
+        // 核心邏輯：自動計算時間
+        function calculateAllTimes() {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            let currentTime = "";
+
+            rows.forEach((row, index) => {
+                const durationInput = row.querySelector(".duration");
+                const duration = parseInt(durationInput.value) || 0;
+
+                if (index === 0) {
+                    // 第一列：取手動輸入的時間
+                    currentTime = row.querySelector(".start-time").value;
+                } else {
+                    // 後續列：顯示計算後的開始時間
+                    row.querySelector(".time-auto").innerText = currentTime;
+                }
+
+                // 計算下一列的起始時間
+                if (currentTime) {
+                    let [hours, minutes] = currentTime.split(":").map(Number);
+                    minutes += duration;
+                    while (minutes >= 60) {
+                        minutes -= 60;
+                        hours = (hours + 1) % 24;
+                    }
+                    currentTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                }
+            });
+        }
+
+        // 刪除列
         function deleteRow(btn) {
             btn.closest("tr").remove();
+            calculateAllTimes();
         }
 
-        // 雲端連動 (長官簽到)
-        async function fetchVips() {
-            const unit = document.getElementById('unitSelect').value;
-            const area = document.getElementById('vipListArea');
-            area.innerHTML = '<div class="text-center py-10 font-bold text-blue-600 animate-pulse">正在同步雲端資料...</div>';
-
-            try {
-                const res = await fetch(`${GAS_URL}?action=fetch&unit=${encodeURIComponent(unit)}`);
-                const vips = await res.json();
-                renderVips(vips);
-            } catch (e) {
-                area.innerHTML = `
-                    <div class="p-6 bg-red-50 border-2 border-red-200 rounded-xl text-center">
-                        <p class="text-red-600 font-bold mb-4">無法直接連線 API</p>
-                        <a href="${GAS_URL}" target="_blank" class="block bg-blue-600 text-white py-3 rounded-lg font-bold">手動開啟簽到頁</a>
-                    </div>`;
+        // 處理手動輸入選項
+        function checkManual(select) {
+            if (select.value === "manual") {
+                const val = prompt("請輸入自定義內容：");
+                if (val) {
+                    const option = document.createElement("option");
+                    option.value = val;
+                    option.text = val;
+                    select.add(option, select[0]);
+                    select.value = val;
+                } else {
+                    select.selectedIndex = 0;
+                }
             }
         }
 
-        function renderVips(vips) {
-            const area = document.getElementById('vipListArea');
-            if (!vips || vips.length === 0) {
-                area.innerHTML = '<div class="text-center py-10">目前無資料</div>';
-                return;
-            }
-            area.innerHTML = vips.map(vip => `
-                <div class="vip-card ${vip.status ? 'signed' : ''}">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <div class="text-[10px] text-gray-400 font-bold">${vip.title || '貴賓'}</div>
-                            <div class="text-xl font-black text-slate-800">${vip.name}</div>
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <button onclick="updateVip(${vip.rowIdx}, 1, ${!vip.status})" 
-                                class="px-6 py-2 rounded-lg font-bold text-sm ${vip.status ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-500'}">
-                                ${vip.status ? '已簽到' : '簽到'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function updateVip(rowIdx, col, val) {
-            const unit = document.getElementById('unitSelect').value;
-            fetch(`${GAS_URL}?action=update&unit=${encodeURIComponent(unit)}&row=${rowIdx + 2}&col=${col}&val=${val}`, { mode: 'no-cors' });
-            setTimeout(fetchVips, 500);
-        }
+        // 初始化計算
+        window.onload = calculateAllTimes;
     </script>
 </body>
 </html>
