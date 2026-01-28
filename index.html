@@ -102,5 +102,156 @@
         
         const serviceItems = [
             {n:"服務台箱", q:false}, {n:"簽到表", q:false}, {n:"長官貴賓名單", q:false}, {n:"桌布", q:false},
-            {n:"餐盒", q:true}, {n:"長桌", q:true}, {n:"新聞資料", q:true}, {n:"瓶水",
-                                                                     
+            {n:"餐盒", q:true}, {n:"長桌", q:true}, {n:"新聞資料", q:true}, {n:"瓶水", q:true}, 
+            {n:"伴手禮", q:true}, {n:"基本膠帶", q:false}, {n:"基本工具", q:false}, {n:"推車", q:true}
+        ];
+        
+        const stageItems = [
+            {n:"truss 數量x數量", q:false}, {n:"斜撐", q:true}, {n:"沙包", q:true}, {n:"手板", q:true}, 
+            {n:"布丁椅", q:true}, {n:"折疊椅", q:true}, {n:"音響", q:false}, {n:"2投面光", q:true}, {n:"par燈", q:true}
+        ];
+
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('eventDate').value = today;
+            updateDayOfWeek();
+            for (let i = 0; i < 7; i++) addRow(i === 0);
+            renderChecklists();
+            calculateAllTimes();
+        };
+
+        function addRow(isFirst = false) {
+            const tbody = document.getElementById("rundownBody");
+            const tr = document.createElement("tr");
+            const timeHTML = isFirst 
+                ? `<div class="flex flex-col items-center"><input type="time" class="start-time text-xs font-bold w-full text-center" value="09:00" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500 font-bold"></span></div>`
+                : `<span class="time-display text-xs">--:--</span>`;
+
+            let jobHTML = `<div class="select-container">`;
+            let staffHTML = `<div class="select-container">`;
+            for(let i=0; i<5; i++) {
+                jobHTML += `<select class="job-s" onchange="handleJobChange(this, ${i})"><option value="">-</option>${jobs.map(j=>`<option value="${j}">${j}</option>`).join('')}<option value="manual">手動輸入</option></select>`;
+                staffHTML += `<select class="staff-s" onchange="checkManual(this)"><option value="">-</option>${staffs.map(s=>`<option value="${s}">${s}</option>`).join('')}<option value="manual">手動輸入</option></select>`;
+            }
+            jobHTML += `</div>`; staffHTML += `</div>`;
+
+            tr.innerHTML = `
+                <td class="col-time">${timeHTML}</td>
+                <td class="col-len"><input type="number" class="duration text-center w-full text-xs font-bold" value="10" oninput="calculateAllTimes()"></td>
+                <td><div contenteditable="true" class="auto-height-cell font-bold text-blue-900">單元名稱</div></td>
+                <td><div contenteditable="true" class="auto-height-cell text-gray-600">請輸入工作細節，內容越多高度會自動增加...</div></td>
+                <td class="col-job">${jobHTML}</td>
+                <td class="col-staff">${staffHTML}</td>
+                <td class="col-op"><button onclick="deleteRow(this)" class="text-red-400 hover:text-red-600 font-bold">✕</button></td>`;
+            tbody.appendChild(tr);
+            initSelectVisibility(tr);
+        }
+
+        // 餘下邏輯 (renderChecklists, handleJobChange, checkManual, calculateAllTimes 等) 與前版本一致 ...
+        // [此處為了簡潔省略重複程式碼，功能皆完整保留並針對彈性高度進行優化]
+
+        function renderChecklists() {
+            const createItemHTML = (item) => `
+                <div class="checkbox-item">
+                    <input type="checkbox"> ${item.n}
+                    ${item.q ? `<input type="number" class="num-input" placeholder="0" min="0">` : ''}
+                </div>`;
+            const sDiv = document.getElementById('serviceDeskItems');
+            const stDiv = document.getElementById('stageItems');
+            sDiv.innerHTML = serviceItems.map(createItemHTML).join('') + `<span class="add-item-btn" onclick="addManualItem('serviceDeskItems')">+ 手動輸入增加項目</span>`;
+            stDiv.innerHTML = stageItems.map(createItemHTML).join('') + `<span class="add-item-btn" onclick="addManualItem('stageItems')">+ 手動輸入增加項目</span>`;
+        }
+
+        function addManualItem(containerId) {
+            const name = prompt("請輸入自定義器材名稱：");
+            if (name) {
+                const container = document.getElementById(containerId);
+                const newDiv = document.createElement('div');
+                newDiv.className = 'checkbox-item';
+                newDiv.innerHTML = `<input type="checkbox"> ${name} <input type="number" class="num-input" placeholder="0" min="0">`;
+                container.insertBefore(newDiv, container.lastElementChild);
+            }
+        }
+
+        function handleJobChange(select, index) {
+            const row = select.closest("tr");
+            const staffSelect = row.querySelectorAll(".staff-s")[index];
+            const currentHost = document.getElementById("headerHost").value;
+            if (select.value === "主持人") {
+                if (![...staffSelect.options].some(opt => opt.value === currentHost)) {
+                    staffSelect.add(new Option(currentHost, currentHost), 0);
+                }
+                staffSelect.value = currentHost;
+            }
+            checkManual(select);
+        }
+
+        function checkManual(sel) {
+            if (sel.value === "manual") {
+                const v = prompt("請輸入自定義內容：");
+                if (v) {
+                    const opt = new Option(v, v);
+                    sel.add(opt, sel[0]); sel.value = v;
+                    sel.dispatchEvent(new Event('change'));
+                } else { sel.selectedIndex = 0; }
+            }
+        }
+
+        function syncHostName() {
+            const currentHost = document.getElementById("headerHost").value;
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                const jobSels = row.querySelectorAll(".job-s");
+                const staffSels = row.querySelectorAll(".staff-s");
+                jobSels.forEach((jobSel, i) => {
+                    if (jobSel.value === "主持人") {
+                        if (![...staffSels[i].options].some(opt => opt.value === currentHost)) {
+                            staffSels[i].add(new Option(currentHost, currentHost), 0);
+                        }
+                        staffSels[i].value = currentHost;
+                    }
+                });
+            });
+            updateDayOfWeek();
+        }
+
+        function initSelectVisibility(row) {
+            const jobSels = row.querySelectorAll('.job-s');
+            const staffSels = row.querySelectorAll('.staff-s');
+            const refresh = () => {
+                jobSels.forEach((sel, i) => { if (i > 0) sel.style.display = (jobSels[i-1].value !== "") ? 'block' : 'none'; });
+                staffSels.forEach((sel, i) => { if (i > 0) sel.style.display = (staffSels[i-1].value !== "") ? 'block' : 'none'; });
+            };
+            row.addEventListener('change', refresh);
+            refresh();
+        }
+
+        function calculateAllTimes() {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            let nextStart = "";
+            rows.forEach((row, i) => {
+                const duration = parseInt(row.querySelector(".duration").value) || 0;
+                let startStr = (i === 0) ? row.querySelector(".start-time").value : nextStart;
+                if (startStr) {
+                    let [h, m] = startStr.split(":").map(Number);
+                    let endM = m + duration;
+                    let endH = (h + Math.floor(endM/60)) % 24;
+                    endM %= 60;
+                    const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+                    if (i === 0) document.getElementById("endTime0").innerText = `${startStr}-${endStr}`;
+                    else row.querySelector(".time-display").innerText = `${startStr}-${endStr}`;
+                    nextStart = endStr;
+                }
+            });
+        }
+
+        function updateDayOfWeek() {
+            const dateVal = document.getElementById('eventDate').value;
+            if (!dateVal) return;
+            const d = new Date(dateVal);
+            document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+        }
+
+        function deleteRow(btn) { if(confirm("確定刪除？")) { btn.closest("tr").remove(); calculateAllTimes(); } }
+    </script>
+</body>
+</html>
