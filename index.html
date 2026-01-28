@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行大表 - 2026 專業雲端整合版</title>
+    <title>活動執行大表 - 2026 雲端穩定版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -17,7 +17,6 @@
         .select-container { display: flex; flex-direction: column; gap: 2px; }
         select { background: #f9fafb; outline: none; width: 100%; cursor: pointer; font-size: 11px; border: 1px solid #ddd; border-radius: 2px; }
         
-        /* 欄寬精確設定 */
         .col-time { width: 100px; text-align: center; }
         .col-len { width: 55px; text-align: center; }
         .col-unit { width: 160px; } 
@@ -49,9 +48,9 @@
                 </select>
             </div>
             <div class="flex-1 text-right flex justify-end gap-2 no-print">
-                <button onclick="syncToCloud()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs shadow font-bold hover:bg-blue-700">💾 更新並同步雲端</button>
-                <button onclick="exportToPDF()" class="bg-amber-500 text-white px-3 py-1.5 rounded text-xs shadow font-bold hover:bg-amber-600">📄 轉PDF並分享</button>
-                <button onclick="clearStorage()" class="text-gray-400 text-[10px] hover:underline">重置表格</button>
+                <button onclick="syncToCloud()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs shadow font-bold hover:bg-blue-700">💾 儲存並同步雲端</button>
+                <button onclick="exportToPDF()" class="bg-amber-500 text-white px-3 py-1.5 rounded text-xs shadow font-bold hover:bg-amber-600">📄 PDF匯出</button>
+                <button onclick="clearStorage()" class="text-gray-400 text-[10px] hover:underline">重置</button>
             </div>
         </div>
 
@@ -68,13 +67,13 @@
         </div>
 
         <div class="bg-white p-4 shadow-lg border">
-            <h3 class="font-black text-lg mb-2 border-l-4 border-blue-600 pl-2">器材清單核對 (可拖曳排序)</h3>
+            <h3 class="font-black text-lg mb-2 border-l-4 border-blue-600 pl-2">器材清單核對</h3>
             <table class="item-table text-xs">
                 <thead><tr class="bg-gray-800 text-white text-center"><th class="w-1/2 py-2">服務台相關</th><th class="w-1/2 py-2">舞台相關</th></tr></thead>
                 <tbody>
                     <tr>
-                        <td><div id="serviceDeskItems"></div><span class="no-print text-blue-500 cursor-pointer text-[10px] p-2 inline-block" onclick="addManualItem('serviceDeskItems')">+ 增加項目</span></td>
-                        <td><div id="stageItems"></div><span class="no-print text-blue-500 cursor-pointer text-[10px] p-2 inline-block" onclick="addManualItem('stageItems')">+ 增加項目</span></td>
+                        <td><div id="serviceDeskItems"></div><span class="no-print text-blue-500 cursor-pointer text-[10px]" onclick="addManualItem('serviceDeskItems')">+ 增加項目</span></td>
+                        <td><div id="stageItems"></div><span class="no-print text-blue-500 cursor-pointer text-[10px]" onclick="addManualItem('stageItems')">+ 增加項目</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -82,16 +81,15 @@
     </div>
 
     <script>
-        // 你的最新 GAS 網址
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbx0_RU2FXuHbx22YyW8pvaA5u8oVfqgVI2b56O-8-FYO3buHOaROLwwdEhJdFwA9G2H/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbYj_gQTwKdVBCtOz2YP-zpAZw0arGDV4qksTY1_90lraOqdIPgvNOtcHaoGcp6E7Q3/exec";
         const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋", "工讀1", "工讀2"];
         const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "上道具", "攝影", "報到區"];
         let jobMapping = {};
 
         window.onload = () => loadFromCloud();
 
-        // 核心：同步至雲端
-        async function syncToCloud() {
+        // --- JSONP 同步函式 ---
+        function syncToCloud() {
             showLoading(true);
             calculateAllTimes();
             const data = {
@@ -115,41 +113,38 @@
                 });
             });
 
-            try {
-                const response = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
-                const result = await response.json();
-                if (result.result === "success") alert("✅ 資料已同步儲存至雲端！");
-            } catch (e) { 
-                console.error(e);
-                alert("❌ 同步失敗。請確認 GAS 部署是否設為「所有人」存取。"); 
-            }
-            showLoading(false);
+            const script = document.createElement('script');
+            const encodedData = encodeURIComponent(JSON.stringify(data));
+            script.src = `${GAS_URL}?callback=handleSyncResponse&data=${encodedData}`;
+            document.body.appendChild(script);
         }
 
-        // 核心：從雲端載入
-        async function loadFromCloud() {
+        function handleSyncResponse(resp) {
+            showLoading(false);
+            if (resp.result === "success") alert("✅ 同步成功！");
+        }
+
+        function loadFromCloud() {
             showLoading(true);
-            try {
-                const response = await fetch(GAS_URL);
-                const data = await response.json();
-                if (data && data.rundown && data.rundown.length > 0) {
-                    renderPage(data);
-                } else { initDefault(); }
-            } catch (e) { 
-                console.log("雲端無資料或讀取錯誤，載入初始設定");
-                initDefault(); 
-            }
-            showLoading(false);
+            const script = document.createElement('script');
+            script.src = `${GAS_URL}?callback=handleLoadResponse`;
+            document.body.appendChild(script);
         }
 
-        // 初始 7 行設定
+        function handleLoadResponse(data) {
+            showLoading(false);
+            if (data && data.rundown && data.rundown.length > 0) renderPage(data);
+            else initDefault();
+        }
+
+        // --- 頁面邏輯 ---
         function initDefault() {
             document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
             const tbody = document.getElementById("rundownBody");
             tbody.innerHTML = "";
             for (let i = 0; i < 7; i++) addRow(i === 0);
             renderList('serviceDeskItems', [{n:"簽到表", q:2}, {n:"餐盒", q:0}, {n:"瓶水", q:0}]);
-            renderList('stageItems', [{n:"TRUSS結構", q:1}, {n:"沙包", q:4}, {n:"麥克風", q:4}, {n:"斜撐", q:0}]);
+            renderList('stageItems', [{n:"TRUSS結構", q:1}, {n:"沙包", q:4}, {n:"麥克風", q:4}]);
             calculateAllTimes();
             updateDayOfWeek();
             initSortable();
@@ -170,7 +165,6 @@
             initSortable();
         }
 
-        // --- 連動邏輯 ---
         function handleJobChange(select, index) {
             const row = select.closest("tr");
             const staffSelect = row.querySelectorAll(".staff-s")[index];
@@ -192,18 +186,6 @@
             if (select.value === "manual") handleManual(select);
         }
 
-        function syncHostName() {
-            const h = document.getElementById("headerHost").value;
-            document.querySelectorAll("#rundownBody tr").forEach(row => {
-                row.querySelectorAll(".job-s").forEach((js, i) => {
-                    if(js.value === "主持人") {
-                        const ss = row.querySelectorAll(".staff-s")[i];
-                        ensureOption(ss, h); ss.value = h;
-                    }
-                });
-            });
-        }
-
         function addRow(isFirst = false, saved = null) {
             const tbody = document.getElementById("rundownBody");
             const tr = document.createElement("tr");
@@ -215,9 +197,9 @@
             }
             tr.innerHTML = `<td class="col-time">${isFirst ? `<div class="flex flex-col items-center"><input type="time" class="start-time font-bold w-full text-center text-xs" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500 font-bold"></span></div>` : '<span class="time-display text-xs"></span>'}</td>
                 <td class="col-len"><input type="number" class="duration text-center w-full font-bold text-xs" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
-                <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-900 text-center">${saved?.unit||'單元名稱'}</div></td>
+                <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-900 text-center">${saved?.unit||'單元'}</div></td>
                 <td class="col-desc"><div contenteditable="true" class="auto-height-cell text-gray-600">${saved?.desc||'工作說明'}</div></td>
-                <td class="col-job">${jobHTML}</div></td><td class="col-staff">${staffHTML}</div></td><span class="del-btn no-print" onclick="if(confirm('刪除此列？')) {this.closest('tr').remove();calculateAllTimes();}">✕</span>`;
+                <td class="col-job">${jobHTML}</div></td><td class="col-staff">${staffHTML}</div></td><span class="del-btn no-print" onclick="this.closest('tr').remove();calculateAllTimes();">✕</span>`;
             tbody.appendChild(tr);
             initSelectVisibility(tr);
         }
@@ -239,7 +221,6 @@
             });
         }
 
-        // 智慧顯示：沒用到下一組分工就不顯示
         function initSelectVisibility(row) {
             const js = row.querySelectorAll('.job-s'), ss = row.querySelectorAll('.staff-s');
             js.forEach((s, i) => { if (i > 0) s.style.display = (js[i-1].value !== "") ? 'block' : 'none'; });
@@ -249,6 +230,7 @@
         function renderList(id, items) {
             document.getElementById(id).innerHTML = items.map(i => `<div class="checkbox-item"><span class="text-gray-300">☰</span><input type="checkbox" ${i.checked?'checked':''}> <span contenteditable="true" class="flex-1">${i.n}</span><input type="number" class="num-input" value="${i.q||''}" placeholder="0"></div>`).join('');
         }
+        function syncHostName() { const h = document.getElementById("headerHost").value; document.querySelectorAll("#rundownBody tr").forEach(row => { row.querySelectorAll(".job-s").forEach((js, i) => { if(js.value === "主持人") { const ss = row.querySelectorAll(".staff-s")[i]; ensureOption(ss, h); ss.value = h; } }); }); }
         function handleManual(sel) { const v = prompt("請輸入自定義名稱："); if (v) { ensureOption(sel, v); sel.value = v; } else sel.selectedIndex = 0; }
         function ensureOption(s, v) { if(![...s.options].some(o => o.value === v)) s.add(new Option(v, v), 0); }
         function showLoading(s) { document.getElementById('loading').style.display = s ? 'flex' : 'none'; }
@@ -256,7 +238,7 @@
         function initSortable() { Sortable.create(document.getElementById('serviceDeskItems'),{animation:150}); Sortable.create(document.getElementById('stageItems'),{animation:150}); }
         function addManualItem(id) { const div = document.createElement('div'); div.className = 'checkbox-item'; div.innerHTML = `<span class="text-gray-300">☰</span><input type="checkbox"> <span contenteditable="true" class="flex-1">新項目</span> <input type="number" class="num-input" placeholder="0">`; document.getElementById(id).appendChild(div); }
         function exportToPDF() { syncToCloud(); const element = document.getElementById('capture-area'); html2pdf().set({ margin: 5, filename: 'Rundown.pdf', jsPDF: { format: 'a3', orientation: 'landscape' } }).from(element).save(); }
-        function clearStorage() { if(confirm("確定重置表格？這將清除雲端所有資料。")) { fetch(GAS_URL, { method: "POST", body: JSON.stringify({rundown:[]}) }).then(() => location.reload()); } }
+        function clearStorage() { if(confirm("確定重置？")) { const script = document.createElement('script'); script.src = `${GAS_URL}?callback=handleSyncResponse&data=${encodeURIComponent(JSON.stringify({rundown:[]}))}`; document.body.appendChild(script); setTimeout(()=>location.reload(), 500); } }
     </script>
 </body>
 </html>
