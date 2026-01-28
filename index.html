@@ -3,81 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行專業版 - 雲端連動</title>
+    <title>活動執行系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
-        
-        /* 流程表：粗黑格線風格 */
         .rundown-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; }
-        .rundown-table th, .rundown-table td { border: 1.5px solid black; padding: 12px; }
-        .bg-gray-header { background-color: #e5e7eb; }
-        [contenteditable]:focus { background-color: #fff9c4; outline: none; }
-
-        /* 簽到看板：仿 GAS 窄版設計 */
-        .vip-container { max-width: 480px; margin: 0 auto; }
-        .vip-card { background: white; border: 1px solid #e2e8f0; border-left: 8px solid #94a3b8; border-radius: 8px; margin-bottom: 12px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.3s; }
-        .vip-card.signed { border-left-color: #22c55e; background-color: #f0fdf4; }
-        .vip-card.introduced { border-right: 5px solid #3b82f6; }
+        .rundown-table th, .rundown-table td { border: 1.5px solid black; padding: 10px; }
+        .bg-gray-header { background-color: #f3f4f6; }
+        .input-line { border: none; border-bottom: 1px solid black; outline: none; padding: 0 4px; background: transparent; }
         
-        .btn-main { transition: all 0.2s; border-bottom: 4px solid rgba(0,0,0,0.2); }
-        .btn-main:active { transform: translateY(2px); border-bottom-width: 2px; }
+        /* 簽到卡窄版樣式 */
+        .vip-container { max-width: 450px; margin: 0 auto; }
+        .vip-card { background: white; border: 1px solid #e2e8f0; border-left: 8px solid #94a3b8; border-radius: 8px; margin-bottom: 12px; padding: 12px; }
+        .vip-card.signed { border-left-color: #22c55e; background-color: #f0fdf4; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4">
 
     <div class="max-w-[1100px] mx-auto">
-        <div class="flex gap-3 mb-6">
-            <button id="btn1" onclick="switchTab(1)" class="btn-main flex-1 py-5 rounded-2xl font-black text-2xl shadow-lg bg-blue-700 text-white">
-                📄 流程大表
+        
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4 flex flex-wrap gap-4 font-bold">
+            <div>主題：<input type="text" class="input-line w-48"></div>
+            <div>時間：<input type="text" class="input-line w-32"></div>
+            <div>地點：<input type="text" class="input-line w-40"></div>
+            <div>主持人：<input type="text" class="input-line w-24"></div>
+        </div>
+
+        <div class="flex gap-2 mb-4">
+            <button id="btn1" onclick="switchTab(1)" class="flex-1 py-4 rounded-xl font-black text-xl bg-blue-700 text-white shadow-md">
+                流程表
             </button>
-            <button id="btn2" onclick="switchTab(2)" class="btn-main flex-1 py-5 rounded-2xl font-black text-2xl shadow-lg bg-white text-blue-700 border-2 border-blue-700">
-                🎙️ 長官簽到
+            <button id="btn2" onclick="switchTab(2)" class="flex-1 py-4 rounded-xl font-black text-xl bg-white text-blue-700 border-2 border-blue-700 shadow-sm">
+                長官簽到
             </button>
         </div>
 
-        <div id="panel1" class="tab-panel active bg-white p-6 rounded-2xl shadow-xl border border-gray-200">
-            <div class="flex justify-between items-end mb-6">
-                <div class="font-bold text-lg space-x-4">
-                    <span>主題：<input type="text" class="border-b-2 border-black outline-none w-64 px-2" placeholder="輸入活動名稱"></span>
-                    <span>主持人：<input type="text" class="border-b-2 border-black outline-none w-32 px-2" placeholder="姓名"></span>
+        <div id="panel1" class="tab-panel active">
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                <div class="flex justify-end mb-4">
+                    <button onclick="addRow()" class="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 shadow-md">
+                        + 新增行列
+                    </button>
                 </div>
-                <button onclick="addRow()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-md">+ 新增行列</button>
+                <table id="rundownTable" class="rundown-table">
+                    <thead>
+                        <tr class="bg-gray-header">
+                            <th class="w-32">時間</th>
+                            <th class="w-20">長度</th>
+                            <th>單元項目</th>
+                            <th class="w-32">分工</th>
+                            <th>重點工作內容</th>
+                            <th class="w-16">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rundownBody">
+                        <tr>
+                            <td contenteditable="true" class="text-center">09:40</td>
+                            <td contenteditable="true" class="text-center">20m</td>
+                            <td contenteditable="true" class="font-bold">長官到場簽到</td>
+                            <td><select class="w-full"><option>場控</option><option>執行</option></select></td>
+                            <td contenteditable="true">確認簽到表、瓶水</td>
+                            <td class="text-center"><button onclick="deleteRow(this)" class="text-red-500">✕</button></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-
-            <table id="rundownTable" class="rundown-table">
-                <thead>
-                    <tr class="bg-gray-header text-center font-bold">
-                        <th class="w-32">時間</th>
-                        <th class="w-20">長度</th>
-                        <th>單元項目</th>
-                        <th class="w-40">分工</th>
-                        <th>重點工作內容</th>
-                        <th class="w-16">操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td contenteditable="true" class="text-center font-mono font-bold">09:40-10:00</td>
-                        <td contenteditable="true" class="text-center">20m</td>
-                        <td contenteditable="true" class="font-bold text-blue-800 text-lg">長官到場簽到</td>
-                        <td>
-                            <select class="w-full bg-transparent outline-none cursor-pointer">
-                                <option>場控</option><option>執行1</option><option>執行2</option><option>音響</option>
-                            </select>
-                        </td>
-                        <td contenteditable="true" class="text-sm">確認簽到表、名片箱、瓶裝水、背景音樂測試。</td>
-                        <td class="text-center">
-                            <button onclick="deleteRow(this)" class="text-red-400 hover:text-red-600">✕</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
 
         <div id="panel2" class="tab-panel">
             <div class="vip-container">
-                <div class="flex gap-2 mb-6 bg-white p-3 rounded-xl shadow border border-gray-200">
-                    <select id="unitSelect" onchange="fetchVips()" class="flex-1 p-2 font
+                <div class="flex gap-2 mb-4">
+                    <select id="unitSelect" onchange="fetchVips()" class="flex-1 p-3 rounded-lg border-2 border-blue-500 font-bold">
+                        <option value="頭份市公所">頭份市公所</option>
+                        <option value="苗栗縣政府">苗栗縣政府</option>
+                    </select>
+                    <button onclick="fetchVips()" class="bg-blue-600 text-white px-6 rounded-lg font-bold shadow-md">連線同步</button>
+                </div>
+                <div id="vipListArea" class="space-y-3">
+                    <div class="text-center py-10 text-gray-400">請按「連線同步」讀取名單</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz1IXEG3lmpDyDx8Xd7iga27HnM_F36f5A7jcnWfc3KH70OLsahGOxRVD8EApNWOYiW8g/exec";
+
+        // 切換分頁
+        function switchTab(n) {
+            const p1 = document.getElementById('panel1');
+            const p2 = document.getElementById('panel2');
+            const b1 = document.getElementById('btn1');
+            const b2 = document.getElementById('btn2');
+
+            if (n === 1) {
+                p1.classList.add('active');
+                p2.classList.remove('active');
+                b1.className = "flex-1 py-4 rounded-xl font-black text-xl bg-blue-700 text-white shadow-md";
+                b2.className = "flex-1 py-4 rounded-xl font-black text-xl bg-white text-blue-700 border-2 border-blue-700 shadow-sm";
+            } else {
+                p1.classList.remove('active');
+                p2.classList.add('active');
+                b1.className = "flex-1 py-4 rounded-xl font-black text-xl bg-white text-blue-700 border-2 border-blue-700 shadow-sm";
+                b2.className = "flex-1 py-4 rounded-xl font-black text-xl bg-blue-700 text-white shadow-md";
+                fetchVips(); // 切換時自動載入
+            }
+        }
+
+        // 新增列 (修復無反應)
+        function addRow() {
+            const tbody = document.getElementById("rundownBody");
+            const newRow = document.createElement("tr");
+            newRow.innerHTML = `
+                <td contenteditable="true" class="text-center">--:--</td>
+                <td contenteditable="true" class="text-center">--m</td>
+                <td contenteditable="true">新單元</td>
+                <td><select class="w-full"><option>場控</option><option>執行</option></select></td>
+                <td contenteditable="true"></td>
+                <td class="text-center"><button onclick="deleteRow(this)" class="text-red-500">✕</button></td>
+            `;
+            tbody.appendChild(newRow);
+        }
+
+        function deleteRow(btn) {
+            btn.closest("tr").remove();
+        }
+
+        // 雲端連動 (長官簽到)
+        async function fetchVips() {
+            const unit = document.getElementById('unitSelect').value;
+            const area = document.getElementById('vipListArea');
+            area.innerHTML = '<div class="text-center py-10 font-bold text-blue-600 animate-pulse">正在同步雲端資料...</div>';
+
+            try {
+                const res = await fetch(`${GAS_URL}?action=fetch&unit=${encodeURIComponent(unit)}`);
+                const vips = await res.json();
+                renderVips(vips);
+            } catch (e) {
+                area.innerHTML = `
+                    <div class="p-6 bg-red-50 border-2 border-red-200 rounded-xl text-center">
+                        <p class="text-red-600 font-bold mb-4">無法直接連線 API</p>
+                        <a href="${GAS_URL}" target="_blank" class="block bg-blue-600 text-white py-3 rounded-lg font-bold">手動開啟簽到頁</a>
+                    </div>`;
+            }
+        }
+
+        function renderVips(vips) {
+            const area = document.getElementById('vipListArea');
+            if (!vips || vips.length === 0) {
+                area.innerHTML = '<div class="text-center py-10">目前無資料</div>';
+                return;
+            }
+            area.innerHTML = vips.map(vip => `
+                <div class="vip-card ${vip.status ? 'signed' : ''}">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="text-[10px] text-gray-400 font-bold">${vip.title || '貴賓'}</div>
+                            <div class="text-xl font-black text-slate-800">${vip.name}</div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <button onclick="updateVip(${vip.rowIdx}, 1, ${!vip.status})" 
+                                class="px-6 py-2 rounded-lg font-bold text-sm ${vip.status ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-500'}">
+                                ${vip.status ? '已簽到' : '簽到'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateVip(rowIdx, col, val) {
+            const unit = document.getElementById('unitSelect').value;
+            fetch(`${GAS_URL}?action=update&unit=${encodeURIComponent(unit)}&row=${rowIdx + 2}&col=${col}&val=${val}`, { mode: 'no-cors' });
+            setTimeout(fetchVips, 500);
+        }
+    </script>
+</body>
+</html>
