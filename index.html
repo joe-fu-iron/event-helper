@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行大表 - 2026 專業整合版</title>
+    <title>活動執行大表 - 2026 儲存列印版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -14,28 +14,23 @@
         .bg-gray-header { background-color: #f3f4f6; }
         .input-line { border: none; border-bottom: 1px solid black; outline: none; background: transparent; }
         
-        /* 彈性文字區塊 */
         .auto-height-cell { min-height: 40px; white-space: pre-wrap; word-break: break-all; outline: none; }
 
-        /* 選單樣式 */
         .select-container { display: flex; flex-direction: column; gap: 2px; }
         select { background: #f9fafb; outline: none; width: 100%; cursor: pointer; font-size: 11px; border: 1px solid #ddd; border-radius: 2px; }
         
-        /* 精確欄寬設定 */
         .col-time { width: 100px; text-align: center; }
         .col-len { width: 55px; text-align: center; }
         .col-unit { width: 150px; } 
-        .col-desc { width: 150px; } /* 工作說明初始 150px */
-        .col-job, .col-staff { width: 75px; } /* 容納三個中文字 */
+        .col-desc { width: 150px; } 
+        .col-job, .col-staff { width: 75px; } 
         
-        /* 隱藏式刪除鈕 */
         .del-btn { 
             position: absolute; right: -25px; top: 15px;
             color: #ccc; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px;
         }
         tr:hover .del-btn { color: #ef4444; }
         
-        /* 器材清單拖曳樣式 */
         .checkbox-item { display: flex; align-items: center; padding: 4px 8px; font-size: 12px; gap: 8px; background: white; border: 1px solid transparent; cursor: grab; }
         .checkbox-item:hover { background: #f1f5f9; border-color: #cbd5e1; border-radius: 4px; }
         .sortable-ghost { opacity: 0.4; background: #dbeafe; }
@@ -44,7 +39,13 @@
         .num-input { width: 45px; border: 1px solid #ccc; border-radius: 3px; padding: 1px 2px; text-align: center; }
         .add-item-btn { font-size: 10px; color: #2563eb; cursor: pointer; text-decoration: underline; margin-top: 8px; display: block; padding-left: 8px; }
 
-        @media print { .no-print { display: none !important; } .del-btn { display: none !important; } body { padding: 0; } }
+        @media print { 
+            .no-print { display: none !important; } 
+            .del-btn { display: none !important; } 
+            body { padding: 0; background: white; }
+            #capture-area { max-width: 100%; }
+            @page { size: landscape; margin: 5mm; }
+        }
     </style>
 </head>
 <body class="p-2 pr-10">
@@ -59,14 +60,15 @@
                 </select>
             </div>
             <div class="flex-1 text-right flex justify-end gap-2 no-print">
-                <button onclick="calculateAllTimes()" class="bg-amber-500 text-white px-3 py-1.5 rounded text-xs shadow font-bold">🔄 更新時間</button>
-                <button onclick="exportToPDF()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs shadow font-bold">📄 PDF & LINE 分享</button>
+                <button onclick="saveAndRefresh()" class="bg-amber-500 text-white px-3 py-1.5 rounded text-xs shadow font-bold hover:bg-amber-600">💾 儲存並更新</button>
+                <button onclick="window.print()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-xs shadow font-bold hover:bg-blue-700">🖨️ 直接列印</button>
+                <button onclick="exportToPDF()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs shadow font-bold hover:bg-indigo-700">📄 PDF & LINE 分享</button>
             </div>
         </div>
 
         <div class="bg-white p-2 shadow-lg border mb-6">
             <div class="flex justify-between mb-2 px-1 text-xs font-bold text-blue-600 no-print">
-                <span>※ 流程表 (單元與工作說明初始 150px)</span>
+                <span>※ 流程表 (內容會自動換行)</span>
                 <button onclick="addRow()" class="bg-green-600 text-white px-4 py-1 rounded font-bold hover:bg-green-700 shadow-md">+ 增加一行</button>
             </div>
             <table id="rundownTable" class="rundown-table">
@@ -115,39 +117,88 @@
         const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋", "工讀1", "工讀2"];
         const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "上道具", "攝影", "服務台"];
         
-        const serviceItems = [{n:"服務台箱", q:0}, {n:"簽到表", q:0}, {n:"貴賓名單", q:0}, {n:"桌布", q:0}, {n:"餐盒", q:1}, {n:"瓶水", q:1}, {n:"伴手禮", q:1}];
-        const stageItems = [{n:"TRUSS結構", q:0}, {n:"斜撐", q:1}, {n:"沙包", q:1}, {n:"手板", q:1}, {n:"音響組", q:0}, {n:"PAR燈", q:1}];
-
         window.onload = function() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('eventDate').value = today;
+            if (!loadData()) {
+                // 如果沒有暫存資料，則初始化預設值
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('eventDate').value = today;
+                for (let i = 0; i < 7; i++) addRow(i === 0);
+                renderDefaultChecklists();
+            }
             updateDayOfWeek();
-            for (let i = 0; i < 7; i++) addRow(i === 0);
-            renderChecklists();
             calculateAllTimes();
             initSortable();
         };
 
-        function addRow(isFirst = false) {
+        // --- 核心：儲存並更新功能 ---
+        function saveAndRefresh() {
+            calculateAllTimes();
+            const data = {
+                title: document.getElementById('eventTitle').value,
+                date: document.getElementById('eventDate').value,
+                host: document.getElementById('headerHost').value,
+                rundown: [],
+                serviceItems: getListItems('serviceDeskItems'),
+                stageItems: getListItems('stageItems')
+            };
+
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                data.rundown.push({
+                    startTime: row.querySelector(".start-time")?.value || "",
+                    duration: row.querySelector(".duration").value,
+                    unit: row.querySelector(".col-unit div").innerText,
+                    desc: row.querySelector(".col-desc div").innerText,
+                    jobs: Array.from(row.querySelectorAll(".job-s")).map(s => s.value),
+                    staffs: Array.from(row.querySelectorAll(".staff-s")).map(s => s.value)
+                });
+            });
+
+            localStorage.setItem('rundown_cache', JSON.stringify(data));
+            alert("✅ 資料已同步更新並儲存至瀏覽器！");
+        }
+
+        // --- 核心：讀取功能 ---
+        function loadData() {
+            const cached = localStorage.getItem('rundown_cache');
+            if (!cached) return false;
+            const data = JSON.parse(cached);
+            
+            document.getElementById('eventTitle').value = data.title;
+            document.getElementById('eventDate').value = data.date;
+            document.getElementById('headerHost').value = data.host;
+
+            const tbody = document.getElementById("rundownBody");
+            tbody.innerHTML = "";
+            data.rundown.forEach((item, idx) => addRow(idx === 0, item));
+            
+            renderChecklistFromData('serviceDeskItems', data.serviceItems);
+            renderChecklistFromData('stageItems', data.stageItems);
+            return true;
+        }
+
+        function addRow(isFirst = false, savedItem = null) {
             const tbody = document.getElementById("rundownBody");
             const tr = document.createElement("tr");
+            
             const timeHTML = isFirst 
-                ? `<div class="flex flex-col items-center"><input type="time" class="start-time text-xs font-bold w-full text-center" value="09:00" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500 font-bold"></span></div>`
+                ? `<div class="flex flex-col items-center"><input type="time" class="start-time text-xs font-bold w-full text-center" value="${savedItem?.startTime || '09:00'}" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500 font-bold"></span></div>`
                 : `<span class="time-display text-xs">--:--</span>`;
 
             let jobHTML = `<div class="select-container">`;
             let staffHTML = `<div class="select-container">`;
             for(let i=0; i<5; i++) {
-                jobHTML += `<select class="job-s no-print" onchange="handleJobChange(this, ${i})"><option value="">-</option>${jobs.map(j=>`<option value="${j}">${j}</option>`).join('')}<option value="manual">手動</option></select>`;
-                staffHTML += `<select class="staff-s no-print" onchange="checkManual(this)"><option value="">-</option>${staffs.map(s=>`<option value="${s}">${s}</option>`).join('')}<option value="manual">手動</option></select>`;
+                const jVal = savedItem?.jobs[i] || "";
+                const sVal = savedItem?.staffs[i] || "";
+                jobHTML += `<select class="job-s no-print" onchange="handleJobChange(this, ${i})"><option value="">-</option>${jobs.map(j=>`<option value="${j}" ${j===jVal?'selected':''}>${j}</option>`).join('')}<option value="manual">手動</option></select>`;
+                staffHTML += `<select class="staff-s no-print" onchange="checkManual(this)"><option value="">-</option>${staffs.map(s=>`<option value="${s}" ${s===sVal?'selected':''}>${s}</option>`).join('')}<option value="manual">手動</option></select>`;
             }
             jobHTML += `</div>`; staffHTML += `</div>`;
 
             tr.innerHTML = `
                 <td class="col-time">${timeHTML}</td>
-                <td class="col-len"><input type="number" class="duration text-center w-full text-xs font-bold" value="10" oninput="calculateAllTimes()"></td>
-                <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-900">單元名稱</div></td>
-                <td class="col-desc"><div contenteditable="true" class="auto-height-cell text-gray-600">工作說明...</div></td>
+                <td class="col-len"><input type="number" class="duration text-center w-full text-xs font-bold" value="${savedItem?.duration || 10}" oninput="calculateAllTimes()"></td>
+                <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-900">${savedItem?.unit || '單元名稱'}</div></td>
+                <td class="col-desc"><div contenteditable="true" class="auto-height-cell text-gray-600">${savedItem?.desc || '工作說明...'}</div></td>
                 <td class="col-job">${jobHTML}</td>
                 <td class="col-staff">${staffHTML}</td>
                 <span class="del-btn no-print" onclick="deleteRow(this)">✕</span>`;
@@ -155,53 +206,30 @@
             initSelectVisibility(tr);
         }
 
-        function renderChecklists() {
-            const createHTML = (item) => `
+        function renderDefaultChecklists() {
+            const sItems = [{n:"服務台箱", q:0}, {n:"簽到表", q:0}, {n:"貴賓名單", q:0}, {n:"桌布", q:0}, {n:"餐盒", q:1}, {n:"瓶水", q:1}, {n:"伴手禮", q:1}];
+            const stItems = [{n:"TRUSS結構", q:0}, {n:"斜撐", q:1}, {n:"沙包", q:1}, {n:"手板", q:1}, {n:"音響組", q:0}, {n:"PAR燈", q:1}];
+            renderChecklistFromData('serviceDeskItems', sItems);
+            renderChecklistFromData('stageItems', stItems);
+        }
+
+        function renderChecklistFromData(id, items) {
+            const container = document.getElementById(id);
+            container.innerHTML = items.map(item => `
                 <div class="checkbox-item">
                     <span class="text-gray-300">☰</span>
-                    <input type="checkbox"> 
+                    <input type="checkbox" ${item.checked ? 'checked' : ''}> 
                     <span contenteditable="true" class="flex-1">${item.n}</span>
-                    ${item.q ? `<input type="number" class="num-input" placeholder="0">` : ''}
-                </div>`;
-            document.getElementById('serviceDeskItems').innerHTML = serviceItems.map(createHTML).join('');
-            document.getElementById('stageItems').innerHTML = stageItems.map(createHTML).join('');
+                    <input type="number" class="num-input" value="${item.q || 0}" placeholder="0">
+                </div>`).join('');
         }
 
-        function initSortable() {
-            const config = { animation: 150, ghostClass: 'sortable-ghost', handle: '.checkbox-item' };
-            Sortable.create(document.getElementById('serviceDeskItems'), config);
-            Sortable.create(document.getElementById('stageItems'), config);
-        }
-
-        function handleJobChange(select, index) {
-            const row = select.closest("tr");
-            const staffSelect = row.querySelectorAll(".staff-s")[index];
-            const currentHost = document.getElementById("headerHost").value;
-            if (select.value === "主持人") {
-                if (![...staffSelect.options].some(opt => opt.value === currentHost)) {
-                    staffSelect.add(new Option(currentHost, currentHost), 0);
-                }
-                staffSelect.value = currentHost;
-            }
-            checkManual(select);
-        }
-
-        function checkManual(sel) {
-            if (sel.value === "manual") {
-                const v = prompt("請輸入自定義內容：");
-                if (v) { const opt = new Option(v, v); sel.add(opt, sel[0]); sel.value = v; sel.dispatchEvent(new Event('change')); }
-                else { sel.selectedIndex = 0; }
-            }
-        }
-
-        function syncHostName() {
-            const currentHost = document.getElementById("headerHost").value;
-            document.querySelectorAll("#rundownBody tr").forEach(row => {
-                const jobSels = row.querySelectorAll(".job-s");
-                const staffSels = row.querySelectorAll(".staff-s");
-                jobSels.forEach((jobSel, i) => { if (jobSel.value === "主持人") { if (![...staffSels[i].options].some(opt => opt.value === currentHost)) { staffSels[i].add(new Option(currentHost, currentHost), 0); } staffSels[i].value = currentHost; } });
-            });
-            updateDayOfWeek();
+        function getListItems(id) {
+            return Array.from(document.getElementById(id).querySelectorAll(".checkbox-item")).map(el => ({
+                n: el.querySelector("span[contenteditable]").innerText,
+                checked: el.querySelector("input[type='checkbox']").checked,
+                q: el.querySelector(".num-input").value
+            }));
         }
 
         function calculateAllTimes() {
@@ -223,26 +251,56 @@
             });
         }
 
-        function exportToPDF() {
-            const element = document.getElementById('capture-area');
-            const title = document.getElementById('eventTitle').value;
-            const opt = {
-                margin: 5, filename: `Rundown_${title}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
-            };
-            html2pdf().set(opt).from(element).save().then(() => {
-                window.open(`https://line.me/R/msg/text/?【${title}】流程表已導出，請查收 PDF！`, '_blank');
+        function initSortable() {
+            const config = { animation: 150, handle: '.checkbox-item' };
+            Sortable.create(document.getElementById('serviceDeskItems'), config);
+            Sortable.create(document.getElementById('stageItems'), config);
+        }
+
+        function handleJobChange(select, index) {
+            const row = select.closest("tr");
+            const staffSelect = row.querySelectorAll(".staff-s")[index];
+            const currentHost = document.getElementById("headerHost").value;
+            if (select.value === "主持人") {
+                if (![...staffSelect.options].some(opt => opt.value === currentHost)) {
+                    staffSelect.add(new Option(currentHost, currentHost), 0);
+                }
+                staffSelect.value = currentHost;
+            }
+            checkManual(select);
+        }
+
+        function checkManual(sel) {
+            if (sel.value === "manual") {
+                const v = prompt("請輸入內容：");
+                if (v) { const opt = new Option(v, v); sel.add(opt, sel[0]); sel.value = v; sel.dispatchEvent(new Event('change')); }
+                else { sel.selectedIndex = 0; }
+            }
+        }
+
+        function syncHostName() {
+            const currentHost = document.getElementById("headerHost").value;
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                row.querySelectorAll(".job-s").forEach((jobSel, i) => {
+                    if (jobSel.value === "主持人") {
+                        const staffSel = row.querySelectorAll(".staff-s")[i];
+                        if (![...staffSel.options].some(opt => opt.value === currentHost)) {
+                            staffSel.add(new Option(currentHost, currentHost), 0);
+                        }
+                        staffSel.value = currentHost;
+                    }
+                });
             });
         }
 
-        function addManualItem(containerId) {
-            const container = document.getElementById(containerId);
-            const newDiv = document.createElement('div');
-            newDiv.className = 'checkbox-item';
-            newDiv.innerHTML = `<span class="text-gray-300">☰</span><input type="checkbox"> <span contenteditable="true" class="flex-1">新項目</span> <input type="number" class="num-input" placeholder="0">`;
-            container.appendChild(newDiv);
+        function exportToPDF() {
+            saveAndRefresh(); // 匯出前自動存一次
+            const element = document.getElementById('capture-area');
+            const title = document.getElementById('eventTitle').value;
+            html2pdf().set({
+                margin: 5, filename: `Rundown_${title}.pdf`,
+                jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
+            }).from(element).save();
         }
 
         function initSelectVisibility(row) {
@@ -264,7 +322,13 @@
             }
         }
 
-        function deleteRow(btn) { if(confirm("確定刪除此列？")) { btn.closest("tr").remove(); calculateAllTimes(); } }
+        function deleteRow(btn) { if(confirm("確定刪除？")) { btn.closest("tr").remove(); calculateAllTimes(); } }
+        function addManualItem(id) {
+            const div = document.createElement('div');
+            div.className = 'checkbox-item';
+            div.innerHTML = `<span class="text-gray-300">☰</span><input type="checkbox"> <span contenteditable="true" class="flex-1">新項目</span> <input type="number" class="num-input" placeholder="0">`;
+            document.getElementById(id).appendChild(div);
+        }
     </script>
 </body>
 </html>
