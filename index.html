@@ -7,46 +7,56 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; font-size: 13px; }
-        .rundown-table, .item-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; table-layout: fixed; }
-        .rundown-table th, .rundown-table td, .item-table th, .item-table td { border: 1.2px solid black; padding: 6px; vertical-align: top; }
+        /* 移除 fixed，讓表格能根據內容撐開 */
+        .rundown-table, .item-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; }
+        .rundown-table th, .rundown-table td, .item-table th, .item-table td { border: 1.2px solid black; padding: 8px; vertical-align: top; }
         .bg-gray-header { background-color: #f3f4f6; }
         .input-line { border: none; border-bottom: 1px solid black; outline: none; background: transparent; }
         
-        .select-container { min-height: 24px; display: flex; flex-direction: column; gap: 2px; }
+        /* 讓文字區塊可以自動換行並撐開高度 */
+        .auto-height-cell { 
+            min-height: 40px; 
+            white-space: pre-wrap; 
+            word-break: break-all;
+            outline: none;
+        }
+
+        .select-container { display: flex; flex-direction: column; gap: 2px; }
         select { background: #f9fafb; outline: none; width: 100%; cursor: pointer; font-size: 11px; border: 1px solid #ddd; border-radius: 2px; }
         
-        .col-time { width: 110px; }
-        .col-len { width: 55px; }
-        .col-job, .col-staff { width: 90px; }
-        .col-op { width: 35px; }
+        /* 固定小欄位的寬度，其餘讓給文字 */
+        .col-time { width: 120px; text-align: center; }
+        .col-len { width: 60px; text-align: center; }
+        .col-job, .col-staff { width: 100px; }
+        .col-op { width: 40px; text-align: center; }
         
-        .time-display { font-family: 'Courier New', monospace; font-weight: bold; color: #1d4ed8; text-align: center; display: block; }
+        .time-display { font-family: 'Courier New', monospace; font-weight: bold; color: #1d4ed8; }
         .checkbox-item { display: flex; align-items: center; padding: 3px 0; font-size: 12px; gap: 5px; }
-        .num-input { width: 45px; border: 1px solid #ccc; border-radius: 3px; padding: 1px 2px; font-size: 11px; text-align: center; }
+        .num-input { width: 45px; border: 1px solid #ccc; border-radius: 3px; padding: 1px 2px; text-align: center; }
         .add-item-btn { font-size: 10px; color: #2563eb; cursor: pointer; text-decoration: underline; margin-top: 4px; display: block; }
     </style>
 </head>
 <body class="p-2">
 
-    <div class="max-w-[1550px] mx-auto">
+    <div class="max-w-[1600px] mx-auto">
         <div class="bg-white p-4 rounded shadow border mb-3 flex flex-wrap gap-4 font-bold text-sm items-center">
-            <div>主題：<input type="text" class="input-line w-44" value="2026 記者會"></div>
+            <div>主題：<input type="text" class="input-line w-48" value="2026 記者會"></div>
             <div>日期：<input type="date" id="eventDate" class="input-line" onchange="updateDayOfWeek()"><span id="dayOfWeek" class="ml-1 text-blue-600"></span></div>
             <div>地點：<input type="text" class="input-line w-40"></div>
             <div>主持人：
-                <select id="headerHost" class="input-line w-24 border-b border-black font-bold" onchange="syncHostName()">
+                <select id="headerHost" class="input-line w-28 border-b border-black font-bold" onchange="syncHostName()">
                     <option value="Yin">Yin</option><option value="小巫">小巫</option><option value="Peter">Peter</option><option value="小柔">小柔</option><option value="manual">手動輸入...</option>
                 </select>
             </div>
             <div class="flex-1 text-right flex justify-end gap-2">
                 <button onclick="calculateAllTimes()" class="bg-amber-500 text-white px-3 py-1.5 rounded text-xs shadow hover:bg-amber-600 font-bold">🔄 即時更新</button>
-                <a href="https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec" target="_blank" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs shadow hover:bg-blue-700">🎙️ 長官簽到情況</a>
+                <a href="https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec" target="_blank" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs shadow hover:bg-blue-700 font-bold">🎙️ 長官簽到情況</a>
             </div>
         </div>
 
-        <div class="bg-white p-2 shadow-lg border mb-6">
+        <div class="bg-white p-2 shadow-lg border mb-6 overflow-x-auto">
             <div class="flex justify-between mb-2 px-1 text-xs font-bold text-blue-600">
-                <span>※ 流程表 (重點工作已左移 / 24H制自動計算)</span>
+                <span>※ 流程表 (文字輸入會自動撐開列高)</span>
                 <button onclick="addRow()" class="bg-green-600 text-white px-4 py-1 rounded font-bold hover:bg-green-700 shadow-md">+ 增加一行</button>
             </div>
             <table id="rundownTable" class="rundown-table">
@@ -54,8 +64,8 @@
                     <tr class="bg-gray-header text-xs">
                         <th class="col-time">時間區段</th>
                         <th class="col-len">長度</th>
-                        <th style="width: 250px;">單元項目</th>
-                        <th>重點工作內容</th>
+                        <th style="min-width: 200px;">單元項目</th>
+                        <th style="min-width: 350px;">重點工作內容</th>
                         <th class="col-job">分工</th>
                         <th class="col-staff">人員</th>
                         <th class="col-op">操作</th>
@@ -71,12 +81,12 @@
             </div>
             <table class="item-table text-xs">
                 <thead>
-                    <tr class="bg-gray-800 text-white">
+                    <tr class="bg-gray-800 text-white text-center">
                         <th class="w-1/2 py-2">服務台相關</th>
                         <th class="w-1/2 py-2">舞台相關</th>
                     </tr>
                 </thead>
-                <tbody id="itemListBody">
+                <tbody>
                     <tr>
                         <td id="serviceDeskItems"></td>
                         <td id="stageItems"></td>
@@ -92,161 +102,5 @@
         
         const serviceItems = [
             {n:"服務台箱", q:false}, {n:"簽到表", q:false}, {n:"長官貴賓名單", q:false}, {n:"桌布", q:false},
-            {n:"餐盒", q:true}, {n:"長桌", q:true}, {n:"新聞資料", q:true}, {n:"瓶水", q:true}, 
-            {n:"伴手禮", q:true}, {n:"基本膠帶", q:false}, {n:"基本工具", q:false}, {n:"推車", q:true}
-        ];
-        
-        const stageItems = [
-            {n:"truss 數量x數量", q:false}, {n:"斜撐", q:true}, {n:"沙包", q:true}, {n:"手板", q:true}, 
-            {n:"布丁椅", q:true}, {n:"折疊椅", q:true}, {n:"音響", q:false}, {n:"2投面光", q:true}, {n:"par燈", q:true}
-        ];
-
-        window.onload = function() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('eventDate').value = today;
-            updateDayOfWeek();
-            for (let i = 0; i < 7; i++) addRow(i === 0);
-            renderChecklists();
-            calculateAllTimes();
-        };
-
-        function renderChecklists() {
-            const createItemHTML = (item) => `
-                <div class="checkbox-item">
-                    <input type="checkbox"> ${item.n}
-                    ${item.q ? `<input type="number" class="num-input" placeholder="0" min="0">` : ''}
-                </div>`;
-            
-            const serviceDiv = document.getElementById('serviceDeskItems');
-            const stageDiv = document.getElementById('stageItems');
-            
-            serviceDiv.innerHTML = serviceItems.map(createItemHTML).join('') + 
-                `<span class="add-item-btn" onclick="addManualItem('serviceDeskItems')">+ 手動輸入增加項目</span>`;
-            
-            stageDiv.innerHTML = stageItems.map(createItemHTML).join('') + 
-                `<span class="add-item-btn" onclick="addManualItem('stageItems')">+ 手動輸入增加項目</span>`;
-        }
-
-        function addManualItem(containerId) {
-            const name = prompt("請輸入自定義器材名稱：");
-            if (name) {
-                const container = document.getElementById(containerId);
-                const newDiv = document.createElement('div');
-                newDiv.className = 'checkbox-item';
-                newDiv.innerHTML = `<input type="checkbox"> ${name} <input type="number" class="num-input" placeholder="0" min="0">`;
-                container.insertBefore(newDiv, container.lastElementChild);
-            }
-        }
-
-        function addRow(isFirst = false) {
-            const tbody = document.getElementById("rundownBody");
-            const tr = document.createElement("tr");
-            const timeHTML = isFirst 
-                ? `<div class="flex flex-col items-center"><input type="time" class="start-time text-xs font-bold w-full text-center" value="09:00" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500 font-bold"></span></div>`
-                : `<span class="time-display text-xs">--:--</span>`;
-
-            let jobHTML = `<div class="select-container">`;
-            let staffHTML = `<div class="select-container">`;
-            for(let i=0; i<5; i++) {
-                jobHTML += `<select class="job-s" onchange="handleJobChange(this, ${i})"><option value="">-</option>${jobs.map(j=>`<option value="${j}">${j}</option>`).join('')}<option value="manual">手動輸入</option></select>`;
-                staffHTML += `<select class="staff-s" onchange="checkManual(this)"><option value="">-</option>${staffs.map(s=>`<option value="${s}">${s}</option>`).join('')}<option value="manual">手動輸入</option></select>`;
-            }
-            jobHTML += `</div>`; staffHTML += `</div>`;
-
-            tr.innerHTML = `
-                <td class="col-time text-center">${timeHTML}</td>
-                <td class="col-len"><input type="number" class="duration text-center w-full text-xs font-bold" value="10" oninput="calculateAllTimes()"></td>
-                <td contenteditable="true" class="font-bold px-2 text-blue-900 italic">點擊輸入單元項目</td>
-                <td contenteditable="true" class="text-xs px-2 text-gray-600">預設工作內容參考...</td>
-                <td class="col-job">${jobHTML}</td>
-                <td class="col-staff">${staffHTML}</td>
-                <td class="col-op text-center"><button onclick="deleteRow(this)" class="text-red-400 hover:text-red-600 font-bold">✕</button></td>`;
-            tbody.appendChild(tr);
-            initSelectVisibility(tr);
-        }
-
-        function handleJobChange(select, index) {
-            const row = select.closest("tr");
-            const staffSelect = row.querySelectorAll(".staff-s")[index];
-            const currentHost = document.getElementById("headerHost").value;
-
-            if (select.value === "主持人") {
-                if (![...staffSelect.options].some(opt => opt.value === currentHost)) {
-                    staffSelect.add(new Option(currentHost, currentHost), 0);
-                }
-                staffSelect.value = currentHost;
-            }
-            checkManual(select);
-        }
-
-        function checkManual(sel) {
-            if (sel.value === "manual") {
-                const v = prompt("請輸入自定義內容：");
-                if (v) {
-                    const opt = new Option(v, v);
-                    sel.add(opt, sel[0]);
-                    sel.value = v;
-                    sel.dispatchEvent(new Event('change'));
-                } else { sel.selectedIndex = 0; }
-            }
-        }
-
-        function syncHostName() {
-            const currentHost = document.getElementById("headerHost").value;
-            document.querySelectorAll("#rundownBody tr").forEach(row => {
-                const jobSels = row.querySelectorAll(".job-s");
-                const staffSels = row.querySelectorAll(".staff-s");
-                jobSels.forEach((jobSel, i) => {
-                    if (jobSel.value === "主持人") {
-                        if (![...staffSels[i].options].some(opt => opt.value === currentHost)) {
-                            staffSels[i].add(new Option(currentHost, currentHost), 0);
-                        }
-                        staffSels[i].value = currentHost;
-                    }
-                });
-            });
-            checkManual(document.getElementById("headerHost"));
-        }
-
-        function initSelectVisibility(row) {
-            const jobSels = row.querySelectorAll('.job-s');
-            const staffSels = row.querySelectorAll('.staff-s');
-            const refresh = () => {
-                jobSels.forEach((sel, i) => { if (i > 0) sel.style.display = (jobSels[i-1].value !== "") ? 'block' : 'none'; });
-                staffSels.forEach((sel, i) => { if (i > 0) sel.style.display = (staffSels[i-1].value !== "") ? 'block' : 'none'; });
-            };
-            row.addEventListener('change', refresh);
-            refresh();
-        }
-
-        function calculateAllTimes() {
-            const rows = document.querySelectorAll("#rundownBody tr");
-            let nextStart = "";
-            rows.forEach((row, i) => {
-                const durationInput = row.querySelector(".duration");
-                const duration = parseInt(durationInput.value) || 0;
-                let startStr = (i === 0) ? row.querySelector(".start-time").value : nextStart;
-                if (startStr) {
-                    let [h, m] = startStr.split(":").map(Number);
-                    let endM = m + duration;
-                    let endH = (h + Math.floor(endM/60)) % 24;
-                    endM %= 60;
-                    const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
-                    if (i === 0) document.getElementById("endTime0").innerText = `${startStr}-${endStr}`;
-                    else row.querySelector(".time-display").innerText = `${startStr}-${endStr}`;
-                    nextStart = endStr;
-                }
-            });
-        }
-
-        function updateDayOfWeek() {
-            const dateVal = document.getElementById('eventDate').value;
-            if (!dateVal) return;
-            const d = new Date(dateVal);
-            document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
-        }
-
-        function deleteRow(btn) { if(confirm("確定刪除？")) { btn.closest("tr").remove(); calculateAllTimes(); } }
-    </script>
-</body>
-</html>
+            {n:"餐盒", q:true}, {n:"長桌", q:true}, {n:"新聞資料", q:true}, {n:"瓶水",
+                                                                     
