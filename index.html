@@ -8,17 +8,17 @@
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; font-size: 13px; }
         .rundown-table, .item-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; table-layout: fixed; }
-        .rundown-table th, .rundown-table td, .item-table th, .item-table td { border: 1.2px solid black; padding: 4px; vertical-align: top; }
+        .rundown-table th, .rundown-table td, .item-table th, .item-table td { border: 1.2px solid black; padding: 6px; vertical-align: top; }
         .bg-gray-header { background-color: #f3f4f6; }
         .input-line { border: none; border-bottom: 1px solid black; outline: none; background: transparent; }
         
-        /* 彈性調整選單高度 */
-        select { background: #f9fafb; outline: none; width: 100%; cursor: pointer; font-size: 11px; border: 1px solid #ddd; border-radius: 2px; margin-bottom: 1px; }
-        select:last-child:not(:first-child) { margin-bottom: 0; }
+        /* 選單樣式：保持基本高度，但不強制撐開 5 倍 */
+        .select-container { min-height: 24px; display: flex; flex-direction: column; gap: 2px; }
+        select { background: #f9fafb; outline: none; width: 100%; cursor: pointer; font-size: 11px; border: 1px solid #ddd; border-radius: 2px; }
         
         .col-time { width: 110px; }
         .col-len { width: 55px; }
-        .col-job, .col-staff { width: 85px; }
+        .col-job, .col-staff { width: 90px; }
         .col-op { width: 35px; }
         
         .time-display { font-family: 'Courier New', monospace; font-weight: bold; color: #1d4ed8; text-align: center; display: block; }
@@ -45,6 +45,194 @@
         </div>
 
         <div class="bg-white p-2 shadow-lg border mb-6">
-            <div class="flex justify-between mb-2 px-1">
-                <span class="text-blue-600 font-bold text-xs">※ 流程表區 (選單高度隨項數彈性縮放)</span>
-                <button onclick="addRow()" class="bg-green-600 text-white px-4 py-
+            <div class="flex justify-between mb-2 px-1 text-xs">
+                <span class="text-blue-600 font-bold">※ 流程表 (固定 7 行起跳)</span>
+                <button onclick="addRow()" class="bg-green-600 text-white px-4 py-1 rounded font-bold hover:bg-green-700 shadow-md">+ 增加一行</button>
+            </div>
+            <table id="rundownTable" class="rundown-table">
+                <thead>
+                    <tr class="bg-gray-header text-xs">
+                        <th class="col-time">時間區段</th>
+                        <th class="col-len">長度</th>
+                        <th>單元項目</th>
+                        <th class="col-job">分工</th>
+                        <th class="col-staff">人員</th>
+                        <th>重點工作內容</th>
+                        <th class="col-op">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="rundownBody">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="bg-white p-4 shadow-lg border">
+            <div class="flex justify-between items-center mb-2 border-l-4 border-blue-600 pl-2">
+                <h3 class="font-black text-lg">器材清單核對</h3>
+                <button onclick="addListRow()" class="bg-gray-700 text-white px-4 py-1 rounded text-xs font-bold hover:bg-black">+ 新增器材行</button>
+            </div>
+            <table class="item-table text-xs">
+                <thead>
+                    <tr class="bg-gray-800 text-white">
+                        <th class="w-1/3 py-2">服務台</th>
+                        <th class="w-1/3 py-2">舞台</th>
+                        <th class="w-1/3 py-2">備註 / 自定義</th>
+                    </tr>
+                </thead>
+                <tbody id="itemListBody">
+                    <tr>
+                        <td id="serviceDeskItems"></td>
+                        <td id="stageItems"></td>
+                        <td contenteditable="true" class="text-gray-400 p-2">點擊輸入其他備註事項...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋", "工讀1", "工讀2"];
+        const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "上道具"];
+        const serviceItems = ["服務台箱", "簽到表", "長官貴賓名單", "桌布", "餐盒*數量", "長桌*數量", "新聞資料*數量", "瓶水*數量", "伴手禮*數量", "基本膠帶", "基本工具", "推車*數量"];
+        const stageItems = ["truss 數量x數量", "斜撐*數量", "沙包*數量", "手板*數量", "布丁椅*數量", "折疊椅*數量", "音響", "2投面光*數量", "par燈*數量"];
+
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('eventDate').value = today;
+            updateDayOfWeek();
+            // 強制初始化 7 行
+            const tbody = document.getElementById("rundownBody");
+            tbody.innerHTML = ""; 
+            for (let i = 0; i < 7; i++) {
+                addRow(i === 0);
+            }
+            renderChecklists();
+            calculateAllTimes();
+        };
+
+        function updateDayOfWeek() {
+            const dateVal = document.getElementById('eventDate').value;
+            if (!dateVal) return;
+            const days = ['日', '一', '二', '三', '四', '五', '六'];
+            const d = new Date(dateVal);
+            document.getElementById('dayOfWeek').innerText = `(週${days[d.getDay()]})`;
+        }
+
+        function renderChecklists() {
+            document.getElementById('serviceDeskItems').innerHTML = serviceItems.map(item => `<label class="checkbox-item"><input type="checkbox"> 囗 ${item}</label>`).join('');
+            document.getElementById('stageItems').innerHTML = stageItems.map(item => `<label class="checkbox-item"><input type="checkbox"> 囗 ${item}</label>`).join('') + `<label class="checkbox-item"><input type="checkbox" onchange="manualCheck(this)"> 囗 手動輸入...</label>`;
+        }
+
+        function addRow(isFirst = false) {
+            const tbody = document.getElementById("rundownBody");
+            const tr = document.createElement("tr");
+            
+            const timeHTML = isFirst 
+                ? `<div class="flex flex-col items-center"><input type="time" class="start-time text-xs font-bold w-full text-center" value="09:00" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500 font-bold"></span></div>`
+                : `<span class="time-display text-xs">--:--</span>`;
+
+            // 選單 HTML 結構：包裹在彈性容器中
+            let jobHTML = `<div class="select-container">`;
+            let staffHTML = `<div class="select-container">`;
+            for(let i=0; i<5; i++) {
+                jobHTML += `<select class="job-s" onchange="handleJobChange(this)"><option value="">-</option>${jobs.map(j=>`<option value="${j}">${j}</option>`).join('')}<option value="manual">自定義</option></select>`;
+                staffHTML += `<select class="staff-s" onchange="checkManual(this)"><option value="">-</option>${staffs.map(s=>`<option value="${s}">${s}</option>`).join('')}<option value="manual">自定義</option></select>`;
+            }
+            jobHTML += `</div>`; staffHTML += `</div>`;
+
+            tr.innerHTML = `
+                <td class="col-time text-center">${timeHTML}</td>
+                <td class="col-len"><input type="number" class="duration text-center w-full text-xs font-bold" value="10" oninput="calculateAllTimes()"></td>
+                <td contenteditable="true" class="font-bold px-2 text-blue-900">單元項目</td>
+                <td class="col-job">${jobHTML}</td>
+                <td class="col-staff">${staffHTML}</td>
+                <td contenteditable="true" class="text-xs px-2 text-gray-500 italic">工作內容...</td>
+                <td class="col-op text-center"><button onclick="deleteRow(this)" class="text-red-400 hover:text-red-600 font-bold">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+            if(!isFirst) calculateAllTimes();
+            initSelectVisibility(tr);
+        }
+
+        // 內部選單隱藏邏輯：保持 Row 高度穩定，但內部選單按需出現
+        function initSelectVisibility(row) {
+            const jobSels = row.querySelectorAll('.job-s');
+            const staffSels = row.querySelectorAll('.staff-s');
+            const refresh = () => {
+                jobSels.forEach((sel, i) => { if (i > 0) sel.style.display = (jobSels[i-1].value !== "") ? 'block' : 'none'; });
+                staffSels.forEach((sel, i) => { if (i > 0) sel.style.display = (staffSels[i-1].value !== "") ? 'block' : 'none'; });
+            };
+            row.addEventListener('change', refresh);
+            refresh();
+        }
+
+        function calculateAllTimes() {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            let nextStart = "";
+            rows.forEach((row, i) => {
+                const duration = parseInt(row.querySelector(".duration").value) || 0;
+                let startStr = (i === 0) ? row.querySelector(".start-time").value : nextStart;
+                if (startStr) {
+                    let [h, m] = startStr.split(":").map(Number);
+                    let endM = m + duration;
+                    let endH = (h + Math.floor(endM/60)) % 24;
+                    endM %= 60;
+                    const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+                    if (i === 0) document.getElementById("endTime0").innerText = `${startStr}-${endStr}`;
+                    else row.querySelector(".time-display").innerText = `${startStr}-${endStr}`;
+                    nextStart = endStr;
+                }
+            });
+        }
+
+        function handleJobChange(select) {
+            if (select.value === "主持人") {
+                const row = select.closest("tr");
+                const jobSels = Array.from(row.querySelectorAll('.job-s'));
+                const index = jobSels.indexOf(select);
+                const staffSelect = row.querySelectorAll(".staff-s")[index];
+                staffSelect.value = document.getElementById("headerHost").value;
+                staffSelect.dispatchEvent(new Event('change')); // 觸發顯示
+            }
+            checkManual(select);
+        }
+
+        function syncHostName() {
+            document.querySelectorAll(".job-s").forEach((sel) => {
+                if (sel.value === "主持人") {
+                    const row = sel.closest("tr");
+                    const idx = Array.from(row.querySelectorAll('.job-s')).indexOf(sel);
+                    const staffSel = row.querySelectorAll(".staff-s")[idx];
+                    staffSel.value = document.getElementById("headerHost").value;
+                }
+            });
+            updateDayOfWeek();
+        }
+
+        function deleteRow(btn) { if(confirm("確定刪除？")) { btn.closest("tr").remove(); calculateAllTimes(); } }
+
+        function addListRow() {
+            const tbody = document.getElementById("itemListBody");
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td contenteditable="true" class="p-2 border"></td><td contenteditable="true" class="p-2 border"></td><td contenteditable="true" class="p-2 border"></td>`;
+            tbody.appendChild(tr);
+        }
+
+        function checkManual(sel) {
+            if (sel.value === "manual") {
+                const v = prompt("請輸入自定義內容：");
+                if (v) { const opt = new Option(v, v); sel.add(opt, sel[0]); sel.value = v; sel.dispatchEvent(new Event('change'));
+                } else { sel.selectedIndex = 0; }
+            }
+        }
+        
+        function manualCheck(input) {
+            if (input.checked) {
+                const v = prompt("請輸入新增器材名稱：");
+                if (v) { input.closest('label').innerHTML = `<input type="checkbox" checked> 囗 ${v}`;
+                } else { input.checked = false; }
+            }
+        }
+    </script>
+</body>
+</html>
