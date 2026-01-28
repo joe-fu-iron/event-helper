@@ -3,164 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行大表 - 多工版</title>
+    <title>活動執行大表 - 專業執行版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; font-size: 14px; }
-        .rundown-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; table-layout: fixed; }
-        .rundown-table th, .rundown-table td { border: 1.2px solid black; padding: 4px; overflow: hidden; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; font-size: 13px; }
+        .rundown-table, .item-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; table-layout: fixed; }
+        .rundown-table th, .rundown-table td, .item-table th, .item-table td { border: 1.2px solid black; padding: 4px; vertical-align: top; }
         .bg-gray-header { background-color: #f3f4f6; }
         .input-line { border: none; border-bottom: 1px solid black; outline: none; background: transparent; }
-        select { background: #f9fafb; outline: none; width: 100%; cursor: pointer; font-size: 12px; border: 1px solid #ddd; border-radius: 2px; margin-bottom: 1px; }
-        /* 欄位寬度精確控制 */
-        .col-time { width: 100px; }
-        .col-len { width: 60px; }
-        .col-job { width: 90px; }
-        .col-staff { width: 85px; }
-        .col-op { width: 40px; }
-        .time-display { font-family: monospace; font-weight: bold; color: #1d4ed8; text-align: center; display: block; }
+        
+        /* 彈性調整選單高度 */
+        select { background: #f9fafb; outline: none; width: 100%; cursor: pointer; font-size: 11px; border: 1px solid #ddd; border-radius: 2px; margin-bottom: 1px; }
+        select:last-child:not(:first-child) { margin-bottom: 0; }
+        
+        .col-time { width: 110px; }
+        .col-len { width: 55px; }
+        .col-job, .col-staff { width: 85px; }
+        .col-op { width: 35px; }
+        
+        .time-display { font-family: 'Courier New', monospace; font-weight: bold; color: #1d4ed8; text-align: center; display: block; }
+        .checkbox-item { display: block; padding: 2px 0; font-size: 12px; cursor: pointer; }
+        .checkbox-item input { margin-right: 5px; }
     </style>
 </head>
 <body class="p-2">
 
-    <div class="max-w-[1500px] mx-auto">
-        <div class="bg-white p-4 rounded shadow border mb-4 flex flex-wrap gap-4 font-bold text-sm">
-            <div>主題：<input type="text" class="input-line w-40" value="記者會"></div>
-            <div>時間：<input type="date" class="input-line"></div>
+    <div class="max-w-[1550px] mx-auto">
+        <div class="bg-white p-4 rounded shadow border mb-3 flex flex-wrap gap-4 font-bold text-sm items-center">
+            <div>主題：<input type="text" class="input-line w-44" value="2026 記者會"></div>
+            <div>日期：<input type="date" id="eventDate" class="input-line" onchange="updateDayOfWeek()"><span id="dayOfWeek" class="ml-1 text-blue-600"></span></div>
             <div>地點：<input type="text" class="input-line w-40"></div>
             <div>主持人：
-                <select id="headerHost" class="input-line w-24 border-b border-black" onchange="syncHostName()">
+                <select id="headerHost" class="input-line w-24 border-b border-black font-bold" onchange="syncHostName()">
                     <option value="Yin">Yin</option><option value="小巫">小巫</option><option value="Peter">Peter</option><option value="小柔">小柔</option><option value="manual">手動輸入...</option>
                 </select>
             </div>
-            <div class="flex-1 text-right">
-                <a href="https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded text-xs shadow hover:bg-blue-700">🎙️ 長官簽到情況</a>
+            <div class="flex-1 text-right flex justify-end gap-2">
+                <button onclick="calculateAllTimes()" class="bg-amber-500 text-white px-3 py-1.5 rounded text-xs shadow hover:bg-amber-600 font-bold">🔄 即時更新</button>
+                <a href="https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec" target="_blank" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs shadow hover:bg-blue-700">🎙️ 長官簽到情況</a>
             </div>
         </div>
 
-        <div class="bg-white p-2 shadow-lg border">
-            <div class="flex justify-between mb-2">
-                <span class="text-blue-600 font-bold text-xs">※ 時間自動累加 (24H制)</span>
-                <button onclick="addRow()" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-700">+ 增加一行</button>
-            </div>
-
-            <table id="rundownTable" class="rundown-table">
-                <thead>
-                    <tr class="bg-gray-header text-xs">
-                        <th class="col-time">時間</th>
-                        <th class="col-len">長度</th>
-                        <th>單元項目 (寬)</th>
-                        <th class="col-job">分工 (5項)</th>
-                        <th class="col-staff">人員 (5項)</th>
-                        <th>重點工作內容 (寬)</th>
-                        <th class="col-op">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="rundownBody">
-                    </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋", "工讀1", "工讀2"];
-        const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "上道具"];
-
-        window.onload = function() {
-            for (let i = 0; i < 7; i++) addRow(i === 0);
-            calculateAllTimes();
-        };
-
-        function addRow(isFirst = false) {
-            const tbody = document.getElementById("rundownBody");
-            const tr = document.createElement("tr");
-            
-            // 時間欄位
-            const timeHTML = isFirst 
-                ? `<div class="flex flex-col items-center"><input type="time" class="start-time text-xs font-bold w-full" value="09:00" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500"></span></div>`
-                : `<span class="time-display text-xs">--:--</span>`;
-
-            // 生成 5 個下拉選單的 HTML
-            let jobSelects = "";
-            let staffSelects = "";
-            for(let i=0; i<5; i++) {
-                jobSelects += `<select class="job-s" onchange="handleJobChange(this)">
-                    <option value="">-</option>${jobs.map(j=>`<option value="${j}">${j}</option>`).join('')}<option value="manual">自定義</option></select>`;
-                staffSelects += `<select class="staff-s" onchange="checkManual(this)">
-                    <option value="">-</option>${staffs.map(s=>`<option value="${s}">${s}</option>`).join('')}<option value="manual">自定義</option></select>`;
-            }
-
-            tr.innerHTML = `
-                <td class="col-time text-center">${timeHTML}</td>
-                <td class="col-len"><input type="number" class="duration text-center w-full text-xs" value="10" oninput="calculateAllTimes()"></td>
-                <td contenteditable="true" class="font-bold px-2">單元項目</td>
-                <td class="col-job">${jobSelects}</td>
-                <td class="col-staff">${staffSelects}</td>
-                <td contenteditable="true" class="text-xs px-2 text-gray-600">細節內容...</td>
-                <td class="col-op text-center"><button onclick="deleteRow(this)" class="text-red-500 text-xs">✕</button></td>
-            `;
-            tbody.appendChild(tr);
-            if(!isFirst) calculateAllTimes();
-        }
-
-        function calculateAllTimes() {
-            const rows = document.querySelectorAll("#rundownBody tr");
-            let nextStart = "";
-            rows.forEach((row, i) => {
-                const duration = parseInt(row.querySelector(".duration").value) || 0;
-                let startStr = (i === 0) ? row.querySelector(".start-time").value : nextStart;
-                
-                if (startStr) {
-                    let [h, m] = startStr.split(":").map(Number);
-                    let endM = m + duration;
-                    let endH = (h + Math.floor(endM/60)) % 24;
-                    endM %= 60;
-                    const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
-                    
-                    if (i === 0) {
-                        document.getElementById("endTime0").innerText = `${startStr}-${endStr}`;
-                    } else {
-                        row.querySelector(".time-display").innerText = `${startStr}-${endStr}`;
-                    }
-                    nextStart = endStr;
-                }
-            });
-        }
-
-        function handleJobChange(select) {
-            if (select.value === "主持人") {
-                const row = select.closest("tr");
-                const index = Array.from(select.parentNode.children).indexOf(select);
-                const staffSelect = row.querySelector(".col-staff").children[index];
-                staffSelect.value = document.getElementById("headerHost").value;
-            }
-            checkManual(select);
-        }
-
-        function syncHostName() {
-            const host = document.getElementById("headerHost").value;
-            document.querySelectorAll(".job-s").forEach((sel, i) => {
-                if (sel.value === "主持人") {
-                    const row = sel.closest("tr");
-                    const idx = Array.from(sel.parentNode.children).indexOf(sel);
-                    row.querySelector(".col-staff").children[idx].value = host;
-                }
-            });
-            checkManual(document.getElementById("headerHost"));
-        }
-
-        function deleteRow(btn) { btn.closest("tr").remove(); calculateAllTimes(); }
-
-        function checkManual(sel) {
-            if (sel.value === "manual") {
-                const v = prompt("請輸入內容：");
-                if (v) {
-                    const opt = new Option(v, v);
-                    sel.add(opt, sel[0]);
-                    sel.value = v;
-                } else { sel.selectedIndex = 0; }
-            }
-        }
-    </script>
-</body>
-</html>
+        <div class="bg-white p-2 shadow-lg border mb-6">
+            <div class="flex justify-between mb-2 px-1">
+                <span class="text-blue-600 font-bold text-xs">※ 流程表區 (選單高度隨項數彈性縮放)</span>
+                <button onclick="addRow()" class="bg-green-600 text-white px-4 py-
