@@ -3,109 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行小幫手 - 整合版</title>
+    <title>活動執行小幫手 - 專業版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; background-color: #f0f2f5; }
+        body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; background-color: #f8fafc; }
+        /* 下劃線輸入樣式 */
         .input-underline { border: none; border-bottom: 1px solid black; outline: none; padding: 0 5px; background: transparent; }
+        /* 嚴謹的表格樣式 */
         table { border-collapse: collapse; width: 100%; border: 2px solid black; }
-        th, td { border: 1.5px solid black; padding: 8px; }
-        .bg-gray-header { background-color: #f2f2f2; }
-        .tab-active { border-bottom: 4px solid #2563eb; color: #2563eb; font-weight: bold; }
+        th, td { border: 1.5px solid black; padding: 10px; }
+        .bg-gray-header { background-color: #e5e7eb; }
+        .active-row { background-color: #fef9c3 !important; }
+        /* 分頁按鈕樣式 */
+        .tab-btn { flex: 1; py: 1rem; text-align: center; transition: all 0.3s; border-bottom: 2px solid #e2e8f0; color: #64748b; }
+        .tab-active { border-bottom: 4px solid #1d4ed8; color: #1d4ed8; font-weight: bold; background-color: #eff6ff; }
         .hidden { display: none; }
-        iframe { width: 100%; height: calc(100vh - 150px); border: none; }
+        /* 清單勾選樣式 */
+        .checkbox-item input:checked + span { color: #94a3b8; text-decoration: line-through; }
+        iframe { width: 100%; height: calc(100vh - 180px); border: none; border-radius: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.06); }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 md:p-8">
 
-    <div class="max-w-[1400px] mx-auto mb-4 bg-white shadow-sm rounded-t-lg">
-        <div class="flex border-b border-gray-200">
-            <button id="tab1Btn" onclick="showTab(1)" class="flex-1 py-4 text-center hover:bg-gray-50 transition-all tab-active">
-                📄 1. 記者會流程大表
-            </button>
-            <button id="tab2Btn" onclick="showTab(2)" class="flex-1 py-4 text-center hover:bg-gray-50 transition-all">
-                🎙️ 2. 長官即時簽到看板 (外部整合)
-            </button>
+    <div class="max-w-[1200px] mx-auto">
+        <div class="flex bg-white rounded-t-xl shadow-sm overflow-hidden mb-1">
+            <button id="tab1Btn" onclick="showTab(1)" class="tab-btn py-4 tab-active">📄 1. 記者會流程大表</button>
+            <button id="tab2Btn" onclick="showTab(2)" class="tab-btn py-4">🎙️ 2. 長官即時簽到看板</button>
         </div>
-    </div>
 
-    <div class="max-w-[1400px] mx-auto bg-white p-6 shadow-lg border border-gray-300 min-h-screen">
-        
-        <div id="tab1Content">
-            <div class="mb-6 text-lg font-bold">
-                記者會主題名稱：<input type="text" class="input-underline w-64" placeholder="請輸入主題"> / 
-                時間：<input type="text" class="input-underline w-40" placeholder="00:00"> / 
-                地點：<input type="text" class="input-underline w-48" placeholder="請輸入地點"> / 
-                主持人：<input type="text" class="input-underline w-32" placeholder="姓名">
-            </div>
+        <div class="bg-white p-6 shadow-xl border border-gray-200 rounded-b-xl min-h-[80vh]">
+            
+            <div id="tab1Content">
+                <div class="mb-8 text-lg font-bold flex flex-wrap gap-y-4 items-center">
+                    <span>記者會主題名稱：<input type="text" class="input-underline w-64" placeholder="請輸入主題"></span>
+                    <span class="mx-2">/</span>
+                    <span>時間：<input type="text" class="input-underline w-40" placeholder="YYYY/MM/DD"></span>
+                    <span class="mx-2">/</span>
+                    <span>地點：<input type="text" class="input-underline w-48" placeholder="請輸入地點"></span>
+                    <span class="mx-2">/</span>
+                    <span>主持人：<input type="text" class="input-underline w-32" placeholder="姓名"></span>
+                </div>
 
-            <table>
-                <thead>
-                    <tr class="bg-gray-header text-center text-sm">
-                        <th class="w-[12%]">時間</th>
-                        <th class="w-[8%]">長度</th>
-                        <th class="w-[20%]">單元</th>
-                        <th class="w-[30%]">分工(人名輸入)</th>
-                        <th class="w-[30%]">工作內容</th>
-                    </tr>
-                </thead>
-                <tbody class="text-base">
-                    <tr>
-                        <td contenteditable="true" class="text-center font-mono">09:40-10:00</td>
-                        <td contenteditable="true" class="text-center">20min</td>
-                        <td contenteditable="true" class="font-bold">長官到場簽到</td>
-                        <td>
-                            <select class="w-full bg-blue-50/50 p-1 border border-gray-300 rounded">
-                                <option value="">請選擇分工...</option>
-                                <option>音響</option><option>主持人</option><option>場控</option><option>執行1</option><option>執行2</option>
-                            </select>
-                        </td>
-                        <td contenteditable="true"></td>
-                    </tr>
+                <table>
+                    <thead>
+                        <tr class="bg-gray-header text-center">
+                            <th class="w-[15%]">時間</th>
+                            <th class="w-[10%]">長度</th>
+                            <th class="w-[20%]">單元</th>
+                            <th class="w-[25%]">分工(人名輸入)</th>
+                            <th class="w-[30%]">工作內容</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr onclick="highlightRow(this)" class="hover:bg-slate-50 cursor-pointer">
+                            <td contenteditable="true" class="text-center font-mono">09:40-10:00</td>
+                            <td contenteditable="true" class="text-center">20min</td>
+                            <td contenteditable="true" class="font-bold text-blue-900">長官到場簽到</td>
+                            <td>
+                                <select class="w-full p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="">選擇分工...</option>
+                                    <option>音響</option>
+                                    <option>主持人</option>
+                                    <option>場控</option>
+                                    <option>執行1</option>
+                                    <option>執行2</option>
+                                </select>
+                            </td>
+                            <td contenteditable="true" class="text-sm">對應輸入...</td>
+                        </tr>
+                        <tr onclick="highlightRow(this)" class="hover:bg-slate-50 cursor-pointer">
+                            <td contenteditable="true" class="text-center font-mono">10:00-10:05</td>
+                            <td contenteditable="true" class="text-center">05min</td>
+                            <td contenteditable="true" class="font-bold text-blue-900">開場</td>
+                            <td>
+                                <select class="w-full p-1 border border-gray-300 rounded outline-none">
+                                    <option value="">選擇分工...</option>
+                                    <option>音響</option><option>主持人</option><option>場控</option><option>執行1</option><option>執行2</option>
+                                </select>
+                            </td>
+                            <td contenteditable="true" class="text-sm"></td>
+                        </tr>
                     </tbody>
-            </table>
+                </table>
 
-            <div class="mt-6 border-[2px] border-black">
-                <div class="flex border-b-[2px] border-black">
-                    <div class="w-24 bg-gray-header p-4 flex items-center justify-center border-r-[2px] border-black font-bold">進場佈置</div>
-                    <div class="flex-1 text-sm">
-                        <div class="p-2 border-b">項次 1：TRUSS-5*3、斜撐*2、帆布、豆扣*ALL、音響*1套</div>
-                        <div class="p-2">項次 2：9M接龍帳*2、長桌*2、短桌*4、燈架*2</div>
+                <div class="mt-8 border-2 border-black overflow-hidden">
+                    <div class="flex border-b-2 border-black">
+                        <div class="w-24 bg-gray-header p-4 flex items-center justify-center border-r-2 border-black font-bold text-center">進場佈置</div>
+                        <div class="flex-1">
+                            <div class="p-3 border-b border-gray-300 text-sm">
+                                <span class="font-bold italic mr-2 text-blue-700">項次 1</span>
+                                佈置用材：TRUSS-5*3、鐵板*2、斜撐*2、帆布、豆扣*ALL、瓶水*3箱、音響*1套
+                            </div>
+                            <div class="p-3 text-sm">
+                                <span class="font-bold italic mr-2 text-blue-700">項次 2</span>
+                                佈置用材：9M接龍帳*2、帳篷*2、水桶*7、長桌*2、短桌*4、燈架*2
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="p-4 grid grid-cols-2 gap-8 text-sm">
-                    <div class="space-y-1">
-                        <span class="font-bold border-b border-black block mb-2">服務台檢核</span>
-                        <label class="block"><input type="checkbox"> 長官簽到表</label>
-                        <label class="block"><input type="checkbox"> 瓶裝水 * 3箱</label>
-                    </div>
-                    <div class="space-y-1">
-                        <span class="font-bold border-b border-black block mb-2 text-red-600">舞台檢核</span>
-                        <label class="block"><input type="checkbox"> 音響+電腦 1式</label>
-                        <label class="block"><input type="checkbox"> 主持人手板 * 1</label>
+                    <div class="grid grid-cols-2 bg-white">
+                        <div class="p-4 border-r-2 border-black">
+                            <h4 class="font-bold underline mb-3 text-slate-700">服務台檢核</h4>
+                            <div class="space-y-2 text-sm">
+                                <label class="checkbox-item flex items-center gap-2 cursor-pointer"><input type="checkbox" class="w-4 h-4"> <span>長官簽到表 / 長官勾選表</span></label>
+                                <label class="checkbox-item flex items-center gap-2 cursor-pointer"><input type="checkbox" class="w-4 h-4"> <span>瓶裝水 * 3箱 / 餐盒 * 40</span></label>
+                                <label class="checkbox-item flex items-center gap-2 cursor-pointer"><input type="checkbox" class="w-4 h-4"> <span>衛生手套 * 20 雙 / 簽到箱 * 1</span></label>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-bold underline mb-3 text-red-600">舞台檢核</h4>
+                            <div class="space-y-2 text-sm">
+                                <label class="checkbox-item flex items-center gap-2 cursor-pointer"><input type="checkbox" class="w-4 h-4"> <span>音響+電腦 1 式 / TRUSS 結構</span></label>
+                                <label class="checkbox-item flex items-center gap-2 cursor-pointer"><input type="checkbox" class="w-4 h-4"> <span>紅桌巾 * 3 / 濕紙巾 / 衛生紙</span></label>
+                                <label class="checkbox-item flex items-center gap-2 cursor-pointer"><input type="checkbox" class="w-4 h-4"> <span>主持人手板 * 1 / 集章卡發放牌</span></label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div id="tab2Content" class="hidden">
-            <div class="bg-blue-50 p-3 mb-2 rounded border border-blue-200 text-sm text-blue-700">
-                💡 正在顯示即時簽到系統。若頁面未載入，請確認您已登入相關權限。
+            <div id="tab2Content" class="hidden">
+                <div class="mb-4 flex items-center justify-between">
+                    <div class="text-sm text-blue-600 font-medium">● 正在連線至即時雲端簽到系統...</div>
+                    <button onclick="reloadIframe()" class="text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded">重新整理看板</button>
+                </div>
+                <iframe id="gasFrame" src="https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec"></iframe>
             </div>
-            <iframe src="https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec"></iframe>
-        </div>
 
+        </div>
     </div>
 
     <script>
+        // 分頁切換邏輯
         function showTab(num) {
-            // 處理分頁切換
             document.getElementById('tab1Content').classList.toggle('hidden', num !== 1);
             document.getElementById('tab2Content').classList.toggle('hidden', num !== 2);
-            
-            // 處理按鈕樣式
             document.getElementById('tab1Btn').classList.toggle('tab-active', num === 1);
             document.getElementById('tab2Btn').classList.toggle('tab-active', num === 2);
+        }
+
+        // 點擊列高亮
+        function highlightRow(row) {
+            document.querySelectorAll('tr').forEach(r => r.classList.remove('active-row'));
+            row.classList.add('active-row');
+        }
+
+        // 強制重新載入 iframe
+        function reloadIframe() {
+            const frame = document.getElementById('gasFrame');
+            frame.src = frame.src;
         }
     </script>
 </body>
