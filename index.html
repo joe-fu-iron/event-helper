@@ -2,13 +2,19 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>活動執行小幫手 - 專業版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活動執行系統 - 專業版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f1f5f9; }
+        .input-underline { border: none; border-bottom: 1px solid black; outline: none; background: transparent; }
+        table { border-collapse: collapse; width: 100%; border: 2px solid black; }
+        th, td { border: 1.5px solid black; padding: 10px; }
         .tab-active { border-bottom: 4px solid #1d4ed8; color: #1d4ed8; font-weight: bold; background: white; }
-        .iframe-container { display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        iframe { width: 450px; height: 700px; border: 1px solid #ddd; border-radius: 12px; background: white; }
+        /* 仿 GAS 版面：窄版設計 */
+        .vip-container { max-width: 450px; margin: 0 auto; }
+        .vip-card { background: white; border: 1px solid #e2e8f0; border-left: 6px solid #94a3b8; border-radius: 6px; margin-bottom: 10px; padding: 12px; }
+        .vip-card.signed { border-left-color: #22c55e; background-color: #f0fdf4; }
         .hidden { display: none; }
     </style>
 </head>
@@ -16,38 +22,105 @@
 
     <div class="max-w-[1200px] mx-auto">
         <div class="flex bg-gray-200 rounded-t-xl overflow-hidden mb-1">
-            <div id="t1" onclick="showTab(1)" class="flex-1 py-4 text-center cursor-pointer tab-active">📄 1. 流程大表</div>
-            <div id="t2" onclick="showTab(2)" class="flex-1 py-4 text-center cursor-pointer">🎙️ 2. 長官即時簽到</div>
+            <div id="t1" onclick="showTab(1)" class="flex-1 py-4 text-center cursor-pointer tab-active">📄 流程大表</div>
+            <div id="t2" onclick="showTab(2)" class="flex-1 py-4 text-center cursor-pointer">🎙️ 長官簽到 (雲端同步)</div>
         </div>
 
         <div class="bg-white p-6 shadow-xl border border-gray-200 rounded-b-xl min-h-[85vh]">
             
             <div id="tab1">
-                <h2 class="text-xl font-bold mb-4">記者會流程大表</h2>
+                <div class="mb-6 font-bold text-lg border-b pb-4">
+                    記者會主題：<input type="text" class="input-underline w-64">
+                    主持人：<input type="text" class="input-underline w-32 ml-4">
                 </div>
+                <table>
+                    <tr class="bg-gray-100">
+                        <th>時間</th><th>單元</th><th>分工</th><th>工作內容</th>
+                    </tr>
+                    <tr>
+                        <td class="text-center">09:40</td>
+                        <td class="font-bold">長官到場簽到</td>
+                        <td><select class="w-full border p-1"><option>場控</option><option>執行1</option></select></td>
+                        <td contenteditable="true">確認簽到表與瓶水</td>
+                    </tr>
+                </table>
+            </div>
 
             <div id="tab2" class="hidden">
-                <div class="iframe-container">
-                    <p class="text-xs text-gray-400 mb-2">提示：若下方出現「拒絕連線」，請點擊藍色按鈕開啟</p>
-                    
-                    <iframe src="https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec"></iframe>
-                    
-                    <a href="https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec" 
-                       target="_blank" 
-                       class="mt-6 bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-all">
-                        🚀 直接開啟「長官簽到系統」全螢幕版
-                    </a>
+                <div class="vip-container">
+                    <div class="flex gap-2 mb-6">
+                        <select id="unitSelect" onchange="loadVips()" class="flex-1 border p-2 rounded font-bold shadow-sm">
+                            <option value="頭份市公所">頭份市公所</option>
+                            <option value="苗栗縣政府">苗栗縣政府</option>
+                        </select>
+                        <button onclick="loadVips()" class="bg-slate-700 text-white px-4 py-2 rounded">🔄</button>
+                    </div>
+                    <div id="vipList" class="space-y-2">
+                        <p class="text-center text-gray-400 py-10">資料同步中...</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // 請填入您的 GAS 執行網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec";
+
         function showTab(n) {
             document.getElementById('tab1').classList.toggle('hidden', n !== 1);
             document.getElementById('tab2').classList.toggle('hidden', n !== 2);
-            document.getElementById('t1').className = n === 1 ? 'flex-1 py-4 text-center cursor-pointer tab-active' : 'flex-1 py-4 text-center cursor-pointer';
-            document.getElementById('t2').className = n === 2 ? 'flex-1 py-4 text-center cursor-pointer tab-active' : 'flex-1 py-4 text-center cursor-pointer';
+            document.getElementById('t1').classList.toggle('tab-active', n === 1);
+            document.getElementById('t2').classList.toggle('tab-active', n === 2);
+            if (n === 2) loadVips();
+        }
+
+        async function loadVips() {
+            const unit = document.getElementById('unitSelect').value;
+            const container = document.getElementById('vipList');
+            try {
+                const res = await fetch(`${GAS_URL}?action=fetch&unit=${encodeURIComponent(unit)}`);
+                const data = await res.json();
+                renderVips(data);
+            } catch (e) {
+                container.innerHTML = '<p class="text-center text-red-500">讀取失敗，請確認 GAS 部署權限設定為「任何人」。</p>';
+            }
+        }
+
+        function renderVips(vips) {
+            const container = document.getElementById('vipList');
+            container.innerHTML = vips.map(vip => `
+                <div class="vip-card ${vip.status === true ? 'signed' : ''}">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="text-[10px] text-gray-400 font-bold">${vip.title || '貴賓'}</div>
+                            <div class="text-lg font-black">${vip.name}</div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <button onclick="runGasUpdate('updateStatus', '${vip.rowIdx}', ${!vip.status})" 
+                                class="text-xs px-3 py-1 rounded border font-bold ${vip.status === true ? 'bg-green-600 text-white' : 'bg-white text-slate-600'}">
+                                ${vip.status === true ? '已入席' : '簽到'}
+                            </button>
+                            <button onclick="runGasUpdate('updateIntroduced', '${vip.rowIdx}', ${!vip.isIntroduced})" 
+                                class="text-xs px-3 py-1 rounded border font-bold ${vip.isIntroduced === true ? 'bg-blue-600 text-white' : 'bg-white text-slate-600'}">
+                                ${vip.isIntroduced === true ? '已介紹' : '未介紹'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 遠端執行您的 GAS 函式
+        function runGasUpdate(funcName, rowIdx, val) {
+            const unit = document.getElementById('unitSelect').value;
+            // 透過 no-cors 發送，模擬 GAS 內部的 update 邏輯
+            // 注意：這裡為了簡便，GitHub 透過網址參數傳遞指令
+            const url = `${GAS_URL}?action=run&func=${funcName}&unit=${encodeURIComponent(unit)}&row=${rowIdx}&val=${val}`;
+            fetch(url, { mode: 'no-cors' });
+            
+            // 介面即時反應
+            setTimeout(loadVips, 500);
         }
     </script>
 </body>
