@@ -12,7 +12,6 @@
         .bg-gray-header { background-color: #f3f4f6; }
         .input-line { border: none; border-bottom: 1px solid black; outline: none; background: transparent; }
         
-        /* 選單樣式：保持基本高度，但不強制撐開 5 倍 */
         .select-container { min-height: 24px; display: flex; flex-direction: column; gap: 2px; }
         select { background: #f9fafb; outline: none; width: 100%; cursor: pointer; font-size: 11px; border: 1px solid #ddd; border-radius: 2px; }
         
@@ -22,8 +21,8 @@
         .col-op { width: 35px; }
         
         .time-display { font-family: 'Courier New', monospace; font-weight: bold; color: #1d4ed8; text-align: center; display: block; }
-        .checkbox-item { display: block; padding: 2px 0; font-size: 12px; cursor: pointer; }
-        .checkbox-item input { margin-right: 5px; }
+        .checkbox-item { display: flex; align-items: center; padding: 3px 0; font-size: 12px; gap: 5px; }
+        .num-input { width: 45px; border: 1px solid #ccc; border-radius: 3px; padding: 1px 2px; font-size: 11px; text-align: center; }
     </style>
 </head>
 <body class="p-2">
@@ -46,7 +45,7 @@
 
         <div class="bg-white p-2 shadow-lg border mb-6">
             <div class="flex justify-between mb-2 px-1 text-xs">
-                <span class="text-blue-600 font-bold">※ 流程表 (固定 7 行起跳)</span>
+                <span class="text-blue-600 font-bold">※ 流程表 (主持人自動連動)</span>
                 <button onclick="addRow()" class="bg-green-600 text-white px-4 py-1 rounded font-bold hover:bg-green-700 shadow-md">+ 增加一行</button>
             </div>
             <table id="rundownTable" class="rundown-table">
@@ -61,15 +60,14 @@
                         <th class="col-op">操作</th>
                     </tr>
                 </thead>
-                <tbody id="rundownBody">
-                    </tbody>
+                <tbody id="rundownBody"></tbody>
             </table>
         </div>
 
         <div class="bg-white p-4 shadow-lg border">
             <div class="flex justify-between items-center mb-2 border-l-4 border-blue-600 pl-2">
-                <h3 class="font-black text-lg">器材清單核對</h3>
-                <button onclick="addListRow()" class="bg-gray-700 text-white px-4 py-1 rounded text-xs font-bold hover:bg-black">+ 新增器材行</button>
+                <h3 class="font-black text-lg">器材清單核對 (含數量填寫)</h3>
+                <button onclick="addListRow()" class="bg-gray-700 text-white px-4 py-1 rounded text-xs font-bold hover:bg-black">+ 新增備註行</button>
             </div>
             <table class="item-table text-xs">
                 <thead>
@@ -93,50 +91,51 @@
     <script>
         const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋", "工讀1", "工讀2"];
         const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "上道具"];
-        const serviceItems = ["服務台箱", "簽到表", "長官貴賓名單", "桌布", "餐盒*數量", "長桌*數量", "新聞資料*數量", "瓶水*數量", "伴手禮*數量", "基本膠帶", "基本工具", "推車*數量"];
-        const stageItems = ["truss 數量x數量", "斜撐*數量", "沙包*數量", "手板*數量", "布丁椅*數量", "折疊椅*數量", "音響", "2投面光*數量", "par燈*數量"];
+        
+        const serviceItems = [
+            {n:"服務台箱", q:false}, {n:"簽到表", q:false}, {n:"長官貴賓名單", q:false}, {n:"桌布", q:false},
+            {n:"餐盒", q:true}, {n:"長桌", q:true}, {n:"新聞資料", q:true}, {n:"瓶水", q:true}, 
+            {n:"伴手禮", q:true}, {n:"基本膠帶", q:false}, {n:"基本工具", q:false}, {n:"推車", q:true}
+        ];
+        
+        const stageItems = [
+            {n:"truss 數量x數量", q:false}, {n:"斜撐", q:true}, {n:"沙包", q:true}, {n:"手板", q:true}, 
+            {n:"布丁椅", q:true}, {n:"折疊椅", q:true}, {n:"音響", q:false}, {n:"2投面光", q:true}, {n:"par燈", q:true}
+        ];
 
         window.onload = function() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('eventDate').value = today;
             updateDayOfWeek();
-            // 強制初始化 7 行
-            const tbody = document.getElementById("rundownBody");
-            tbody.innerHTML = ""; 
-            for (let i = 0; i < 7; i++) {
-                addRow(i === 0);
-            }
+            for (let i = 0; i < 7; i++) addRow(i === 0);
             renderChecklists();
             calculateAllTimes();
         };
 
-        function updateDayOfWeek() {
-            const dateVal = document.getElementById('eventDate').value;
-            if (!dateVal) return;
-            const days = ['日', '一', '二', '三', '四', '五', '六'];
-            const d = new Date(dateVal);
-            document.getElementById('dayOfWeek').innerText = `(週${days[d.getDay()]})`;
-        }
-
         function renderChecklists() {
-            document.getElementById('serviceDeskItems').innerHTML = serviceItems.map(item => `<label class="checkbox-item"><input type="checkbox"> 囗 ${item}</label>`).join('');
-            document.getElementById('stageItems').innerHTML = stageItems.map(item => `<label class="checkbox-item"><input type="checkbox"> 囗 ${item}</label>`).join('') + `<label class="checkbox-item"><input type="checkbox" onchange="manualCheck(this)"> 囗 手動輸入...</label>`;
+            const createItemHTML = (item) => `
+                <div class="checkbox-item">
+                    <input type="checkbox"> 囗 ${item.n}
+                    ${item.q ? `<input type="number" class="num-input" placeholder="數量" min="0">` : ''}
+                </div>`;
+            
+            document.getElementById('serviceDeskItems').innerHTML = serviceItems.map(createItemHTML).join('');
+            document.getElementById('stageItems').innerHTML = stageItems.map(createItemHTML).join('') + 
+                `<div class="checkbox-item"><input type="checkbox" onchange="manualCheck(this)"> 囗 手動輸入...</div>`;
         }
 
         function addRow(isFirst = false) {
             const tbody = document.getElementById("rundownBody");
             const tr = document.createElement("tr");
-            
             const timeHTML = isFirst 
                 ? `<div class="flex flex-col items-center"><input type="time" class="start-time text-xs font-bold w-full text-center" value="09:00" oninput="calculateAllTimes()"><span id="endTime0" class="text-[10px] text-blue-500 font-bold"></span></div>`
                 : `<span class="time-display text-xs">--:--</span>`;
 
-            // 選單 HTML 結構：包裹在彈性容器中
             let jobHTML = `<div class="select-container">`;
             let staffHTML = `<div class="select-container">`;
             for(let i=0; i<5; i++) {
-                jobHTML += `<select class="job-s" onchange="handleJobChange(this)"><option value="">-</option>${jobs.map(j=>`<option value="${j}">${j}</option>`).join('')}<option value="manual">自定義</option></select>`;
-                staffHTML += `<select class="staff-s" onchange="checkManual(this)"><option value="">-</option>${staffs.map(s=>`<option value="${s}">${s}</option>`).join('')}<option value="manual">自定義</option></select>`;
+                jobHTML += `<select class="job-s" onchange="handleJobChange(this, ${i})"><option value="">-</option>${jobs.map(j=>`<option value="${j}">${j}</option>`).join('')}<option value="manual">自定義</option></select>`;
+                staffHTML += `<select class="staff-s"><option value="">-</option>${staffs.map(s=>`<option value="${s}">${s}</option>`).join('')}<option value="manual" onclick="checkManual(this)">自定義</option></select>`;
             }
             jobHTML += `</div>`; staffHTML += `</div>`;
 
@@ -146,93 +145,15 @@
                 <td contenteditable="true" class="font-bold px-2 text-blue-900">單元項目</td>
                 <td class="col-job">${jobHTML}</td>
                 <td class="col-staff">${staffHTML}</td>
-                <td contenteditable="true" class="text-xs px-2 text-gray-500 italic">工作內容...</td>
-                <td class="col-op text-center"><button onclick="deleteRow(this)" class="text-red-400 hover:text-red-600 font-bold">✕</button></td>
-            `;
+                <td contenteditable="true" class="text-xs px-2 text-gray-500 italic">內容...</td>
+                <td class="col-op text-center"><button onclick="deleteRow(this)" class="text-red-400 hover:text-red-600 font-bold">✕</button></td>`;
             tbody.appendChild(tr);
-            if(!isFirst) calculateAllTimes();
             initSelectVisibility(tr);
         }
 
-        // 內部選單隱藏邏輯：保持 Row 高度穩定，但內部選單按需出現
-        function initSelectVisibility(row) {
-            const jobSels = row.querySelectorAll('.job-s');
-            const staffSels = row.querySelectorAll('.staff-s');
-            const refresh = () => {
-                jobSels.forEach((sel, i) => { if (i > 0) sel.style.display = (jobSels[i-1].value !== "") ? 'block' : 'none'; });
-                staffSels.forEach((sel, i) => { if (i > 0) sel.style.display = (staffSels[i-1].value !== "") ? 'block' : 'none'; });
-            };
-            row.addEventListener('change', refresh);
-            refresh();
-        }
+        function handleJobChange(select, index) {
+            const row = select.closest("tr");
+            const staffSelect = row.querySelectorAll(".staff-s")[index];
+            const currentHost = document.getElementById("headerHost").value;
 
-        function calculateAllTimes() {
-            const rows = document.querySelectorAll("#rundownBody tr");
-            let nextStart = "";
-            rows.forEach((row, i) => {
-                const duration = parseInt(row.querySelector(".duration").value) || 0;
-                let startStr = (i === 0) ? row.querySelector(".start-time").value : nextStart;
-                if (startStr) {
-                    let [h, m] = startStr.split(":").map(Number);
-                    let endM = m + duration;
-                    let endH = (h + Math.floor(endM/60)) % 24;
-                    endM %= 60;
-                    const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
-                    if (i === 0) document.getElementById("endTime0").innerText = `${startStr}-${endStr}`;
-                    else row.querySelector(".time-display").innerText = `${startStr}-${endStr}`;
-                    nextStart = endStr;
-                }
-            });
-        }
-
-        function handleJobChange(select) {
-            if (select.value === "主持人") {
-                const row = select.closest("tr");
-                const jobSels = Array.from(row.querySelectorAll('.job-s'));
-                const index = jobSels.indexOf(select);
-                const staffSelect = row.querySelectorAll(".staff-s")[index];
-                staffSelect.value = document.getElementById("headerHost").value;
-                staffSelect.dispatchEvent(new Event('change')); // 觸發顯示
-            }
-            checkManual(select);
-        }
-
-        function syncHostName() {
-            document.querySelectorAll(".job-s").forEach((sel) => {
-                if (sel.value === "主持人") {
-                    const row = sel.closest("tr");
-                    const idx = Array.from(row.querySelectorAll('.job-s')).indexOf(sel);
-                    const staffSel = row.querySelectorAll(".staff-s")[idx];
-                    staffSel.value = document.getElementById("headerHost").value;
-                }
-            });
-            updateDayOfWeek();
-        }
-
-        function deleteRow(btn) { if(confirm("確定刪除？")) { btn.closest("tr").remove(); calculateAllTimes(); } }
-
-        function addListRow() {
-            const tbody = document.getElementById("itemListBody");
-            const tr = document.createElement("tr");
-            tr.innerHTML = `<td contenteditable="true" class="p-2 border"></td><td contenteditable="true" class="p-2 border"></td><td contenteditable="true" class="p-2 border"></td>`;
-            tbody.appendChild(tr);
-        }
-
-        function checkManual(sel) {
-            if (sel.value === "manual") {
-                const v = prompt("請輸入自定義內容：");
-                if (v) { const opt = new Option(v, v); sel.add(opt, sel[0]); sel.value = v; sel.dispatchEvent(new Event('change'));
-                } else { sel.selectedIndex = 0; }
-            }
-        }
-        
-        function manualCheck(input) {
-            if (input.checked) {
-                const v = prompt("請輸入新增器材名稱：");
-                if (v) { input.closest('label').innerHTML = `<input type="checkbox" checked> 囗 ${v}`;
-                } else { input.checked = false; }
-            }
-        }
-    </script>
-</body>
-</html>
+            if (select.
