@@ -3,129 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行快手</title>
+    <title>活動執行專業版 - 雲端連動</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f0f2f5; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
-        .btn-toggle { transition: all 0.2s; border: 2px solid #1d4ed8; }
-        .btn-active { background: #1d4ed8 !important; color: white !important; }
-        table { width: 100%; border-collapse: collapse; border: 2px solid #333; background: white; }
-        th, td { border: 1px solid #333; padding: 12px; }
-        /* 窄版簽到卡 */
-        .vip-box { max-width: 450px; margin: 0 auto; }
-        .card { background: white; border-radius: 8px; border-left: 6px solid #cbd5e1; margin-bottom: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .card.signed { border-left-color: #22c55e; background: #f0fdf4; }
+        
+        /* 流程表：粗黑格線風格 */
+        .rundown-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; }
+        .rundown-table th, .rundown-table td { border: 1.5px solid black; padding: 12px; }
+        .bg-gray-header { background-color: #e5e7eb; }
+        [contenteditable]:focus { background-color: #fff9c4; outline: none; }
+
+        /* 簽到看板：仿 GAS 窄版設計 */
+        .vip-container { max-width: 480px; margin: 0 auto; }
+        .vip-card { background: white; border: 1px solid #e2e8f0; border-left: 8px solid #94a3b8; border-radius: 8px; margin-bottom: 12px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.3s; }
+        .vip-card.signed { border-left-color: #22c55e; background-color: #f0fdf4; }
+        .vip-card.introduced { border-right: 5px solid #3b82f6; }
+        
+        .btn-main { transition: all 0.2s; border-bottom: 4px solid rgba(0,0,0,0.2); }
+        .btn-main:active { transform: translateY(2px); border-bottom-width: 2px; }
     </style>
 </head>
-<body class="p-2 md:p-6">
+<body class="p-4 md:p-8">
 
-    <div class="max-w-[1000px] mx-auto">
-        <div class="flex gap-1 mb-4 bg-white p-1 rounded-xl shadow-md border border-gray-200">
-            <button id="btn1" onclick="switchTab(1)" class="btn-toggle btn-active flex-1 py-4 rounded-lg font-black text-blue-700 bg-white">
-                📄 查看流程大表
+    <div class="max-w-[1100px] mx-auto">
+        <div class="flex gap-3 mb-6">
+            <button id="btn1" onclick="switchTab(1)" class="btn-main flex-1 py-5 rounded-2xl font-black text-2xl shadow-lg bg-blue-700 text-white">
+                📄 流程大表
             </button>
-            <button id="btn2" onclick="switchTab(2)" class="btn-toggle flex-1 py-4 rounded-lg font-black text-blue-700 bg-white">
-                🎙️ 進入長官簽到
+            <button id="btn2" onclick="switchTab(2)" class="btn-main flex-1 py-5 rounded-2xl font-black text-2xl shadow-lg bg-white text-blue-700 border-2 border-blue-700">
+                🎙️ 長官簽到
             </button>
         </div>
 
-        <div id="panel1" class="tab-panel active bg-white p-4 rounded-xl shadow-lg">
-            <h2 class="text-xl font-black mb-4 border-b-2 border-blue-500 pb-2">記者會流程大表</h2>
-            <table>
-                <tr class="bg-gray-200">
-                    <th class="w-24">時間</th><th>單元</th><th>分工</th><th>內容重點</th>
-                </tr>
-                <tr>
-                    <td class="text-center font-mono font-bold">09:40</td>
-                    <td class="font-bold text-blue-700">長官簽到</td>
-                    <td><select class="p-1 border rounded w-full"><option>場控</option></select></td>
-                    <td contenteditable="true" class="text-sm">引導長官入席、提供礦泉水</td>
-                </tr>
+        <div id="panel1" class="tab-panel active bg-white p-6 rounded-2xl shadow-xl border border-gray-200">
+            <div class="flex justify-between items-end mb-6">
+                <div class="font-bold text-lg space-x-4">
+                    <span>主題：<input type="text" class="border-b-2 border-black outline-none w-64 px-2" placeholder="輸入活動名稱"></span>
+                    <span>主持人：<input type="text" class="border-b-2 border-black outline-none w-32 px-2" placeholder="姓名"></span>
+                </div>
+                <button onclick="addRow()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold shadow-md">+ 新增行列</button>
+            </div>
+
+            <table id="rundownTable" class="rundown-table">
+                <thead>
+                    <tr class="bg-gray-header text-center font-bold">
+                        <th class="w-32">時間</th>
+                        <th class="w-20">長度</th>
+                        <th>單元項目</th>
+                        <th class="w-40">分工</th>
+                        <th>重點工作內容</th>
+                        <th class="w-16">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td contenteditable="true" class="text-center font-mono font-bold">09:40-10:00</td>
+                        <td contenteditable="true" class="text-center">20m</td>
+                        <td contenteditable="true" class="font-bold text-blue-800 text-lg">長官到場簽到</td>
+                        <td>
+                            <select class="w-full bg-transparent outline-none cursor-pointer">
+                                <option>場控</option><option>執行1</option><option>執行2</option><option>音響</option>
+                            </select>
+                        </td>
+                        <td contenteditable="true" class="text-sm">確認簽到表、名片箱、瓶裝水、背景音樂測試。</td>
+                        <td class="text-center">
+                            <button onclick="deleteRow(this)" class="text-red-400 hover:text-red-600">✕</button>
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
 
         <div id="panel2" class="tab-panel">
-            <div class="vip-box">
-                <div class="flex gap-2 mb-4">
-                    <select id="unitSelect" class="flex-1 p-3 rounded-lg border-2 border-blue-500 font-bold">
-                        <option value="頭份市公所">頭份市公所</option>
-                        <option value="苗栗縣政府">苗栗縣政府</option>
-                    </select>
-                    <button onclick="loadData()" class="bg-blue-600 text-white px-6 rounded-lg font-bold shadow-lg">連線</button>
-                </div>
-
-                <div id="displayArea">
-                    <div class="bg-blue-50 p-10 rounded-xl border-2 border-dashed border-blue-300 text-center">
-                        <p class="text-blue-700 mb-6 font-bold">尚未連線至雲端資料庫</p>
-                        <button onclick="loadData()" class="bg-blue-600 hover:bg-blue-700 text-white py-4 px-10 rounded-full font-black shadow-xl text-lg transition-transform active:scale-95">
-                            ⚡ 立即按此連線
-                        </button>
-                        <p class="text-xs text-gray-400 mt-6">若多次連線失敗，請點擊下方</p>
-                        <a href="你的GAS執行網址" target="_blank" class="text-blue-500 underline text-xs">強制開啟全螢幕簽到頁面</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const GAS_URL = "你的GAS執行網址";
-
-        // 切換按鈕邏輯
-        function switchTab(n) {
-            document.getElementById('panel1').classList.toggle('active', n === 1);
-            document.getElementById('panel2').classList.toggle('active', n === 2);
-            document.getElementById('btn1').className = n === 1 ? 'btn-toggle btn-active flex-1 py-4 rounded-lg font-black' : 'btn-toggle flex-1 py-4 rounded-lg font-black text-blue-700 bg-white';
-            document.getElementById('btn2').className = n === 2 ? 'btn-toggle btn-active flex-1 py-4 rounded-lg font-black' : 'btn-toggle flex-1 py-4 rounded-lg font-black text-blue-700 bg-white';
-        }
-
-        // 讀取資料邏輯
-        async function loadData() {
-            const container = document.getElementById('displayArea');
-            const unit = document.getElementById('unitSelect').value;
-            container.innerHTML = '<div class="text-center py-20 font-bold animate-pulse">📡 正在連線雲端名單...</div>';
-
-            try {
-                const res = await fetch(`${GAS_URL}?action=fetch&unit=${encodeURIComponent(unit)}`);
-                const data = await res.json();
-                renderCards(data);
-            } catch (e) {
-                container.innerHTML = `
-                    <div class="bg-red-50 p-6 rounded-xl border-2 border-red-200 text-center">
-                        <p class="text-red-600 font-bold mb-4">API 連線被阻擋</p>
-                        <a href="${GAS_URL}" target="_blank" class="block bg-blue-600 text-white py-4 rounded-lg font-black shadow-lg">
-                            直接開啟原本簽到系統
-                        </a>
-                    </div>`;
-            }
-        }
-
-        function renderCards(vips) {
-            const container = document.getElementById('displayArea');
-            container.innerHTML = vips.map(vip => `
-                <div class="card ${vip.status ? 'signed' : ''}">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <span class="text-[10px] text-gray-400 block">${vip.title || '貴賓'}</span>
-                            <span class="text-xl font-black">${vip.name}</span>
-                        </div>
-                        <button onclick="update('${vip.rowIdx}', ${!vip.status})" class="px-6 py-2 rounded-md font-bold text-sm ${vip.status ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-500'}">
-                            ${vip.status ? '已簽到' : '未簽到'}
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function update(row, val) {
-            const unit = document.getElementById('unitSelect').value;
-            // 指令：action=update, col=1(A欄)
-            fetch(`${https://script.google.com/macros/s/AKfycbz1IXEG3lmpDyDx8Xd7iga27HnM_F36f5A7jcnWfc3KH70OLsahGOxRVD8EApNWOYiW8g/exec}?action=update&unit=${encodeURIComponent(unit)}&row=${row + 2}&col=1&val=${val}`, {mode: 'no-cors'});
-            setTimeout(loadData, 500);
-        }
-    </script>
-</body>
-</html>
-
+            <div class="vip-container">
+                <div class="flex gap-2 mb-6 bg-white p-3 rounded-xl shadow border border-gray-200">
+                    <select id="unitSelect" onchange="fetchVips()" class="flex-1 p-2 font
