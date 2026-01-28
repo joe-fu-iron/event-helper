@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行大表 2026 - 專業穩定版</title>
+    <title>活動執行大表 2026 - Firebase 專業版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -15,159 +15,120 @@
         .input-line { border: none; border-bottom: 1px solid #94a3b8; outline: none; background: transparent; }
         .auto-height-cell { min-height: 40px; white-space: pre-wrap; word-break: break-all; outline: none; }
         .select-container { display: flex; flex-direction: column; gap: 2px; }
-        select { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 2px; font-size: 11px; width: 100%; }
+        select { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 2px; font-size: 11px; width: 100%; cursor: pointer; }
         
-        /* 燈號樣式 */
-        #syncStatus { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .status-online { background-color: #22c55e; box-shadow: 0 0 5px #22c55e; }
-        .status-offline { background-color: #ef4444; }
-        .status-syncing { background-color: #f59e0b; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        /* 狀態燈 */
+        .status-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; }
+        .dot-online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
 
-        @media print { .no-print { display: none !important; } body { background: white; padding: 0; } }
+        @media print { .no-print { display: none !important; } .del-btn { display: none !important; } body { background: white; padding: 0; } }
     </style>
 </head>
 <body class="p-4">
 
-    <div id="capture-area" class="max-w-[1400px] mx-auto">
-        <div class="bg-white p-4 rounded-lg shadow-md mb-4 flex flex-wrap justify-between items-center border-t-4 border-blue-600">
-            <div class="flex gap-4 items-center">
-                <span class="font-black text-lg">2026 活動執行大表</span>
-                <div class="text-xs text-gray-500 flex items-center">
-                    <span id="syncStatus" class="status-offline"></span>
-                    <span id="syncText">本地存檔中</span>
+    <div id="capture-area" class="max-w-[1580px] mx-auto">
+        <div class="bg-white p-4 rounded-lg shadow-md mb-4 flex flex-wrap justify-between items-center border-t-4 border-orange-500">
+            <div class="flex flex-col gap-1">
+                <span class="font-black text-lg text-orange-600">🔥 Firebase 即時控制台 (2026)</span>
+                <div class="status-bar">
+                    <div id="syncDot" class="dot dot-online"></div>
+                    <span id="syncStatus" class="text-gray-500">雲端連線中...</span>
                 </div>
             </div>
             <div class="flex gap-2 no-print">
-                <button onclick="manualSync()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-blue-700 shadow">💾 立即同步雲端</button>
-                <button onclick="exportToPDF()" class="bg-amber-500 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-amber-600 shadow">📄 匯出 PDF</button>
+                <button onclick="saveToFirebase()" class="bg-orange-600 text-white px-5 py-2 rounded text-xs font-bold hover:bg-orange-700 shadow-lg transition">💾 儲存並發佈</button>
+                <button onclick="exportToPDF()" class="bg-slate-700 text-white px-4 py-2 rounded text-xs font-bold hover:bg-black shadow">📄 匯出 PDF</button>
+                <button onclick="clearAllData()" class="text-gray-400 text-[10px] hover:underline">重置大表</button>
             </div>
         </div>
 
-        <div class="bg-white p-4 rounded shadow mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 font-bold items-center">
-            <div>活動主題：<input type="text" id="eventTitle" class="input-line w-2/3" value="新活動專案"></div>
-            <div>執行日期：<input type="date" id="eventDate" class="input-line" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600"></span></div>
-            <div>總召/主持：
+        <div class="bg-white p-4 rounded shadow mb-4 grid grid-cols-1 md:grid-cols-3 gap-6 font-bold border border-orange-100">
+            <div>主題：<input type="text" id="eventTitle" class="input-line w-2/3" value="載入中..."></div>
+            <div>日期：<input type="date" id="eventDate" class="input-line" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600"></span></div>
+            <div>主持人：
                 <select id="headerHost" class="input-line w-1/2" onchange="syncHostName()">
-                    <option value="Yin">Yin</option><option value="小巫">小巫</option><option value="Peter">Peter</option>
+                    <option value="Yin">Yin</option><option value="小巫">小巫</option><option value="Peter">Peter</option><option value="manual">手動輸入...</option>
                 </select>
             </div>
         </div>
 
-        <div class="overflow-x-auto mb-6">
+        <div class="bg-white p-2 shadow-lg border mb-6 overflow-x-auto">
             <table id="rundownTable" class="rundown-table">
                 <thead>
                     <tr class="bg-gray-header text-xs text-center">
-                        <th style="width:100px">時間</th><th style="width:60px">長度</th><th>單元內容</th><th>執行細節 / 備註</th><th style="width:100px">分工</th><th style="width:100px">人員</th>
+                        <th style="width:100px">時間</th><th style="width:60px">長度</th><th style="width:160px">單元內容</th><th style="width:250px">工作說明 / 備註</th><th style="width:90px">分工</th><th style="width:90px">人員</th>
                     </tr>
                 </thead>
                 <tbody id="rundownBody"></tbody>
             </table>
-            <button onclick="addRow()" class="mt-2 bg-slate-700 text-white px-4 py-1 rounded text-xs no-print hover:bg-black">+ 新增流程項目</button>
+            <button onclick="addRow()" class="mt-2 bg-green-600 text-white px-4 py-1 rounded text-xs font-bold no-print hover:bg-green-700">+ 增加一行</button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="bg-white p-4 shadow border rounded">
-                <h3 class="font-black border-b mb-3">服務台 / 行政器材</h3>
+                <h3 class="font-black border-l-4 border-orange-500 pl-2 mb-3">服務台相關</h3>
                 <div id="serviceDeskItems"></div>
-                <button onclick="addManualItem('serviceDeskItems')" class="text-blue-500 text-xs mt-2 no-print">+ 自定義項目</button>
+                <button onclick="addManualItem('serviceDeskItems')" class="text-blue-500 text-[10px] mt-2 no-print">+ 增加項目</button>
             </div>
             <div class="bg-white p-4 shadow border rounded">
-                <h3 class="font-black border-b mb-3">舞台 / 聲光器材</h3>
+                <h3 class="font-black border-l-4 border-orange-500 pl-2 mb-3">舞台 / 聲光相關</h3>
                 <div id="stageItems"></div>
-                <button onclick="addManualItem('stageItems')" class="text-blue-500 text-xs mt-2 no-print">+ 自定義項目</button>
+                <button onclick="addManualItem('stageItems')" class="text-blue-500 text-[10px] mt-2 no-print">+ 增加項目</button>
             </div>
         </div>
     </div>
 
-    <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbYj_gQTwKdVBCtOz2YP-zpAZw0arGDV4qksTY1_90lraOqdIPgvNOtcHaoGcp6E7Q3/exec";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // 您的 Firebase 設定
+        const firebaseConfig = {
+            databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const dataRef = ref(db, 'rundown_data');
+
+        // 全域變數
         const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋", "工讀1", "工讀2"];
         const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "上道具", "攝影", "報到區"];
         let jobMapping = {};
 
-        // 1. 初始化：本地優先
-        window.onload = () => {
-            const localData = localStorage.getItem('rundown_cache');
-            if (localData) {
-                console.log("正在加載本地快取...");
-                renderPage(JSON.parse(localData));
+        // 1. 初始化監聽：當 Firebase 資料變動時，自動更新畫面
+        onValue(dataRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                renderPage(data);
+                document.getElementById('syncStatus').innerText = "雲端同步中 (即時連線)";
             } else {
                 initDefault();
             }
-            // 背景同步：悄悄去抓雲端
-            silentLoadFromCloud();
-        };
+        });
 
-        // 背景靜默加載
-        function silentLoadFromCloud() {
-            setSyncStatus('syncing', '正在比對雲端...');
-            const script = document.createElement('script');
-            script.src = `${GAS_URL}?callback=handleBackgroundLoad&t=${Date.now()}`;
-            script.onerror = () => setSyncStatus('offline', '離線編輯模式');
-            document.body.appendChild(script);
-        }
-
-        window.handleBackgroundLoad = function(data) {
-            if (data && data.rundown && data.rundown.length > 0) {
-                // 如果雲端有新東西，詢問是否覆蓋
-                const cloudTime = data.timestamp || 0;
-                const localTime = parseInt(localStorage.getItem('rundown_ts') || 0);
-                
-                if (cloudTime > localTime) {
-                    if (confirm("偵測到手機端有更新的資料，是否載入？")) {
-                        renderPage(data);
-                        saveToLocal(data);
-                    }
-                }
-                setSyncStatus('online', '雲端已同步');
-            } else {
-                setSyncStatus('online', '雲端尚無資料');
-            }
-        };
-
-        // 立即同步
-        function manualSync() {
-            setSyncStatus('syncing', '正在傳送到雲端...');
-            const data = collectFormData();
-            data.timestamp = Date.now();
-            saveToLocal(data);
-
-            const script = document.createElement('script');
-            script.src = `${GAS_URL}?callback=handleSyncResponse&data=${encodeURIComponent(JSON.stringify(data))}`;
-            document.body.appendChild(script);
-        }
-
-        window.handleSyncResponse = function(resp) {
-            if (resp.result === "success") {
-                setSyncStatus('online', '同步成功！');
-                alert("✅ 雲端存檔成功");
-            }
-        };
-
-        function setSyncStatus(type, text) {
-            const dot = document.getElementById('syncStatus');
-            const txt = document.getElementById('syncText');
-            dot.className = '';
-            dot.classList.add('status-' + type);
-            txt.innerText = text;
-        }
-
-        function saveToLocal(data) {
-            localStorage.setItem('rundown_cache', JSON.stringify(data));
-            localStorage.setItem('rundown_ts', Date.now());
-        }
-
-        function collectFormData() {
+        // 2. 儲存至 Firebase
+        window.saveToFirebase = function() {
+            document.getElementById('syncStatus').innerText = "正在儲存...";
             const data = {
                 title: document.getElementById('eventTitle').value,
                 date: document.getElementById('eventDate').value,
                 host: document.getElementById('headerHost').value,
                 jobMapping: jobMapping,
                 rundown: [],
-                serviceItems: Array.from(document.querySelectorAll('#serviceDeskItems .checkbox-item')).map(el => ({n: el.querySelector('span[contenteditable]').innerText, checked: el.querySelector('input').checked, q: el.querySelector('.num-input').value})),
-                stageItems: Array.from(document.querySelectorAll('#stageItems .checkbox-item')).map(el => ({n: el.querySelector('span[contenteditable]').innerText, checked: el.querySelector('input').checked, q: el.querySelector('.num-input').value}))
+                serviceItems: Array.from(document.querySelectorAll('#serviceDeskItems .checkbox-item')).map(el => ({
+                    n: el.querySelector('span[contenteditable]').innerText, 
+                    checked: el.querySelector('input').checked, 
+                    q: el.querySelector('.num-input').value
+                })),
+                stageItems: Array.from(document.querySelectorAll('#stageItems .checkbox-item')).map(el => ({
+                    n: el.querySelector('span[contenteditable]').innerText, 
+                    checked: el.querySelector('input').checked, 
+                    q: el.querySelector('.num-input').value
+                }))
             };
+
             document.querySelectorAll("#rundownBody tr").forEach(row => {
                 data.rundown.push({
                     startTime: row.querySelector(".start-time")?.value || "",
@@ -178,10 +139,13 @@
                     staffs: Array.from(row.querySelectorAll(".staff-s")).map(s => s.value)
                 });
             });
-            return data;
-        }
 
-        // --- 以下為 UI 渲染與連動邏輯 (與您最習慣的版本一致) ---
+            set(dataRef, data).then(() => {
+                alert("✅ 雲端存檔成功！所有裝置已同步。");
+            }).catch(err => alert("儲存失敗: " + err));
+        };
+
+        // 3. UI 渲染與其他邏輯
         function renderPage(data) {
             document.getElementById('eventTitle').value = data.title || "";
             document.getElementById('eventDate').value = data.date || "";
@@ -196,7 +160,7 @@
             updateDayOfWeek();
         }
 
-        function addRow(isFirst = false, saved = null) {
+        window.addRow = function(isFirst = false, saved = null) {
             const tbody = document.getElementById("rundownBody");
             const tr = document.createElement("tr");
             let jobHTML = `<div class="select-container">`, staffHTML = `<div class="select-container">`;
@@ -207,48 +171,34 @@
             }
             tr.innerHTML = `<td class="text-center">${isFirst ? `<input type="time" class="start-time font-bold w-full text-center" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="time-display"></span>'}</td>
                 <td><input type="number" class="duration text-center w-full" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
-                <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-800">${saved?.unit||''}</div></td>
-                <td class="col-desc"><div contenteditable="true" class="auto-height-cell text-gray-600">${saved?.desc||''}</div></td>
-                <td>${jobHTML}</div></td><td>${staffHTML}</div></td>`;
+                <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-800 text-center">${saved?.unit||'單元名稱'}</div></td>
+                <td class="col-desc"><div contenteditable="true" class="auto-height-cell text-gray-500">${saved?.desc||'工作說明'}</div></td>
+                <td>${jobHTML}</div></td><td>${staffHTML}</div></td>
+                <span class="absolute right-[-20px] top-4 text-gray-300 cursor-pointer no-print hover:text-red-500" onclick="this.closest('tr').remove();calculateAllTimes();">✕</span>`;
             tbody.appendChild(tr);
             initSelectVisibility(tr);
-        }
+        };
 
-        function initDefault() {
-            document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
-            const tbody = document.getElementById("rundownBody");
-            tbody.innerHTML = "";
-            for (let i = 0; i < 7; i++) addRow(i === 0);
-            renderList('serviceDeskItems', [{n:"簽到表", q:2}, {n:"餐盒", q:0}]);
-            renderList('stageItems', [{n:"麥克風", q:4}]);
-            calculateAllTimes();
-            updateDayOfWeek();
-        }
-
-        function handleJobChange(select, index) {
+        window.handleJobChange = function(select, index) {
             const row = select.closest("tr");
             const staffSelect = row.querySelectorAll(".staff-s")[index];
             if (select.value === "主持人") {
-                staffSelect.value = document.getElementById("headerHost").value;
+                const host = document.getElementById("headerHost").value;
+                ensureOption(staffSelect, host); staffSelect.value = host;
             } else if (select.value && jobMapping[select.value]) {
+                ensureOption(staffSelect, jobMapping[select.value]);
                 staffSelect.value = jobMapping[select.value];
             }
             initSelectVisibility(row);
-        }
+        };
 
-        function handleStaffChange(select, index) {
+        window.handleStaffChange = function(select, index) {
             const row = select.closest("tr");
             const job = row.querySelectorAll(".job-s")[index].value;
             if (job && job !== "manual" && select.value) jobMapping[job] = select.value;
-        }
+        };
 
-        function initSelectVisibility(row) {
-            const js = row.querySelectorAll('.job-s'), ss = row.querySelectorAll('.staff-s');
-            js.forEach((s, i) => { if (i > 0) s.style.display = (js[i-1].value !== "") ? 'block' : 'none'; });
-            ss.forEach((s, i) => { if (i > 0) s.style.display = (ss[i-1].value !== "") ? 'block' : 'none'; });
-        }
-
-        function calculateAllTimes() {
+        window.calculateAllTimes = function() {
             const rows = document.querySelectorAll("#rundownBody tr");
             let next = "";
             rows.forEach((row, i) => {
@@ -262,15 +212,45 @@
                     next = end;
                 }
             });
+        };
+
+        function initSelectVisibility(row) {
+            const js = row.querySelectorAll('.job-s'), ss = row.querySelectorAll('.staff-s');
+            js.forEach((s, i) => { if (i > 0) s.style.display = (js[i-1].value !== "") ? 'block' : 'none'; });
+            ss.forEach((s, i) => { if (i > 0) s.style.display = (ss[i-1].value !== "") ? 'block' : 'none'; });
         }
 
         function renderList(id, items) {
-            document.getElementById(id).innerHTML = (items||[]).map(i => `<div class="checkbox-item py-1 flex items-center gap-2 border-b border-gray-100"><input type="checkbox" ${i.checked?'checked':''}> <span contenteditable="true" class="flex-1">${i.n}</span> <input type="number" class="num-input w-10 text-center" value="${i.q||''}"></div>`).join('');
+            document.getElementById(id).innerHTML = (items||[]).map(i => `<div class="checkbox-item py-1 flex items-center gap-2 border-b border-gray-50"><input type="checkbox" ${i.checked?'checked':''}> <span contenteditable="true" class="flex-1">${i.n}</span><input type="number" class="num-input w-10 text-center border rounded" value="${i.q||''}"></div>`).join('');
         }
-        function addManualItem(id) { const div = document.createElement('div'); div.className = 'checkbox-item py-1 flex items-center gap-2 border-b border-gray-100'; div.innerHTML = `<input type="checkbox"> <span contenteditable="true" class="flex-1">新項目</span> <input type="number" class="num-input w-10 text-center">`; document.getElementById(id).appendChild(div); }
-        function updateDayOfWeek() { const d = new Date(document.getElementById('eventDate').value); if(!isNaN(d.getTime())) document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`; }
-        function syncHostName() { /* 同步逻辑 */ }
-        function exportToPDF() { const element = document.getElementById('capture-area'); html2pdf().set({ margin: 5, filename: 'Rundown.pdf', jsPDF: { format: 'a3', orientation: 'landscape' } }).from(element).save(); }
+
+        window.addManualItem = function(id) {
+            const div = document.createElement('div');
+            div.className = 'checkbox-item py-1 flex items-center gap-2 border-b border-gray-50';
+            div.innerHTML = `<input type="checkbox"> <span contenteditable="true" class="flex-1">新項目</span> <input type="number" class="num-input w-10 text-center border rounded">`;
+            document.getElementById(id).appendChild(div);
+        }
+
+        window.updateDayOfWeek = function() {
+            const d = new Date(document.getElementById('eventDate').value);
+            if(!isNaN(d.getTime())) document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+        }
+
+        window.initDefault = function() {
+            document.getElementById('eventTitle').value = "2026 新活動大表";
+            document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
+            const tbody = document.getElementById("rundownBody");
+            tbody.innerHTML = "";
+            for (let i = 0; i < 8; i++) addRow(i === 0);
+            renderList('serviceDeskItems', [{n:"簽到表", q:2}, {n:"瓶水", q:24}]);
+            renderList('stageItems', [{n:"麥克風", q:4}, {n:"簡報筆", q:1}]);
+            calculateAllTimes();
+            updateDayOfWeek();
+        }
+
+        window.clearAllData = function() { if(confirm("確定要重置所有雲端資料嗎？")) set(dataRef, null); }
+        window.exportToPDF = function() { const element = document.getElementById('capture-area'); html2pdf().set({ margin: 5, filename: 'Rundown_2026.pdf', jsPDF: { format: 'a3', orientation: 'landscape' } }).from(element).save(); }
+        function ensureOption(s, v) { if(![...s.options].some(o => o.value === v)) s.add(new Option(v, v), 0); }
     </script>
 </body>
 </html>
