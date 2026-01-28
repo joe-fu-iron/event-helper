@@ -3,89 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 活動執行工作細部流程表 - 最終修正版</title>
+    <title>2026 活動執行大表 - 精準修正版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 13px; }
-        .rundown-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; }
-        .rundown-table th, .rundown-table td { border: 1.2px solid black; padding: 6px; vertical-align: top; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 12px; }
+        .rundown-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; table-layout: fixed; }
+        .rundown-table th, .rundown-table td { border: 1.2px solid black; padding: 4px; vertical-align: top; overflow: hidden; }
         .input-line { border: none; border-bottom: 1px solid #94a3b8; outline: none; background: transparent; }
-        .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #000; padding: 4px 8px; border-radius: 4px; margin: 4px; font-size: 12px; }
+        .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #000; padding: 2px 6px; border-radius: 4px; margin: 2px; font-size: 11px; }
         .btn-pick { background: #e2e8f0; padding: 2px 8px; border-radius: 99px; font-size: 11px; cursor: pointer; border: 1px solid #94a3b8; }
-        .num-input { width: 45px; border-bottom: 1px solid black; text-align: center; background: transparent; }
+        .num-input { width: 40px; border-bottom: 1px solid black; text-align: center; background: transparent; }
+        select { font-size: 10px; width: 100%; border: 1px solid #ccc; margin-bottom: 1px; }
         
-        /* 分頁設定 */
-        .page-break { page-break-before: always; }
-        
+        /* 欄位寬度控制 */
+        .col-time { width: 100px; }
+        .col-dur { width: 45px; }
+        .col-unit { width: 75px; min-width: 75px; }
+        .col-desc { width: 75px; min-width: 75px; }
+        .col-job { width: 90px; }
+        .col-staff { width: 80px; }
+
         @media print {
             .no-print { display: none !important; }
             body { background: white; padding: 0; }
-            @page { size: A4 landscape; margin: 1cm; }
-            .rundown-table { font-size: 11px; }
+            @page { size: A4 landscape; margin: 0.8cm; }
+            .rundown-table { font-size: 10px; width: 100%; table-layout: auto; }
+            .equipment-tag { border: 1px solid black; }
+            .page-break { page-break-before: always; }
         }
     </style>
 </head>
 <body class="p-4">
 
     <div id="capture-area" class="max-w-[1580px] mx-auto">
-        <div class="bg-white p-4 rounded-lg shadow mb-4 border-t-4 border-orange-600 no-print">
+        <div class="bg-white p-4 rounded-lg shadow mb-4 border-t-4 border-orange-600">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-4">
-                    <span class="font-black text-xl">細部工作流程</span>
+                    <span class="font-black text-xl">2026 活動大表</span>
                     <a href="https://script.google.com/macros/s/AKfycbz1IXEG3lmpDyDx8Xd7iga27HnM_F36f5A7jcnWfc3KH70OLsahGOxRVD8EApNWOYiW8g/exec" 
-                       target="_blank" class="bg-red-600 text-white px-4 py-2 rounded font-bold shadow hover:bg-red-700 animate-pulse">🚨 長官簽到即時情況</a>
+                       target="_blank" class="no-print bg-red-600 text-white px-3 py-1.5 rounded font-bold text-xs shadow hover:bg-red-700">🚨 長官簽到即時情況</a>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2 no-print">
                     <button onclick="saveToFirebase()" class="bg-orange-600 text-white px-5 py-2 rounded text-xs font-bold">💾 儲存發佈</button>
-                    <button onclick="window.print()" class="bg-slate-700 text-white px-4 py-2 rounded text-xs font-bold">🖨️ 列印 (A4橫式)</button>
+                    <button onclick="window.print()" class="bg-slate-700 text-white px-4 py-2 rounded text-xs font-bold">🖨️ 列印大表</button>
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 font-bold">
-                <div>主題：<input type="text" id="eventTitle" class="input-line w-2/3"></div>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 font-bold mb-4">
+                <div>主題：<input type="text" id="eventTitle" class="input-line w-full"></div>
                 <div>日期：<input type="date" id="eventDate" class="input-line" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600"></span></div>
-                <div>主持人：<input type="text" id="headerHost" class="input-line w-1/2" placeholder="手動輸入"></div>
+                <div>地點：<input type="text" id="eventLocation" class="input-line w-full"></div>
+                <div>主持人：<input type="text" id="headerHost" class="input-line w-full"></div>
+            </div>
+
+            <div class="p-3 bg-orange-50 rounded border border-orange-200">
+                <p class="font-bold text-orange-800 mb-2">👥 執行人員安排：</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                    <div class="flex gap-1">1.<input type="text" id="j1" placeholder="分工" class="input-line w-12" oninput="syncAllStaffs()">-<input type="text" id="s1" placeholder="人" class="input-line w-12" oninput="syncAllStaffs()"></div>
+                    <div class="flex gap-1">2.<input type="text" id="j2" placeholder="分工" class="input-line w-12" oninput="syncAllStaffs()">-<input type="text" id="s2" placeholder="人" class="input-line w-12" oninput="syncAllStaffs()"></div>
+                    <div class="flex gap-1">3.<input type="text" id="j3" placeholder="分工" class="input-line w-12" oninput="syncAllStaffs()">-<input type="text" id="s3" placeholder="人" class="input-line w-12" oninput="syncAllStaffs()"></div>
+                    <div class="flex gap-1">4.<input type="text" id="j4" placeholder="分工" class="input-line w-12" oninput="syncAllStaffs()">-<input type="text" id="s4" placeholder="人" class="input-line w-12" oninput="syncAllStaffs()"></div>
+                    <div class="flex gap-1">5.<input type="text" id="j5" placeholder="分工" class="input-line w-12" oninput="syncAllStaffs()">-<input type="text" id="s5" placeholder="人" class="input-line w-12" oninput="syncAllStaffs()"></div>
+                    <div class="flex gap-1">6.<input type="text" id="j6" placeholder="分工" class="input-line w-12" oninput="syncAllStaffs()">-<input type="text" id="s6" placeholder="人" class="input-line w-12" oninput="syncAllStaffs()"></div>
+                    <div class="flex gap-1">7.<input type="text" id="j7" placeholder="分工" class="input-line w-12" oninput="syncAllStaffs()">-<input type="text" id="s7" placeholder="人" class="input-line w-12" oninput="syncAllStaffs()"></div>
+                </div>
             </div>
         </div>
 
-        <div class="bg-white p-4 rounded shadow mb-4 no-print border border-orange-200">
-            <p class="font-bold text-orange-800 mb-2">👥 執行人員安排 (連動分工)：</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-                <div class="text-[11px]">1. <input type="text" id="j1" placeholder="分工" class="input-line w-12">-<input type="text" id="s1" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
-                <div class="text-[11px]">2. <input type="text" id="j2" placeholder="分工" class="input-line w-12">-<input type="text" id="s2" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
-                <div class="text-[11px]">3. <input type="text" id="j3" placeholder="分工" class="input-line w-12">-<input type="text" id="s3" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
-                <div class="text-[11px]">4. <input type="text" id="j4" placeholder="分工" class="input-line w-12">-<input type="text" id="s4" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
-                <div class="text-[11px]">5. <input type="text" id="j5" placeholder="分工" class="input-line w-12">-<input type="text" id="s5" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
-                <div class="text-[11px]">6. <input type="text" id="j6" placeholder="分工" class="input-line w-12">-<input type="text" id="s6" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
-                <div class="text-[11px]">7. <input type="text" id="j7" placeholder="分工" class="input-line w-12">-<input type="text" id="s7" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
-            </div>
-        </div>
-
-        <table id="rundownTable" class="rundown-table mb-8">
-            <thead class="bg-gray-100 text-xs">
-                <tr><th style="width:110px">時間</th><th style="width:50px">長度</th><th style="width:180px">單元內容</th><th>執行說明 / 備註</th><th style="width:100px">分工</th><th style="width:100px">人員</th></tr>
+        <table id="rundownTable" class="rundown-table mb-4">
+            <thead class="bg-gray-100 text-xs text-center">
+                <tr>
+                    <th class="col-time">時間</th><th class="col-dur">長度</th><th class="col-unit">單元</th><th class="col-desc">說明</th><th class="col-job">分工</th><th class="col-staff">人員</th>
+                </tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
-        <button onclick="addRow()" class="no-print bg-slate-200 px-4 py-1 rounded text-xs mb-4">+ 新增一行</button>
+        <button onclick="addRow()" class="no-print bg-slate-200 px-4 py-1 rounded text-xs mb-8">+ 新增流程項目</button>
 
-        <div class="page-break"></div>
-
-        <div class="bg-white p-4 shadow border rounded mt-4">
+        <div class="page-break bg-white p-4 shadow border rounded">
             <div class="flex justify-between items-center border-b pb-2 mb-4">
                 <h3 class="font-black text-lg text-blue-800">📋 器材清單核對</h3>
                 <button onclick="toggleMenuArea()" id="toggleBtn" class="no-print bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs">🔼 縮小選單</button>
             </div>
             
             <div id="menuArea" class="no-print mb-6 p-4 bg-slate-50 rounded border border-dashed">
-                <div class="mb-4"><strong>📍 服務台：</strong><div id="serviceMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
-                <div class="mb-4"><strong>📍 舞台區：</strong><div id="stageMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
-                <button onclick="addCustomEquip()" class="bg-green-100 text-green-700 px-2 py-1 rounded text-[11px] font-bold">+ 自定義項目</button>
+                <div class="mb-4"><strong>📍 服務台選單：</strong><div id="serviceMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
+                <div class="mb-4"><strong>📍 舞台區選單：</strong><div id="stageMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
+                <div class="flex gap-4">
+                    <button onclick="addCustomEquip('serviceContainer')" class="bg-blue-600 text-white px-3 py-1 rounded text-[11px]">+ 服務台自定義</button>
+                    <button onclick="addCustomEquip('stageContainer')" class="bg-red-600 text-white px-3 py-1 rounded text-[11px]">+ 舞台區自定義</button>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-6">
-                <div><h4 class="font-bold text-blue-700">服務台：</h4><div id="serviceContainer" class="flex flex-wrap items-start min-h-[50px]"></div></div>
-                <div><h4 class="font-bold text-red-700">舞台區：</h4><div id="stageContainer" class="flex flex-wrap items-start min-h-[50px]"></div></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="border p-4 rounded"><h4 class="font-bold text-blue-700 mb-2">服務台：</h4><div id="serviceContainer" class="flex flex-wrap items-start"></div></div>
+                <div class="border p-4 rounded"><h4 class="font-bold text-red-700 mb-2">舞台區：</h4><div id="stageContainer" class="flex flex-wrap items-start"></div></div>
             </div>
         </div>
     </div>
@@ -97,7 +109,7 @@
         const firebaseConfig = { databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const dataRef = ref(db, 'rundown_v2026_final');
+        const dataRef = ref(db, 'rundown_v2026_final_sync');
 
         const menuItems = {
             service: ["長官簽到表一式", "長官勾選表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱*1式", "新聞資料*{手動}", "黃桌巾*{手動}", "紅桌巾*{手動}", "伴手禮*{手動}"],
@@ -120,25 +132,25 @@
         }
 
         window.toggleMenuArea = () => {
-            const area = document.getElementById('menuArea');
-            const btn = document.getElementById('toggleBtn');
-            if (area.style.display === "none") {
-                area.style.display = "block"; btn.innerText = "🔼 縮小選單";
-            } else {
-                area.style.display = "none"; btn.innerText = "🔽 展開選單";
-            }
+            const area = document.getElementById('menuArea'), btn = document.getElementById('toggleBtn');
+            const isHidden = area.style.display === "none";
+            area.style.display = isHidden ? "block" : "none";
+            btn.innerText = isHidden ? "🔼 縮小選單" : "🔽 展開選單";
         };
 
-        window.syncStaff = () => {
-            const mappings = {};
+        window.syncAllStaffs = () => {
+            const map = {};
             for(let i=1; i<=7; i++) {
-                const job = document.getElementById(`j${i}`).value;
-                const staff = document.getElementById(`s${i}`).value;
-                if(job) mappings[job] = staff;
+                const j = document.getElementById(`j${i}`).value;
+                const s = document.getElementById(`s${i}`).value;
+                if(j) map[j] = s;
             }
             document.querySelectorAll("#rundownBody tr").forEach(row => {
-                const jVal = row.querySelector(".job-input").value;
-                if(mappings[jVal]) row.querySelector(".staff-input").value = mappings[jVal];
+                const jSels = row.querySelectorAll(".job-sel");
+                const sDips = row.querySelectorAll(".staff-display");
+                jSels.forEach((sel, idx) => {
+                    sDips[idx].innerText = map[sel.value] || "";
+                });
             });
         };
 
@@ -147,19 +159,17 @@
             const tag = document.createElement('div'); tag.className = 'equipment-tag';
             const name = template.split('*')[0];
             const isManual = template.includes('{手動}');
-            const fixedQty = template.includes('*') && !isManual ? template.split('*')[1] : "";
             tag.innerHTML = `
                 <input type="checkbox" class="no-print mr-1">
                 <span class="font-bold">${name}</span>
-                ${isManual ? `*<input type="text" class="num-input no-print" value="${savedQty}" placeholder="數量">` : (fixedQty ? `*${fixedQty}` : '')}
-                ${isManual && savedQty ? `<span class="hidden print:inline">*${savedQty}</span>` : ''}
+                ${isManual ? `*<input type="text" class="num-input" value="${savedQty}">` : ''}
                 <span class="no-print text-red-400 cursor-pointer ml-2" onclick="this.parentElement.remove()">✕</span>`;
             container.appendChild(tag);
         };
 
-        window.addCustomEquip = () => {
-            const name = prompt("請輸入項目名稱：");
-            if(name) addEquipment('serviceContainer', name + '*{手動}');
+        window.addCustomEquip = (cid) => {
+            const name = prompt("輸入項目名稱：");
+            if(name) addEquipment(cid, name + '*{手動}');
         };
 
         onValue(dataRef, (snapshot) => {
@@ -167,10 +177,11 @@
             if (data) {
                 document.getElementById('eventTitle').value = data.title || "";
                 document.getElementById('eventDate').value = data.date || "";
+                document.getElementById('eventLocation').value = data.location || "";
                 document.getElementById('headerHost').value = data.host || "";
-                for(let i=1; i<=7; i++) {
-                    document.getElementById(`j${i}`).value = data.mappings?.[i]?.j || "";
-                    document.getElementById(`s${i}`).value = data.mappings?.[i]?.s || "";
+                for(let i=1; i<=7; i++){
+                    document.getElementById(`j${i}`).value = data.maps?.[i]?.j || "";
+                    document.getElementById(`s${i}`).value = data.maps?.[i]?.s || "";
                 }
                 const tbody = document.getElementById("rundownBody"); tbody.innerHTML = "";
                 (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
@@ -178,7 +189,7 @@
                 (data.serviceEquip || []).forEach(e => addEquipment('serviceContainer', e.t, e.q));
                 document.getElementById('stageContainer').innerHTML = "";
                 (data.stageEquip || []).forEach(e => addEquipment('stageContainer', e.t, e.q));
-                calculateAllTimes(); updateDayOfWeek();
+                calculateAllTimes(); updateDayOfWeek(); syncAllStaffs();
             } else { initDefault(); }
         });
 
@@ -186,41 +197,54 @@
             const data = {
                 title: document.getElementById('eventTitle').value,
                 date: document.getElementById('eventDate').value,
+                location: document.getElementById('eventLocation').value,
                 host: document.getElementById('headerHost').value,
-                mappings: {},
-                rundown: [],
-                serviceEquip: Array.from(document.querySelectorAll('#serviceContainer .equipment-tag')).map(el => ({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" })),
-                stageEquip: Array.from(document.querySelectorAll('#stageContainer .equipment-tag')).map(el => ({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }))
+                maps: {}, rundown: [], serviceEquip: [], stageEquip: []
             };
-            for(let i=1; i<=7; i++) { data.mappings[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value }; }
+            for(let i=1; i<=7; i++) data.maps[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
             document.querySelectorAll("#rundownBody tr").forEach(row => {
                 data.rundown.push({
                     startTime: row.querySelector(".start-time")?.value || "",
                     duration: row.querySelector(".duration").value,
                     unit: row.querySelector(".unit-cell").innerText,
                     desc: row.querySelector(".desc-cell").innerText,
-                    job: row.querySelector(".job-input").value,
-                    staff: row.querySelector(".staff-input").value
+                    jobs: Array.from(row.querySelectorAll(".job-sel")).map(s => s.value)
                 });
             });
-            set(dataRef, data).then(() => alert("✅ 存檔成功"));
+            document.querySelectorAll('#serviceContainer .equipment-tag').forEach(el => data.serviceEquip.push({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }));
+            document.querySelectorAll('#stageContainer .equipment-tag').forEach(el => data.stageEquip.push({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }));
+            set(dataRef, data).then(() => alert("✅ 儲存成功"));
         };
 
         window.addRow = (isFirst = false, saved = null) => {
             const tbody = document.getElementById("rundownBody");
             const tr = document.createElement("tr");
+            let jobHTML = "", staffHTML = "";
+            for(let i=0; i<5; i++){
+                jobHTML += `<select class="job-sel no-print" onchange="syncAllStaffs()"><option value="">-</option></select><div class="print:block hidden text-[9px] border-b mb-1 h-3">${saved?.jobs?.[i] || ''}</div>`;
+                staffHTML += `<div class="staff-display h-4 border-b mb-1 text-[10px] flex items-center justify-center"></div>`;
+            }
             tr.innerHTML = `
-                <td class="text-center font-bold">${isFirst ? `<div class="flex flex-col gap-1"><input type="time" class="start-time text-center w-full" value="${saved?.startTime||'08:00'}" oninput="calculateAllTimes()"><span> - 09:00</span></div>` : '<span class="time-display"></span>'}</td>
-                <td><input type="number" class="duration text-center w-full" value="${saved?.duration||60}" oninput="calculateAllTimes()"></td>
-                <td contenteditable="true" class="unit-cell font-bold text-blue-900">${saved?.unit||'單元'}</td>
-                <td contenteditable="true" class="desc-cell text-gray-600 text-[11px]">${saved?.desc||'備註說明'}</td>
-                <td><input type="text" class="job-input w-full no-print" value="${saved?.job||''}" oninput="syncStaff()"></td>
-                <td><input type="text" class="staff-input w-full no-print" value="${saved?.staff||''}"></td>
-                <td class="no-print"><span class="cursor-pointer text-gray-300" onclick="this.closest('tr').remove();calculateAllTimes();">✕</span></td>
+                <td class="col-time text-center font-bold">${isFirst ? `<div class="flex flex-col"><input type="time" class="start-time text-center w-full" value="${saved?.startTime||'08:00'}" oninput="calculateAllTimes()"><span>- 09:00</span></div>` : '<span class="time-display"></span>'}</td>
+                <td class="col-dur"><input type="number" class="duration text-center w-full" value="${saved?.duration||60}" oninput="calculateAllTimes()"></td>
+                <td contenteditable="true" class="col-unit unit-cell font-bold text-blue-900">${saved?.unit||''}</td>
+                <td contenteditable="true" class="col-desc desc-cell text-gray-600 text-[10px]">${saved?.desc||''}</td>
+                <td class="col-job">${jobHTML}</td><td class="col-staff">${staffHTML}</td>
+                <td class="no-print" style="width:20px"><span class="cursor-pointer text-gray-300" onclick="this.closest('tr').remove();calculateAllTimes();">✕</span></td>
             `;
             tbody.appendChild(tr);
+            updateJobDropdowns(tr, saved?.jobs);
             calculateAllTimes();
         };
+
+        function updateJobDropdowns(tr, savedJobs) {
+            const sels = tr.querySelectorAll(".job-sel");
+            const jobsList = [];
+            for(let i=1; i<=7; i++) { if(document.getElementById(`j${i}`).value) jobsList.push(document.getElementById(`j${i}`).value); }
+            sels.forEach((sel, idx) => {
+                sel.innerHTML = `<option value="">-</option>` + jobsList.map(j => `<option value="${j}" ${savedJobs?.[idx]===j?'selected':''}>${j}</option>`).join('');
+            });
+        }
 
         window.calculateAllTimes = () => {
             const rows = document.querySelectorAll("#rundownBody tr");
@@ -251,5 +275,3 @@
     </script>
 </body>
 </html>
-
-
