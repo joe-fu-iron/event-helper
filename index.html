@@ -216,4 +216,35 @@
         function calculateAllTimes() {
             const rows = document.querySelectorAll("#rundownBody tr");
             let next = "";
-            rows.forEach((row, i) =>
+            rows.forEach((row, i) => {
+                const dur = parseInt(row.querySelector(".duration").value) || 0;
+                let start = (i === 0) ? row.querySelector(".start-time").value : next;
+                if (start) {
+                    let [h, m] = start.split(":").map(Number);
+                    let em = m + dur; let eh = (h + Math.floor(em/60)) % 24; em %= 60;
+                    let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+                    if (i === 0) document.getElementById("endTime0").innerText = `${start}-${end}`;
+                    else row.querySelector(".time-display").innerText = `${start}-${end}`;
+                    next = end;
+                }
+            });
+        }
+
+        function renderChecklist(id, items) {
+            if(!items) return;
+            document.getElementById(id).innerHTML = items.map(i => `<div class="checkbox-item"><span class="text-gray-300">☰</span><input type="checkbox" ${i.checked?'checked':''}> <span contenteditable="true" class="flex-1">${i.n}</span><input type="number" class="num-input" value="${i.q||''}" placeholder="0"></div>`).join('');
+        }
+        function getListItems(id) { return Array.from(document.getElementById(id).querySelectorAll(".checkbox-item")).map(el => ({ n: el.querySelector("span[contenteditable]").innerText, checked: el.querySelector("input").checked, q: el.querySelector(".num-input").value })); }
+        function initSelectVisibility(row) { const js = row.querySelectorAll('.job-s'); js.forEach((s, i) => { if (i > 0) s.parentElement.style.display = (js[i-1].value !== "") ? 'flex' : 'none'; }); }
+        function handleManual(sel) { const v = prompt("請輸入自定義名稱："); if (v) { ensureOption(sel, v); sel.value = v; } else sel.selectedIndex = 0; }
+        function ensureOption(s, v) { if(![...s.options].some(o => o.value === v)) s.add(new Option(v, v), 0); }
+        function showLoading(s) { document.getElementById('loading').style.display = s ? 'flex' : 'none'; }
+        function updateDayOfWeek() { const d = new Date(document.getElementById('eventDate').value); if(!isNaN(d.getTime())) document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`; }
+        function syncHostName() { const h = document.getElementById("headerHost").value; if(h === "manual") { handleManual(document.getElementById("headerHost")); } calculateAllTimes(); }
+        function initSortable() { Sortable.create(document.getElementById('serviceDeskItems'),{animation:150}); Sortable.create(document.getElementById('stageItems'),{animation:150}); }
+        function addManualItem(id) { const div = document.createElement('div'); div.className = 'checkbox-item'; div.innerHTML = `<span class="text-gray-300">☰</span><input type="checkbox"> <span contenteditable="true" class="flex-1">新項目</span> <input type="number" class="num-input" placeholder="0">`; document.getElementById(id).appendChild(div); }
+        function exportToPDF() { syncToCloud(); const element = document.getElementById('capture-area'); html2pdf().set({ margin: 5, filename: 'Rundown.pdf', jsPDF: { format: 'a3', orientation: 'landscape' } }).from(element).save().then(() => { window.open(`https://line.me/R/msg/text/?流程表已更新：${window.location.href}`, '_blank'); }); }
+        function clearStorage() { if(confirm("確定重置表格？這將清除雲端與本機所有資料。")) { fetch(GAS_URL, { method: "POST", body: JSON.stringify({rundown:[]}) }).then(() => { localStorage.removeItem('rundown_local'); location.reload(); }); } }
+    </script>
+</body>
+</html>
