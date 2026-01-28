@@ -1,381 +1,191 @@
 <!DOCTYPE html>
-
 <html lang="zh-TW">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>活動執行大表 - 2026 雲端即時同步版</title>
-
     <script src="https://cdn.tailwindcss.com"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-
     <style>
-
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; font-size: 13px; }
-
         .rundown-table, .item-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; }
-
         .rundown-table th, .rundown-table td, .item-table th, .item-table td { border: 1.2px solid black; padding: 6px; vertical-align: top; position: relative; }
-
         .bg-gray-header { background-color: #f3f4f6; }
-
         .input-line { border: none; border-bottom: 1px solid black; outline: none; background: transparent; }
-
         .auto-height-cell { min-height: 40px; white-space: pre-wrap; word-break: break-all; outline: none; }
-
         .col-unit, .col-desc { width: 150px; } 
-
         .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:9999; justify-content:center; align-items:center; font-weight:bold; }
-
         @media print { .no-print { display: none !important; } body { padding: 0; } }
-
     </style>
-
 </head>
-
 <body class="p-2 pr-10">
-
-
 
     <div id="loading" class="loading-overlay">☁️ 雲端同步中，請稍候...</div>
 
-
-
     <div id="capture-area" class="max-w-[1580px] mx-auto">
-
         <div class="bg-white p-4 rounded shadow border mb-3 flex flex-wrap gap-4 font-bold text-sm items-center">
-
             <div>主題：<input type="text" id="eventTitle" class="input-line w-48" value="2026 記者會"></div>
-
             <div>日期：<input type="date" id="eventDate" class="input-line" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600"></span></div>
-
             <div>主持人：
-
                 <select id="headerHost" class="input-line w-28 border-b border-black font-bold" onchange="syncHostName()">
-
                     <option value="Yin">Yin</option><option value="小巫">小巫</option><option value="Peter">Peter</option><option value="manual">手動輸入...</option>
-
                 </select>
-
             </div>
-
             <div class="flex-1 text-right flex justify-end gap-2 no-print">
-
                 <button onclick="syncToCloud()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs shadow font-bold hover:bg-blue-700">☁️ 儲存更新並上傳雲端</button>
-
                 <button onclick="loadFromCloud()" class="bg-gray-500 text-white px-4 py-1.5 rounded text-xs shadow font-bold hover:bg-gray-600">🔄 重新讀取雲端資料</button>
-
                 <button onclick="window.print()" class="bg-amber-500 text-white px-3 py-1.5 rounded text-xs shadow font-bold">🖨️ 列印</button>
-
             </div>
-
         </div>
-
-
 
         <div class="bg-white p-2 shadow-lg border mb-6">
-
             <table id="rundownTable" class="rundown-table">
-
                 <thead><tr class="bg-gray-header text-xs"><th>時間</th><th>長度</th><th>單元</th><th>工作說明</th><th>分工與人員 (自動連動)</th></tr></thead>
-
                 <tbody id="rundownBody"></tbody>
-
             </table>
-
             <button onclick="addRow()" class="mt-2 bg-green-600 text-white px-4 py-1 rounded font-bold text-xs no-print shadow">+ 增加一行</button>
-
         </div>
-
-
 
         <div class="bg-white p-4 shadow-lg border">
-
             <h3 class="font-black text-lg mb-2">器材清單 (可拖曳排序)</h3>
-
             <table class="item-table text-xs">
-
                 <thead><tr class="bg-gray-800 text-white"><th class="w-1/2">服務台相關</th><th class="w-1/2">舞台相關</th></tr></thead>
-
                 <tbody>
-
                     <tr>
-
                         <td><div id="serviceDeskItems"></div></td>
-
                         <td><div id="stageItems"></div></td>
-
                     </tr>
-
                 </tbody>
-
             </table>
-
         </div>
-
     </div>
 
-
-
     <script>
-
-        const GAS_URL = "YOUR_GAS_URL"; // <--- 替換成您的部署網址
-
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz4xqspaLWivSW5lqjf6Nn4pT_MJhTuajs62HS5j2R0Tr4ynLZArlBMLBxS-SpmGjBH/exec"; // <--- 替換成您的部署網址
         const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋"];
-
         const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "攝影"];
-
         let jobMapping = {}; 
-
-
 
         window.onload = () => loadFromCloud();
 
-
-
         async function syncToCloud() {
-
             showLoading(true);
-
             calculateAllTimes();
-
             const data = {
-
                 title: document.getElementById('eventTitle').value,
-
                 date: document.getElementById('eventDate').value,
-
                 host: document.getElementById('headerHost').value,
-
                 jobMapping: jobMapping,
-
                 rundown: [],
-
                 serviceItems: getListItems('serviceDeskItems'),
-
                 stageItems: getListItems('stageItems')
-
             };
 
-
-
             document.querySelectorAll("#rundownBody tr").forEach(row => {
-
                 data.rundown.push({
-
                     startTime: row.querySelector(".start-time")?.value || "",
-
                     duration: row.querySelector(".duration").value,
-
                     unit: row.querySelector(".col-unit div").innerText,
-
                     desc: row.querySelector(".col-desc div").innerText,
-
                     jobs: Array.from(row.querySelectorAll(".job-s")).map(s => s.value),
-
                     staffs: Array.from(row.querySelectorAll(".staff-s")).map(s => s.value)
-
                 });
-
             });
 
-
-
             try {
-
-                await fetch(https://script.google.com/macros/s/AKfycbwRuKUZxnPApGXdSENJbWzNDdt_T_pqgKBnUKzH2KH5YXaIDMAmM3ebqsqTXf0SHPLE/exec, { method: "POST", body: JSON.stringify(data) });
-
+                await fetch(https://script.google.com/macros/s/AKfycbz4xqspaLWivSW5lqjf6Nn4pT_MJhTuajs62HS5j2R0Tr4ynLZArlBMLBxS-SpmGjBH/exec, { method: "POST", body: JSON.stringify(data) });
                 alert("✅ 雲端同步成功！另一台設備重新整理即可看見。");
-
             } catch (e) { alert("❌ 同步失敗，請檢查網路或 GAS 權限。"); }
-
             showLoading(false);
-
         }
-
-
 
         async function loadFromCloud() {
-
             showLoading(true);
-
             try {
-
                 const response = await fetch(GAS_URL);
-
                 const data = await response.json();
-
                 if (data.rundown) {
-
                     document.getElementById('eventTitle').value = data.title || "";
-
                     document.getElementById('eventDate').value = data.date || "";
-
                     document.getElementById('headerHost').value = data.host || "Yin";
-
                     jobMapping = data.jobMapping || {};
-
                     const tbody = document.getElementById("rundownBody");
-
                     tbody.innerHTML = "";
-
                     data.rundown.forEach((item, idx) => addRow(idx === 0, item));
-
                     renderChecklist('serviceDeskItems', data.serviceItems);
-
                     renderChecklist('stageItems', data.stageItems);
-
                     updateDayOfWeek();
-
                     calculateAllTimes();
-
                     initSortable();
-
                 } else {
-
                     addRow(true);
-
                 }
-
             } catch (e) { addRow(true); }
-
             showLoading(false);
-
         }
-
-
 
         // --- 核心：智慧連動學習 ---
-
         function handleJobChange(select, index) {
-
             const row = select.closest("tr");
-
             const staffSelect = row.querySelectorAll(".staff-s")[index];
-
             const selectedJob = select.value;
-
             if (selectedJob === "主持人") {
-
                 const h = document.getElementById("headerHost").value;
-
                 ensureOption(staffSelect, h); staffSelect.value = h;
-
             } else if (selectedJob && jobMapping[selectedJob]) {
-
                 ensureOption(staffSelect, jobMapping[selectedJob]);
-
                 staffSelect.value = jobMapping[selectedJob];
-
             }
-
         }
-
-
 
         function handleStaffChange(select, index) {
-
             const row = select.closest("tr");
-
             const job = row.querySelectorAll(".job-s")[index].value;
-
             if (job && select.value && job !== "manual") jobMapping[job] = select.value;
-
         }
-
-
 
         function addRow(isFirst = false, saved = null) {
-
             const tbody = document.getElementById("rundownBody");
-
             const tr = document.createElement("tr");
-
             let selects = "";
-
             for(let i=0; i<3; i++) {
-
                 let jV = saved?.jobs[i] || ""; let sV = saved?.staffs[i] || "";
-
                 selects += `<div class="flex gap-1 mb-1 no-print">
-
                     <select class="job-s flex-1" onchange="handleJobChange(this, ${i})"><option value="">-</option>${jobs.map(j=>`<option value="${j}" ${j===jV?'selected':''}>${j}</option>`).join('')}</select>
-
                     <select class="staff-s flex-1" onchange="handleStaffChange(this, ${i})"><option value="">-</option>${staffs.map(s=>`<option value="${s}" ${s===sV?'selected':''}>${s}</option>`).join('')}</select>
-
                 </div>`;
-
             }
-
             tr.innerHTML = `<td>${isFirst ? `<input type="time" class="start-time w-full font-bold" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="time-display"></span>'}</td>
-
                 <td><input type="number" class="duration w-full text-center font-bold" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
-
                 <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-900">${saved?.unit||'單元'}</div></td>
-
                 <td class="col-desc"><div contenteditable="true" class="auto-height-cell text-gray-600">${saved?.desc||'工作內容'}</div></td>
-
                 <td>${selects}</td><span class="del-btn no-print" onclick="this.closest('tr').remove();calculateAllTimes();">✕</span>`;
-
             tbody.appendChild(tr);
-
         }
-
-
 
         // 輔助功能
-
         function calculateAllTimes() {
-
             const rows = document.querySelectorAll("#rundownBody tr");
-
             let next = "";
-
             rows.forEach((row, i) => {
-
                 const dur = parseInt(row.querySelector(".duration").value) || 0;
-
                 let start = (i === 0) ? row.querySelector(".start-time").value : next;
-
                 if (start) {
-
                     let [h, m] = start.split(":").map(Number);
-
                     let em = m + dur; let eh = (h + Math.floor(em/60)) % 24; em %= 60;
-
                     let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
-
                     if (i !== 0) row.querySelector(".time-display").innerText = `${start}-${end}`;
-
                     next = end;
-
                 }
-
             });
-
         }
-
         function getListItems(id) { return Array.from(document.getElementById(id).querySelectorAll(".checkbox-item")).map(el => ({ n: el.querySelector("span[contenteditable]").innerText, checked: el.querySelector("input").checked })); }
-
         function renderChecklist(id, items) { if(!items) return; document.getElementById(id).innerHTML = items.map(i => `<div class="checkbox-item"><span class="text-gray-300">☰</span><input type="checkbox" ${i.checked?'checked':''}> <span contenteditable="true" class="flex-1">${i.n}</span></div>`).join(''); }
-
         function showLoading(s) { document.getElementById('loading').style.display = s ? 'flex' : 'none'; }
-
         function ensureOption(s, v) { if(![...s.options].some(o => o.value === v)) s.add(new Option(v, v), 0); }
-
         function updateDayOfWeek() { const d = new Date(document.getElementById('eventDate').value); if(!isNaN(d.getTime())) document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`; }
-
         function initSortable() { Sortable.create(document.getElementById('serviceDeskItems'), {animation: 150}); Sortable.create(document.getElementById('stageItems'), {animation: 150}); }
-
     </script>
-
 </body>
-
 </html>
