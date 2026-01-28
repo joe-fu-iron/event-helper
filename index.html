@@ -3,124 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 活動執行 - 完整功能版</title>
+    <title>2026 活動執行大表 - 最終修正版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 12px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 13px; }
         .rundown-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; }
-        .rundown-table th, .rundown-table td { border: 1.2px solid black; padding: 4px; vertical-align: top; }
+        .rundown-table th, .rundown-table td { border: 1.2px solid black; padding: 6px; vertical-align: top; }
         .input-line { border: none; border-bottom: 1px solid #94a3b8; outline: none; background: transparent; }
-        .vip-status-btn { padding: 4px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; border: 1px solid #ddd; }
-        .vip-arrived { background-color: #ef4444; color: white; border-color: #b91c1c; }
-        .vip-not-yet { background-color: #e2e8f0; color: #475569; }
-        .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 4px; margin: 4px; gap: 6px; }
-        .btn-pick { background: #e2e8f0; padding: 2px 8px; border-radius: 99px; font-size: 11px; cursor: pointer; border: 1px solid transparent; }
-        .btn-pick:hover { background: #cbd5e1; }
-        .num-input { width: 60px; border-bottom: 1px solid black; text-align: center; font-weight: bold; background: transparent; }
-        @media print { .no-print { display: none !important; } }
+        .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #000; padding: 4px 8px; border-radius: 4px; margin: 4px; font-size: 12px; }
+        .btn-pick { background: #e2e8f0; padding: 2px 8px; border-radius: 99px; font-size: 11px; cursor: pointer; border: 1px solid #94a3b8; }
+        .num-input { width: 45px; border-bottom: 1px solid black; text-align: center; background: transparent; }
+        
+        /* 分頁設定 */
+        .page-break { page-break-before: always; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            @page { size: A4 landscape; margin: 1cm; }
+            .rundown-table { font-size: 11px; }
+        }
     </style>
 </head>
 <body class="p-4">
 
     <div id="capture-area" class="max-w-[1580px] mx-auto">
-        <div class="bg-white p-4 rounded-lg shadow-md mb-4 border-t-4 border-red-600">
+        <div class="bg-white p-4 rounded-lg shadow mb-4 border-t-4 border-orange-600 no-print">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-4">
-                    <span class="font-black text-xl text-red-600">🚨 2026 活動即時大表</span>
-                    <div id="vipMasterStatus" class="vip-status-btn vip-not-yet" onclick="toggleVipMaster()">長官尚未抵達</div>
+                    <span class="font-black text-xl">2026 活動大表</span>
+                    <a href="https://script.google.com/macros/s/AKfycbz1IXEG3lmpDyDx8Xd7iga27HnM_F36f5A7jcnWfc3KH70OLsahGOxRVD8EApNWOYiW8g/exec" 
+                       target="_blank" class="bg-red-600 text-white px-4 py-2 rounded font-bold shadow hover:bg-red-700 animate-pulse">🚨 長官簽到即時情況</a>
                 </div>
-                <div class="no-print flex gap-2">
-                    <button onclick="saveToFirebase()" class="bg-orange-600 text-white px-5 py-2 rounded text-xs font-bold shadow-lg hover:bg-orange-700">💾 同步雲端</button>
-                    <button onclick="exportToPDF()" class="bg-slate-700 text-white px-4 py-2 rounded text-xs font-bold">📄 匯出 PDF</button>
+                <div class="flex gap-2">
+                    <button onclick="saveToFirebase()" class="bg-orange-600 text-white px-5 py-2 rounded text-xs font-bold">💾 儲存發佈</button>
+                    <button onclick="window.print()" class="bg-slate-700 text-white px-4 py-2 rounded text-xs font-bold">🖨️ 列印 (A4橫式)</button>
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 font-bold border-b pb-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 font-bold">
                 <div>主題：<input type="text" id="eventTitle" class="input-line w-2/3"></div>
                 <div>日期：<input type="date" id="eventDate" class="input-line" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600"></span></div>
-                <div>主持人：<select id="headerHost" class="input-line w-1/2" onchange="syncPersonnel()">
-                        <option value="Yin">Yin</option><option value="小巫">小巫</option><option value="Peter">Peter</option><option value="manual">手動輸入...</option>
-                    </select>
-                </div>
-                <div>快速連結：<input type="text" id="quickLink" placeholder="例如：活動相簿 URL" class="input-line w-2/3 text-blue-500 underline text-[10px]" onchange="updateLinkDisplay()"> <a id="linkJump" href="#" target="_blank" class="text-xs bg-blue-100 p-1 rounded no-print">🔗 跳轉</a></div>
-            </div>
-
-            <div class="bg-orange-50 p-3 rounded border border-orange-200">
-                <div class="flex flex-wrap gap-6 items-center">
-                    <span class="text-orange-800 font-black">執行人員預設：</span>
-                    <div>分工：<input type="text" id="customJob" placeholder="例如:音控" class="input-line w-24"></div>
-                    <div>人員：<input type="text" id="customStaff" placeholder="江哥" class="input-line w-24" oninput="syncPersonnel()"></div>
-                </div>
+                <div>主持人：<input type="text" id="headerHost" class="input-line w-1/2" placeholder="手動輸入"></div>
             </div>
         </div>
 
-        <div class="overflow-x-auto mb-6">
-            <table id="rundownTable" class="rundown-table">
-                <thead class="bg-slate-800 text-white text-xs">
-                    <tr><th style="width:100px">時間</th><th style="width:60px">長度</th><th style="width:200px">單元內容</th><th>工作說明 / 備註</th><th style="width:110px">分工</th><th style="width:110px">人員</th></tr>
-                </thead>
-                <tbody id="rundownBody"></tbody>
-            </table>
-            <button onclick="addRow()" class="mt-2 bg-slate-700 text-white px-4 py-1 rounded text-xs no-print">+ 增加流程</button>
+        <div class="bg-white p-4 rounded shadow mb-4 no-print border border-orange-200">
+            <p class="font-bold text-orange-800 mb-2">👥 執行人員安排 (連動分工)：</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                <div class="text-[11px]">1. <input type="text" id="j1" placeholder="分工" class="input-line w-12">-<input type="text" id="s1" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
+                <div class="text-[11px]">2. <input type="text" id="j2" placeholder="分工" class="input-line w-12">-<input type="text" id="s2" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
+                <div class="text-[11px]">3. <input type="text" id="j3" placeholder="分工" class="input-line w-12">-<input type="text" id="s3" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
+                <div class="text-[11px]">4. <input type="text" id="j4" placeholder="分工" class="input-line w-12">-<input type="text" id="s4" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
+                <div class="text-[11px]">5. <input type="text" id="j5" placeholder="分工" class="input-line w-12">-<input type="text" id="s5" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
+                <div class="text-[11px]">6. <input type="text" id="j6" placeholder="分工" class="input-line w-12">-<input type="text" id="s6" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
+                <div class="text-[11px]">7. <input type="text" id="j7" placeholder="分工" class="input-line w-12">-<input type="text" id="s7" placeholder="人員" class="input-line w-12" oninput="syncStaff()"></div>
+            </div>
         </div>
 
-        <div class="bg-white p-4 shadow border rounded">
-            <h3 class="font-black text-lg border-l-4 border-blue-600 pl-2 mb-4">器材清單核對 (點選後出現在下方)</h3>
-            <div class="no-print mb-4 p-4 bg-slate-50 rounded border">
-                <div class="mb-3"><strong>📍 服務台：</strong><div id="serviceMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
-                <div><strong>📍 舞台區：</strong><div id="stageMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
+        <table id="rundownTable" class="rundown-table mb-8">
+            <thead class="bg-gray-100 text-xs">
+                <tr><th style="width:110px">時間</th><th style="width:50px">長度</th><th style="width:180px">單元內容</th><th>執行說明 / 備註</th><th style="width:100px">分工</th><th style="width:100px">人員</th></tr>
+            </thead>
+            <tbody id="rundownBody"></tbody>
+        </table>
+        <button onclick="addRow()" class="no-print bg-slate-200 px-4 py-1 rounded text-xs mb-4">+ 新增一行</button>
+
+        <div class="page-break"></div>
+
+        <div class="bg-white p-4 shadow border rounded mt-4">
+            <div class="flex justify-between items-center border-b pb-2 mb-4">
+                <h3 class="font-black text-lg text-blue-800">📋 器材清單核對</h3>
+                <button onclick="toggleMenuArea()" id="toggleBtn" class="no-print bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs">🔼 縮小選單</button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="border p-4 rounded">
-                    <h4 class="font-bold text-blue-700 mb-3 border-b">服務台：</h4>
-                    <div id="serviceDeskContainer" class="flex flex-wrap"></div>
-                </div>
-                <div class="border p-4 rounded">
-                    <h4 class="font-bold text-red-700 mb-3 border-b">舞台區：</h4>
-                    <div id="stageContainer" class="flex flex-wrap"></div>
-                </div>
+            
+            <div id="menuArea" class="no-print mb-6 p-4 bg-slate-50 rounded border border-dashed">
+                <div class="mb-4"><strong>📍 服務台：</strong><div id="serviceMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
+                <div class="mb-4"><strong>📍 舞台區：</strong><div id="stageMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
+                <button onclick="addCustomEquip()" class="bg-green-100 text-green-700 px-2 py-1 rounded text-[11px] font-bold">+ 自定義項目</button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6">
+                <div><h4 class="font-bold text-blue-700">服務台：</h4><div id="serviceContainer" class="flex flex-wrap items-start min-h-[50px]"></div></div>
+                <div><h4 class="font-bold text-red-700">舞台區：</h4><div id="stageContainer" class="flex flex-wrap items-start min-h-[50px]"></div></div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = { databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const dataRef = ref(db, 'rundown_final_2026');
+        const dataRef = ref(db, 'rundown_v2026_final');
 
         const menuItems = {
-            service: ["長官簽到表一式", "長官勾選表", "瓶水*{手動輸入}", "餐盒*{手動輸入}", "簽到箱*1式", "新聞資料*{手動輸入}", "黃桌巾*{手動輸入}", "紅桌巾*{手動輸入}", "伴手禮*{手動輸入}"],
-            stage: ["音響+電腦1式", "TRUSS*{手動輸入}", "斜撐*{手動輸入}", "鐵板*{手動輸入}", "帆布+豆扣*ALL", "紅桌巾*3", "濕紙巾*3", "衛生紙*2", "手板*5", "給主持人手板*1", "歲末集章卡發放牌+木架*1", "2斜撐+2鐵板+帆布+豆扣*ALL", "紅桌巾*{手動輸入}", "手板*{手動輸入}", "木架*{手動輸入}"]
-        };
-        const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋", "工讀1", "工讀2"];
-        const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "上道具", "攝影", "報到區"];
-
-        // --- 核心：長官簽到切換 ---
-        window.toggleVipMaster = function() {
-            const btn = document.getElementById('vipMasterStatus');
-            const isArrived = btn.classList.contains('vip-not-yet');
-            update(dataRef, { vipArrived: isArrived });
+            service: ["長官簽到表一式", "長官勾選表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱*1式", "新聞資料*{手動}", "黃桌巾*{手動}", "紅桌巾*{手動}", "伴手禮*{手動}"],
+            stage: ["音響+電腦1式", "TRUSS*{手動}", "斜撐*{手動}", "鐵板*{手動}", "帆布+豆扣*All", "紅桌巾*{手動}", "濕紙巾*{手動}", "衛生紙*{手動}", "手板*{手動}", "木架*{手動}"]
         };
 
-        function updateVipUI(isArrived) {
-            const btn = document.getElementById('vipMasterStatus');
-            if(isArrived) {
-                btn.innerText = "🚨 長官已抵達現場";
-                btn.className = "vip-status-btn vip-arrived";
-            } else {
-                btn.innerText = "長官尚未抵達";
-                btn.className = "vip-status-btn vip-not-yet";
-            }
-        }
-
-        // --- 初始化選單與 UI ---
         window.onload = () => {
-            initMenu('serviceMenu', menuItems.service, 'serviceDeskContainer');
+            initMenu('serviceMenu', menuItems.service, 'serviceContainer');
             initMenu('stageMenu', menuItems.stage, 'stageContainer');
         };
 
@@ -134,129 +119,126 @@
             });
         }
 
-        window.updateLinkDisplay = () => {
-            const url = document.getElementById('quickLink').value;
-            document.getElementById('linkJump').href = url || "#";
+        window.toggleMenuArea = () => {
+            const area = document.getElementById('menuArea');
+            const btn = document.getElementById('toggleBtn');
+            if (area.style.display === "none") {
+                area.style.display = "block"; btn.innerText = "🔼 縮小選單";
+            } else {
+                area.style.display = "none"; btn.innerText = "🔽 展開選單";
+            }
         };
 
-        window.syncPersonnel = function() {
-            const targetJob = document.getElementById('customJob').value;
-            const targetStaff = document.getElementById('customStaff').value;
-            const host = document.getElementById('headerHost').value;
+        window.syncStaff = () => {
+            const mappings = {};
+            for(let i=1; i<=7; i++) {
+                const job = document.getElementById(`j${i}`).value;
+                const staff = document.getElementById(`s${i}`).value;
+                if(job) mappings[job] = staff;
+            }
             document.querySelectorAll("#rundownBody tr").forEach(row => {
-                const jobSel = row.querySelector(".job-s"), staffSel = row.querySelector(".staff-s");
-                if(jobSel.value === "主持人") { ensureOption(staffSel, host); staffSel.value = host; }
-                else if(targetJob && jobSel.value === targetJob) { ensureOption(staffSel, targetStaff); staffSel.value = targetStaff; }
+                const jVal = row.querySelector(".job-input").value;
+                if(mappings[jVal]) row.querySelector(".staff-input").value = mappings[jVal];
             });
         };
 
-        window.addEquipment = function(containerId, template, savedQty = "") {
+        window.addEquipment = (containerId, template, savedQty = "") => {
             const container = document.getElementById(containerId);
             const tag = document.createElement('div'); tag.className = 'equipment-tag';
-            let name = template.split('*')[0], isManual = template.includes('{手動輸入}'), fixedQty = template.includes('*') && !isManual ? template.split('*')[1] : "";
-            tag.innerHTML = `<input type="checkbox" class="no-print"> <span class="font-bold">${name}</span>
-                ${isManual ? `*<input type="text" class="num-input" value="${savedQty}">` : (fixedQty ? `*${fixedQty}` : '')}
-                <span class="no-print text-red-400 cursor-pointer ml-1" onclick="this.parentElement.remove()">✕</span>`;
+            const name = template.split('*')[0];
+            const isManual = template.includes('{手動}');
+            const fixedQty = template.includes('*') && !isManual ? template.split('*')[1] : "";
+            tag.innerHTML = `
+                <input type="checkbox" class="no-print mr-1">
+                <span class="font-bold">${name}</span>
+                ${isManual ? `*<input type="text" class="num-input no-print" value="${savedQty}" placeholder="數量">` : (fixedQty ? `*${fixedQty}` : '')}
+                ${isManual && savedQty ? `<span class="hidden print:inline">*${savedQty}</span>` : ''}
+                <span class="no-print text-red-400 cursor-pointer ml-2" onclick="this.parentElement.remove()">✕</span>`;
             container.appendChild(tag);
         };
 
-        // --- Firebase 同步 ---
+        window.addCustomEquip = () => {
+            const name = prompt("請輸入項目名稱：");
+            if(name) addEquipment('serviceContainer', name + '*{手動}');
+        };
+
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 document.getElementById('eventTitle').value = data.title || "";
                 document.getElementById('eventDate').value = data.date || "";
-                document.getElementById('quickLink').value = data.quickLink || "";
-                updateLinkDisplay();
-                ensureOption(document.getElementById('headerHost'), data.host);
-                document.getElementById('headerHost').value = data.host || "Yin";
-                document.getElementById('customJob').value = data.customJob || "";
-                document.getElementById('customStaff').value = data.customStaff || "";
-                updateVipUI(data.vipArrived);
-                
+                document.getElementById('headerHost').value = data.host || "";
+                for(let i=1; i<=7; i++) {
+                    document.getElementById(`j${i}`).value = data.mappings?.[i]?.j || "";
+                    document.getElementById(`s${i}`).value = data.mappings?.[i]?.s || "";
+                }
                 const tbody = document.getElementById("rundownBody"); tbody.innerHTML = "";
                 (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
-                document.getElementById('serviceDeskContainer').innerHTML = "";
-                (data.serviceEquip || []).forEach(e => addEquipment('serviceDeskContainer', e.t, e.q));
+                document.getElementById('serviceContainer').innerHTML = "";
+                (data.serviceEquip || []).forEach(e => addEquipment('serviceContainer', e.t, e.q));
                 document.getElementById('stageContainer').innerHTML = "";
                 (data.stageEquip || []).forEach(e => addEquipment('stageContainer', e.t, e.q));
                 calculateAllTimes(); updateDayOfWeek();
             } else { initDefault(); }
         });
 
-        window.saveToFirebase = function() {
+        window.saveToFirebase = () => {
             const data = {
                 title: document.getElementById('eventTitle').value,
                 date: document.getElementById('eventDate').value,
                 host: document.getElementById('headerHost').value,
-                quickLink: document.getElementById('quickLink').value,
-                customJob: document.getElementById('customJob').value,
-                customStaff: document.getElementById('customStaff').value,
-                vipArrived: document.getElementById('vipMasterStatus').classList.contains('vip-arrived'),
+                mappings: {},
                 rundown: [],
-                serviceEquip: Array.from(document.querySelectorAll('#serviceDeskContainer .equipment-tag')).map(el => ({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動輸入}" : ""), q: el.querySelector('.num-input')?.value || "" })),
-                stageEquip: Array.from(document.querySelectorAll('#stageContainer .equipment-tag')).map(el => ({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動輸入}" : ""), q: el.querySelector('.num-input')?.value || "" }))
+                serviceEquip: Array.from(document.querySelectorAll('#serviceContainer .equipment-tag')).map(el => ({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" })),
+                stageEquip: Array.from(document.querySelectorAll('#stageContainer .equipment-tag')).map(el => ({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }))
             };
+            for(let i=1; i<=7; i++) { data.mappings[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value }; }
             document.querySelectorAll("#rundownBody tr").forEach(row => {
                 data.rundown.push({
                     startTime: row.querySelector(".start-time")?.value || "",
                     duration: row.querySelector(".duration").value,
                     unit: row.querySelector(".unit-cell").innerText,
                     desc: row.querySelector(".desc-cell").innerText,
-                    jobs: [row.querySelector(".job-s").value], staffs: [row.querySelector(".staff-s").value]
+                    job: row.querySelector(".job-input").value,
+                    staff: row.querySelector(".staff-input").value
                 });
             });
-            set(dataRef, data).then(() => alert("✅ 雲端同步完成"));
+            set(dataRef, data).then(() => alert("✅ 存檔成功"));
         };
 
-        window.addRow = function(isFirst = false, saved = null) {
+        window.addRow = (isFirst = false, saved = null) => {
             const tbody = document.getElementById("rundownBody");
             const tr = document.createElement("tr");
-            const jVal = saved?.jobs?.[0] || "", sVal = saved?.staffs?.[0] || "";
             tr.innerHTML = `
-                <td>${isFirst ? `<input type="time" class="start-time w-full text-center font-bold" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="time-display flex justify-center"></span>'}</td>
-                <td><input type="number" class="duration w-full text-center" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
-                <td contenteditable="true" class="unit-cell font-bold text-blue-900">${saved?.unit||''}</td>
-                <td contenteditable="true" class="desc-cell text-gray-600">${saved?.desc||''}</td>
-                <td><select class="job-s w-full no-print" onchange="handleManualOption(this); syncPersonnel();"><option value="">-</option>${jobs.map(j => `<option value="${j}" ${jVal===j?'selected':''}>${j}</option>`).join('')}<option value="manual">手動...</option></select></td>
-                <td><select class="staff-s w-full no-print" onchange="handleManualOption(this)"><option value="">-</option>${staffs.map(s => `<option value="${s}" ${sVal===s?'selected':''}>${s}</option>`).join('')}<option value="manual">手動...</option></select></td>
-                <td class="no-print"><span class="cursor-pointer text-gray-300 hover:text-red-500" onclick="this.closest('tr').remove();calculateAllTimes();">✕</span></td>
+                <td class="text-center font-bold">${isFirst ? `<div class="flex flex-col gap-1"><input type="time" class="start-time text-center w-full" value="${saved?.startTime||'08:00'}" oninput="calculateAllTimes()"><span> - 09:00</span></div>` : '<span class="time-display"></span>'}</td>
+                <td><input type="number" class="duration text-center w-full" value="${saved?.duration||60}" oninput="calculateAllTimes()"></td>
+                <td contenteditable="true" class="unit-cell font-bold text-blue-900">${saved?.unit||'單元'}</td>
+                <td contenteditable="true" class="desc-cell text-gray-600 text-[11px]">${saved?.desc||'備註說明'}</td>
+                <td><input type="text" class="job-input w-full no-print" value="${saved?.job||''}" oninput="syncStaff()"></td>
+                <td><input type="text" class="staff-input w-full no-print" value="${saved?.staff||''}"></td>
+                <td class="no-print"><span class="cursor-pointer text-gray-300" onclick="this.closest('tr').remove();calculateAllTimes();">✕</span></td>
             `;
             tbody.appendChild(tr);
-            if(jVal && !jobs.includes(jVal)) ensureOption(tr.querySelector(".job-s"), jVal);
-            if(sVal && !staffs.includes(sVal)) ensureOption(tr.querySelector(".staff-s"), sVal);
             calculateAllTimes();
         };
 
-        window.handleManualOption = function(sel) {
-            if (sel.value === "manual") {
-                const val = prompt("請輸入自定義內容：");
-                if (val) { ensureOption(sel, val); sel.value = val; } else { sel.value = ""; }
-            }
-        };
-
-        function ensureOption(sel, val) {
-            if (!val) return;
-            const exists = Array.from(sel.options).some(opt => opt.value === val);
-            if (!exists) { const newOpt = new Option(val, val); sel.add(newOpt, sel.options.length - 1); }
-        }
-
-        window.calculateAllTimes = function() {
-            const rows = document.querySelectorAll("#rundownBody tr"); let next = "";
+        window.calculateAllTimes = () => {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            let nextStart = "";
             rows.forEach((row, i) => {
                 const dur = parseInt(row.querySelector(".duration").value) || 0;
-                let start = (i === 0) ? row.querySelector(".start-time").value : next;
+                let start = (i === 0) ? row.querySelector(".start-time").value : nextStart;
                 if (start) {
                     let [h, m] = start.split(":").map(Number);
                     let em = m + dur; let eh = (h + Math.floor(em/60)) % 24; em %= 60;
                     let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
-                    if (i !== 0) row.querySelector(".time-display").innerText = `${start}-${end}`;
-                    next = end;
+                    if (i !== 0) row.querySelector(".time-display").innerText = `${start} - ${end}`;
+                    nextStart = end;
                 }
             });
         };
 
-        window.updateDayOfWeek = function() {
+        window.updateDayOfWeek = () => {
             const d = new Date(document.getElementById('eventDate').value);
             if(!isNaN(d.getTime())) document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
         };
@@ -266,11 +248,6 @@
             for (let i = 0; i < 5; i++) addRow(i === 0);
             updateDayOfWeek();
         }
-
-        window.exportToPDF = function() {
-            const element = document.getElementById('capture-area');
-            html2pdf().set({ margin: 5, filename: 'Rundown_2026.pdf', jsPDF: { format: 'a3', orientation: 'landscape' } }).from(element).save();
-        };
     </script>
 </body>
 </html>
