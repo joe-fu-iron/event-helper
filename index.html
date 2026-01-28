@@ -3,66 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行大表 - 2026 雲端同步版</title>
+    <title>活動執行大表 - 雲端同步 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 13px; }
-        .rundown-table, .item-table { width: 100%; border-collapse: collapse; border: 2px solid #000; background: white; }
-        .rundown-table th, .rundown-table td { border: 1px solid #000; padding: 8px; vertical-align: top; position: relative; }
-        .col-unit, .col-desc { width: 150px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; font-size: 13px; }
+        .rundown-table, .item-table { width: 100%; border-collapse: collapse; border: 2px solid black; background: white; }
+        .rundown-table th, .rundown-table td, .item-table th, .item-table td { border: 1.2px solid black; padding: 6px; vertical-align: top; position: relative; }
+        .bg-gray-header { background-color: #f3f4f6; }
+        .input-line { border: none; border-bottom: 1px solid black; outline: none; background: transparent; }
         .auto-height-cell { min-height: 40px; white-space: pre-wrap; word-break: break-all; outline: none; }
-        .del-btn { position: absolute; right: -25px; top: 10px; color: #ccc; cursor: pointer; font-weight: bold; }
+        
+        /* 欄寬設定 */
+        .col-time { width: 100px; text-align: center; }
+        .col-len { width: 55px; text-align: center; }
+        .col-unit { width: 150px; } 
+        .col-desc { width: 150px; } 
+        .col-job, .col-staff { width: 75px; }
+        
+        .del-btn { position: absolute; right: -25px; top: 15px; color: #ccc; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; }
         tr:hover .del-btn { color: #ef4444; }
-        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 1000; justify-content: center; align-items: center; font-weight: bold; }
-        @media print { .no-print { display: none !important; } body { padding: 0; } }
+        
+        .checkbox-item { display: flex; align-items: center; padding: 4px 8px; font-size: 12px; gap: 8px; background: white; border: 1px solid transparent; cursor: grab; }
+        .checkbox-item:hover { background: #f1f5f9; border-color: #cbd5e1; border-radius: 4px; }
+        .sortable-ghost { opacity: 0.4; background: #dbeafe; }
+        
+        .time-display { font-family: 'Courier New', monospace; font-weight: bold; color: #1d4ed8; text-align: center; display: block; }
+        .num-input { width: 45px; border: 1px solid #ccc; border-radius: 3px; padding: 1px 2px; text-align: center; }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 1000; justify-content: center; align-items: center; font-weight: bold; }
+
+        @media print { .no-print { display: none !important; } .del-btn { display: none !important; } body { padding: 0; } }
     </style>
 </head>
-<body class="p-4 pr-10">
+<body class="p-2 pr-10">
 
-    <div id="loading" class="loading-overlay">⏳ 雲端同步中...</div>
+    <div id="loading" class="loading-overlay">☁️ 雲端同步中...</div>
 
     <div id="capture-area" class="max-w-[1580px] mx-auto">
-        <div class="bg-white p-4 rounded shadow border mb-4 flex flex-wrap gap-4 font-bold items-center">
-            <div>主題：<input type="text" id="eventTitle" class="border-b border-black outline-none w-48"></div>
-            <div>日期：<input type="date" id="eventDate" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600"></span></div>
+        <div class="bg-white p-4 rounded shadow border mb-3 flex flex-wrap gap-4 font-bold text-sm items-center">
+            <div>主題：<input type="text" id="eventTitle" class="input-line w-48"></div>
+            <div>日期：<input type="date" id="eventDate" class="input-line" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600"></span></div>
             <div class="flex-1 text-right flex justify-end gap-2 no-print">
-                <button onclick="syncToCloud()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 font-bold">☁️ 儲存並發佈至雲端</button>
-                <button onclick="loadFromCloud()" class="bg-gray-500 text-white px-4 py-2 rounded shadow hover:bg-gray-600 font-bold">🔄 手動重新整理</button>
-                <button onclick="exportToPDF()" class="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 font-bold">📄 PDF分享</button>
+                <button onclick="syncToCloud()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs shadow font-bold hover:bg-blue-700">☁️ 更新並同步至雲端</button>
+                <button onclick="loadFromCloud()" class="bg-gray-500 text-white px-4 py-1.5 rounded text-xs shadow font-bold hover:bg-gray-600">🔄 重新讀取雲端</button>
+                <button onclick="exportToPDF()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-xs shadow font-bold">📄 PDF 分享</button>
             </div>
         </div>
 
-        <table id="rundownTable" class="rundown-table mb-6">
-            <thead class="bg-gray-100 text-xs">
-                <tr>
-                    <th width="100">時間</th><th width="60">長度</th><th class="col-unit">單元</th><th class="col-desc">工作說明</th><th>分工人員連動</th>
-                </tr>
-            </thead>
-            <tbody id="rundownBody"></tbody>
-        </table>
-        <button onclick="addRow()" class="no-print bg-green-600 text-white px-4 py-1 rounded mb-10">+ 增加流程</button>
+        <div class="bg-white p-2 shadow-lg border mb-6">
+            <table id="rundownTable" class="rundown-table">
+                <thead>
+                    <tr class="bg-gray-header text-xs">
+                        <th class="col-time">時間</th><th class="col-len">長度</th><th class="col-unit">單元</th><th class="col-desc">工作說明</th><th class="col-job">分工</th><th class="col-staff">人員</th>
+                    </tr>
+                </thead>
+                <tbody id="rundownBody"></tbody>
+            </table>
+            <button onclick="addRow()" class="mt-2 bg-green-600 text-white px-4 py-1 rounded font-bold text-xs no-print shadow hover:bg-green-700">+ 增加一行</button>
+        </div>
+
+        <div class="bg-white p-4 shadow-lg border">
+            <h3 class="font-black text-lg mb-2 border-l-4 border-blue-600 pl-2">器材清單核對 (可拖曳排序)</h3>
+            <table class="item-table text-xs">
+                <thead>
+                    <tr class="bg-gray-800 text-white text-center">
+                        <th class="w-1/2 py-2">服務台相關</th><th class="w-1/2 py-2">舞台相關</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><div id="serviceDeskItems"></div><span class="add-item-btn no-print" onclick="addManualItem('serviceDeskItems')">+ 增加</span></td>
+                        <td><div id="stageItems"></div><span class="add-item-btn no-print" onclick="addManualItem('stageItems')">+ 增加</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
-        const GAS_URL = "你的_GOOGLE_APP_SCRIPT_網址"; // <--- 務必替換這裡
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzaKhZMDEE5gFoN2DQP81wtAsxMXVYBckfp_D8U6kw0n9esJ0bFQDhTr2AF4_CyWRQS/exec";
         const staffs = ["鐵仁", "柏緯", "江哥", "瑩驊", "露比", "芳瑜", "崧瑋"];
         const jobs = ["控場", "音響", "主持人", "遞mic", "上手板", "攝影"];
-        let jobMapping = {};
+        let jobMapping = {}; 
 
         window.onload = () => {
-            loadFromCloud(); // 開啟網頁自動從雲端捉取最新資料
+            loadFromCloud();
         };
 
+        // --- 核心：雲端儲存 ---
         async function syncToCloud() {
             showLoading(true);
             calculateAllTimes();
             const data = {
                 title: document.getElementById('eventTitle').value,
                 date: document.getElementById('eventDate').value,
-                rundown: []
+                jobMapping: jobMapping,
+                rundown: [],
+                serviceItems: getListItems('serviceDeskItems'),
+                stageItems: getListItems('stageItems')
             };
+
             document.querySelectorAll("#rundownBody tr").forEach(row => {
                 data.rundown.push({
                     startTime: row.querySelector(".start-time")?.value || "",
@@ -75,63 +116,77 @@
             });
 
             try {
-                await fetch(GAS_URL, {
-                    method: "POST",
-                    body: JSON.stringify(data)
-                });
-                alert("✅ 雲端同步成功！另一支手機重新整理即可看到更新。");
-            } catch (e) {
-                alert("❌ 同步失敗，請檢查網路或 GAS 部署設定。");
-            }
+                await fetch(GAS_URL, { method: "POST", body: JSON.stringify(data) });
+                alert("✅ 雲端同步完成！手機端重新整理即可看到最新資料。");
+            } catch (e) { alert("❌ 同步失敗，請確認 GAS 權限。"); }
             showLoading(false);
         }
 
+        // --- 核心：雲端載入 ---
         async function loadFromCloud() {
             showLoading(true);
             try {
                 const response = await fetch(GAS_URL);
                 const data = await response.json();
                 if (data.rundown) {
-                    document.getElementById('eventTitle').value = data.title;
-                    document.getElementById('eventDate').value = data.date;
+                    document.getElementById('eventTitle').value = data.title || "";
+                    document.getElementById('eventDate').value = data.date || "";
+                    jobMapping = data.jobMapping || {};
                     const tbody = document.getElementById("rundownBody");
                     tbody.innerHTML = "";
                     data.rundown.forEach((item, idx) => addRow(idx === 0, item));
+                    renderChecklistFromData('serviceDeskItems', data.serviceItems);
+                    renderChecklistFromData('stageItems', data.stageItems);
                     updateDayOfWeek();
                     calculateAllTimes();
+                    initSortable();
                 }
-            } catch (e) {
-                console.log("尚無雲端資料或讀取錯誤");
-                // 初始空表格
-                if(document.getElementById("rundownBody").innerHTML === "") addRow(true);
+            } catch (e) { 
+                console.log("初始化空表");
+                if(document.getElementById("rundownBody").innerHTML === "") {
+                    addRow(true); renderDefaultChecklists(); initSortable();
+                }
             }
             showLoading(false);
+        }
+
+        // --- 核心：智慧連動 ---
+        function handleJobChange(select, index) {
+            const row = select.closest("tr");
+            const staffSelect = row.querySelectorAll(".staff-s")[index];
+            const job = select.value;
+            if (job && jobMapping[job]) {
+                ensureOption(staffSelect, jobMapping[job]);
+                staffSelect.value = jobMapping[job];
+            }
+            initSelectVisibility(row);
+        }
+
+        function handleStaffChange(select, index) {
+            const row = select.closest("tr");
+            const job = row.querySelectorAll(".job-s")[index].value;
+            if (job && select.value) jobMapping[job] = select.value;
         }
 
         function addRow(isFirst = false, saved = null) {
             const tbody = document.getElementById("rundownBody");
             const tr = document.createElement("tr");
             let selects = "";
-            for(let i=0; i<3; i++) { // 簡化為3組以利手機閱讀
-                let jV = saved?.jobs[i] || "";
-                let sV = saved?.staffs[i] || "";
-                selects += `
-                <div class="flex gap-1 mb-1">
-                    <select class="job-s flex-1" onchange="handleJobChange(this, ${i})"><option value="">-</option>${jobs.map(j=>`<option value="${j}" ${j===jV?'selected':''}>${j}</option>`).join('')}</select>
-                    <select class="staff-s flex-1" onchange="handleStaffChange(this, ${i})"><option value="">-</option>${staffs.map(s=>`<option value="${s}" ${s===sV?'selected':''}>${s}</option>`).join('')}</select>
-                </div>`;
+            for(let i=0; i<3; i++) { // 手機版建議 3 組較清晰
+                let jV = saved?.jobs[i] || ""; let sV = saved?.staffs[i] || "";
+                selects += `<div class="flex gap-1 mb-1"><select class="job-s flex-1" onchange="handleJobChange(this, ${i})"><option value="">-</option>${jobs.map(j=>`<option value="${j}" ${j===jV?'selected':''}>${j}</option>`).join('')}</select>
+                            <select class="staff-s flex-1" onchange="handleStaffChange(this, ${i})"><option value="">-</option>${staffs.map(s=>`<option value="${s}" ${s===sV?'selected':''}>${s}</option>`).join('')}</select></div>`;
             }
-            tr.innerHTML = `
-                <td>${isFirst ? `<input type="time" class="start-time w-full font-bold" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="time-display"></span>'}</td>
-                <td><input type="number" class="duration w-full text-center font-bold" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
-                <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-800">${saved?.unit||'單元'}</div></td>
+            tr.innerHTML = `<td class="col-time">${isFirst ? `<input type="time" class="start-time w-full font-bold" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="time-display"></span>'}</td>
+                <td class="col-len"><input type="number" class="duration w-full text-center font-bold" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
+                <td class="col-unit"><div contenteditable="true" class="auto-height-cell font-bold text-blue-900">${saved?.unit||'單元'}</div></td>
                 <td class="col-desc"><div contenteditable="true" class="auto-height-cell text-gray-600">${saved?.desc||'工作說明'}</div></td>
-                <td>${selects}</td>
-                <span class="del-btn no-print" onclick="this.closest('tr').remove();calculateAllTimes();">✕</span>`;
+                <td colspan="2" class="p-1">${selects}</td><span class="del-btn no-print" onclick="this.closest('tr').remove();calculateAllTimes();">✕</span>`;
             tbody.appendChild(tr);
+            initSelectVisibility(tr);
         }
 
-        // ... 其餘邏輯：智慧連動、時間計算、PDF匯出與先前一致 ...
+        // --- 輔助功能 ---
         function calculateAllTimes() {
             const rows = document.querySelectorAll("#rundownBody tr");
             let next = "";
@@ -140,15 +195,28 @@
                 let start = (i === 0) ? row.querySelector(".start-time").value : next;
                 if (start) {
                     let [h, m] = start.split(":").map(Number);
-                    let em = m + dur; let eh = (h + Math.floor(em/60))%24; em %= 60;
+                    let em = m + dur; let eh = (h + Math.floor(em/60)) % 24; em %= 60;
                     let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
                     if (i !== 0) row.querySelector(".time-display").innerText = `${start}-${end}`;
                     next = end;
                 }
             });
         }
-        function showLoading(show) { document.getElementById('loading').style.display = show ? 'flex' : 'none'; }
+        function getListItems(id) { return Array.from(document.getElementById(id).querySelectorAll(".checkbox-item")).map(el => ({ n: el.querySelector("span[contenteditable]").innerText, checked: el.querySelector("input").checked, q: el.querySelector(".num-input")?.value || "" })); }
+        function renderChecklistFromData(id, items) {
+            document.getElementById(id).innerHTML = items.map(item => `<div class="checkbox-item"><span class="text-gray-300">☰</span><input type="checkbox" ${item.checked?'checked':''}> <span contenteditable="true" class="flex-1">${item.n}</span><input type="number" class="num-input" value="${item.q}"></div>`).join('');
+        }
+        function renderDefaultChecklists() {
+            renderChecklistFromData('serviceDeskItems', [{n:"簽到表", q:0}, {n:"餐盒", q:1}]);
+            renderChecklistFromData('stageItems', [{n:"音響", q:0}, {n:"燈光", q:1}]);
+        }
+        function initSortable() { Sortable.create(document.getElementById('serviceDeskItems'), { animation: 150 }); Sortable.create(document.getElementById('stageItems'), { animation: 150 }); }
+        function showLoading(s) { document.getElementById('loading').style.display = s ? 'flex' : 'none'; }
         function updateDayOfWeek() { const d = new Date(document.getElementById('eventDate').value); if(!isNaN(d.getTime())) document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`; }
+        function ensureOption(s, v) { if(![...s.options].some(o => o.value === v)) s.add(new Option(v, v), 0); }
+        function initSelectVisibility(r) { const sels = r.querySelectorAll('.job-s'); sels.forEach((s, i) => { if (i > 0) s.parentElement.style.display = (sels[i-1].value !== "") ? 'flex' : 'none'; }); }
+        function exportToPDF() { html2pdf().set({ margin: 5, filename: 'Rundown.pdf', jsPDF: { format: 'a3', orientation: 'landscape' } }).from(document.getElementById('capture-area')).save(); }
+        function addManualItem(id) { const div = document.createElement('div'); div.className='checkbox-item'; div.innerHTML='<span class="text-gray-300">☰</span><input type="checkbox"> <span contenteditable="true" class="flex-1">新項目</span><input type="number" class="num-input" placeholder="0">'; document.getElementById(id).appendChild(div); }
     </script>
 </body>
 </html>
