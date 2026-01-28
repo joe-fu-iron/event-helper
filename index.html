@@ -2,7 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>活動執行小幫手 - 專業執行版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活動執行小幫手 - 專業版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f1f5f9; }
@@ -10,111 +11,77 @@
         table { border-collapse: collapse; width: 100%; border: 2px solid black; }
         th, td { border: 1.5px solid black; padding: 10px; }
         .bg-gray-header { background-color: #e5e7eb; }
+        .tab-btn { flex: 1; py: 1rem; text-align: center; cursor: pointer; transition: 0.3s; border-bottom: 2px solid #cbd5e1; }
         .tab-active { border-bottom: 4px solid #1d4ed8; color: #1d4ed8; font-weight: bold; background: white; }
-        .vip-card { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 6px solid #cbd5e1; }
-        .vip-card.arrived { border-left-color: #22c55e; }
-        .vip-card.introduced { background-color: #f0fdf4; opacity: 0.8; }
+        /* 控制 iframe 容器，讓它不要滿滿一整頁 */
+        .iframe-container {
+            display: flex;
+            justify-content: center; /* 居中 */
+            background-color: #f1f5f9;
+            padding: 20px 0;
+        }
+        iframe {
+            width: 450px; /* 固定寬度，模仿手機版/側邊欄版面 */
+            height: 750px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            background: white;
+        }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 md:p-8">
 
     <div class="max-w-[1200px] mx-auto">
         <div class="flex bg-gray-200 rounded-t-xl overflow-hidden mb-1">
-            <div id="t1" onclick="showTab(1)" class="flex-1 py-4 text-center cursor-pointer tab-active">📄 1. 流程大表</div>
-            <div id="t2" onclick="showTab(2)" class="flex-1 py-4 text-center cursor-pointer">🎙️ 2. 長官簽到 (API)</div>
+            <div id="t1" onclick="showTab(1)" class="tab-btn tab-active">📄 1. 流程大表</div>
+            <div id="t2" onclick="showTab(2)" class="tab-btn">🎙️ 2. 長官即時簽到</div>
         </div>
 
         <div class="bg-white p-6 shadow-xl border border-gray-200 rounded-b-xl min-h-[85vh]">
             
             <div id="tab1">
-                <div class="mb-6 font-bold">主題：<input type="text" class="input-underline w-64"></div>
+                <div class="mb-6 font-bold text-lg flex gap-4">
+                    <span>主題：<input type="text" class="input-underline w-64"></span>
+                    <span>主持人：<input type="text" class="input-underline w-32"></span>
+                </div>
                 <table>
-                    <tr class="bg-gray-header"><th>時間</th><th>單元</th><th>分工</th><th>工作內容</th></tr>
-                    <tr><td class="text-center">09:40</td><td class="font-bold">長官簽到</td><td><select><option>場控</option></select></td><td></td></tr>
+                    <thead>
+                        <tr class="bg-gray-header">
+                            <th class="w-24">時間</th><th class="w-20">長度</th><th>單元</th><th>分工</th><th>工作內容</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td contenteditable="true" class="text-center font-mono">09:40</td>
+                            <td contenteditable="true" class="text-center">20min</td>
+                            <td contenteditable="true" class="font-bold text-blue-800">長官到場簽到</td>
+                            <td><select class="w-full border-none"><option>場控</option><option>執行1</option></select></td>
+                            <td contenteditable="true"></td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
 
             <div id="tab2" class="hidden">
-                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-                    <div class="flex items-center gap-2">
-                        <span class="font-bold">切換單位：</span>
-                        <select id="unitSelect" onchange="changeUnit()" class="border p-2 rounded">
-                            <option value="頭份市公所">頭份市公所</option>
-                            <option value="苗栗縣政府">苗栗縣政府</option>
-                        </select>
-                    </div>
-                    <button onclick="loadVips()" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow">🔄 刷新狀態</button>
+                <div class="text-center mb-4">
+                    <p class="text-sm text-gray-500">正在顯示原本的 GAS 簽到系統介面</p>
                 </div>
-                
-                <div id="vipList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    </div>
+                <div class="iframe-container">
+                    <iframe src="https://script.google.com/macros/s/AKfycbyKe0EVXuPva48B_ocPMpJBRjG-kLbyhDf4eeofN5Mnq060Mb60OucBXtLRqxK2ON6w9Q/exec"></iframe>
+                </div>
             </div>
+
         </div>
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbywZhLohhe44f30HS5MADBgQEMpiuZOemHGsbQsPkM0n7a6cF0RbnN3bn4-WNaNGtmqyw/exec";
-
         function showTab(n) {
-            document.getElementById('tab1').classList.toggle('hidden', n!==1);
-            document.getElementById('tab2').classList.toggle('hidden', n!==2);
-            document.getElementById('t1').classList.toggle('tab-active', n===1);
-            document.getElementById('t2').classList.toggle('tab-active', n===2);
-            if(n===2) loadVips();
-        }
-
-        async function loadVips() {
-            const unit = document.getElementById('unitSelect').value;
-            const container = document.getElementById('vipList');
-            container.innerHTML = '<div class="col-span-full text-center">連線中...</div>';
-            
-            try {
-                const res = await fetch(`${GAS_URL}?action=getData&unit=${encodeURIComponent(unit)}`);
-                const vips = await res.json();
-                renderVips(vips);
-            } catch (e) {
-                container.innerHTML = '<div class="col-span-full text-red-500 text-center">連線失敗，請檢查 GAS 部署權限。</div>';
-            }
-        }
-
-        function renderVips(vips) {
-            const container = document.getElementById('vipList');
-            container.innerHTML = vips.map(vip => `
-                <div class="vip-card ${vip.status ? 'arrived' : ''} ${vip.isIntroduced ? 'introduced' : ''}">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <div class="text-sm font-bold text-slate-800">${vip.title || '貴賓'}</div>
-                            <div class="text-xl font-black">${vip.name}</div>
-                        </div>
-                        <div class="text-xs font-mono bg-gray-100 px-2 rounded">順序:${vip.order || '-'}</div>
-                    </div>
-                    <div class="flex gap-2 mt-4">
-                        <button onclick="update('${vip.rowIdx}', 'status', ${!vip.status})" 
-                                class="flex-1 py-1 rounded text-sm font-bold ${vip.status ? 'bg-green-600 text-white' : 'bg-slate-200'}">
-                            ${vip.status ? '已簽到' : '簽到'}
-                        </button>
-                        <button onclick="update('${vip.rowIdx}', 'introduced', ${!vip.isIntroduced})" 
-                                class="flex-1 py-1 rounded text-sm font-bold ${vip.isIntroduced ? 'bg-blue-600 text-white' : 'bg-slate-200'}">
-                            ${vip.isIntroduced ? '已介紹' : '介紹'}
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        async function update(rowIdx, type, val) {
-            const unit = document.getElementById('unitSelect').value;
-            // 使用 no-cors 模式發送指令以避免 CORS 報錯
-            fetch(`${GAS_URL}?action=update&unit=${encodeURIComponent(unit)}&rowIdx=${rowIdx}&type=${type}&val=${val}`, {mode: 'no-cors'});
-            
-            // 為了流暢度，我們先在畫面上假更新，不用等伺服器回傳
-            setTimeout(loadVips, 500);
-        }
-
-        function changeUnit() {
-            const unit = document.getElementById('unitSelect').value;
-            fetch(`${GAS_URL}?action=update&type=unit&val=${encodeURIComponent(unit)}`, {mode: 'no-cors'});
-            loadVips();
+            document.getElementById('tab1').classList.toggle('hidden', n !== 1);
+            document.getElementById('tab2').classList.toggle('hidden', n !== 2);
+            document.getElementById('t1').className = n === 1 ? 'tab-btn tab-active' : 'tab-btn';
+            document.getElementById('t2').className = n === 2 ? 'tab-btn tab-active' : 'tab-btn';
         }
     </script>
 </body>
