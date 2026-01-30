@@ -115,4 +115,189 @@
 
         const menuItems = {
             service: ["長官簽到表一式", "長官勾選表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱*1式", "新聞資料*{手動}", "黃桌巾*{手動}", "紅桌巾*{手動}", "伴手禮*{手動}"],
-            stage: ["音響+電腦1式", "TRUSS*{手動}", "斜撐*{手動}", "鐵板*{手動}", "帆布+豆扣*All", "紅桌巾*{手動}", "濕紙巾*{手動}", "衛生紙*{手動}", "手板*{
+            stage: ["音響+電腦1式", "TRUSS*{手動}", "斜撐*{手動}", "鐵板*{手動}", "帆布+豆扣*All", "紅桌巾*{手動}", "濕紙巾*{手動}", "衛生紙*{手動}", "手板*{手板}", "木架*{手動}"]
+        };
+
+        window.onload = () => {
+            initMenu('serviceMenu', menuItems.service, 'serviceContainer');
+            initMenu('stageMenu', menuItems.stage, 'stageContainer');
+        };
+
+        function initMenu(menuId, list, containerId) {
+            const menu = document.getElementById(menuId);
+            list.forEach(item => {
+                const btn = document.createElement('span'); btn.className = 'btn-pick';
+                btn.innerText = `+ ${item.split('*')[0]}`;
+                btn.onclick = () => addEquipment(containerId, item);
+                menu.appendChild(btn);
+            });
+        }
+
+        window.toggleMenuArea = () => {
+            const area = document.getElementById('menuArea'), btn = document.getElementById('toggleBtn');
+            const isHidden = area.style.display === "none";
+            area.style.display = isHidden ? "block" : "none";
+            btn.innerText = isHidden ? "🔼 縮小選單" : "🔽 展開選單";
+        };
+
+        window.updateAllSelects = () => {
+            const mappings = {};
+            for(let i=1; i<=7; i++) {
+                const j = document.getElementById(`j${i}`).value;
+                const s = document.getElementById(`s${i}`).value;
+                if(j) mappings[j] = s;
+            }
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                const jSels = row.querySelectorAll(".job-sel"), sDips = row.querySelectorAll(".staff-display");
+                jSels.forEach((sel, idx) => {
+                    const currentVal = sel.value;
+                    sel.innerHTML = `<option value="">-</option>` + Object.keys(mappings).map(k => `<option value="${k}" ${currentVal===k?'selected':''}>${k}</option>`).join('');
+                    sDips[idx].innerText = mappings[sel.value] || "";
+                });
+            });
+        };
+
+        window.addEquipment = (containerId, template, savedQty = "") => {
+            const container = document.getElementById(containerId);
+            const tag = document.createElement('div'); tag.className = 'equipment-tag';
+            const name = template.split('*')[0], isManual = template.includes('{手動}');
+            tag.innerHTML = `
+                <input type="checkbox" class="no-print mr-1">
+                <span class="font-bold">${name}</span>
+                ${isManual ? `*<input type="text" class="num-input" value="${savedQty}">` : ''}
+                <span class="no-print text-red-400 cursor-pointer ml-1" onclick="this.parentElement.remove()">✕</span>`;
+            container.appendChild(tag);
+        };
+
+        window.addCustomEquip = (cid) => {
+            const name = prompt("輸入項目名稱：");
+            if(name) addEquipment(cid, name + '*{手動}');
+        };
+
+        window.deleteRowPrompt = () => {
+            const rowIdx = prompt("請輸入要刪除的行數：");
+            if (rowIdx) {
+                const rows = document.querySelectorAll("#rundownBody tr");
+                const idx = parseInt(rowIdx) - 1;
+                if (idx >= 0 && idx < rows.length) { rows[idx].remove(); calculateAllTimes(); }
+                else { alert("行數無效"); }
+            }
+        };
+
+        onValue(dataRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                document.getElementById('eventTitle').value = data.title || "";
+                document.getElementById('eventDate').value = data.date || "";
+                document.getElementById('eventLocation').value = data.location || "";
+                document.getElementById('headerHost').value = data.host || "";
+                for(let i=1; i<=7; i++){
+                    document.getElementById(`j${i}`).value = data.maps?.[i]?.j || "";
+                    document.getElementById(`s${i}`).value = data.maps?.[i]?.s || "";
+                }
+                const tbody = document.getElementById("rundownBody"); tbody.innerHTML = "";
+                (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
+                document.getElementById('serviceContainer').innerHTML = "";
+                (data.serviceEquip || []).forEach(e => addEquipment('serviceContainer', e.t, e.q));
+                document.getElementById('stageContainer').innerHTML = "";
+                (data.stageEquip || []).forEach(e => addEquipment('stageContainer', e.t, e.q));
+                calculateAllTimes(); updateDayOfWeek(); updateAllSelects();
+            } else { initDefault(); }
+        });
+
+        window.saveToFirebase = () => {
+            const data = {
+                title: document.getElementById('eventTitle').value,
+                date: document.getElementById('eventDate').value,
+                location: document.getElementById('eventLocation').value,
+                host: document.getElementById('headerHost').value,
+                maps: {}, rundown: [], serviceEquip: [], stageEquip: []
+            };
+            for(let i=1; i<=7; i++) data.maps[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                data.rundown.push({
+                    startTime: row.querySelector(".start-time")?.value || "",
+                    duration: row.querySelector(".duration").value,
+                    unit: row.querySelector(".unit-cell").innerText,
+                    desc: row.querySelector(".desc-cell").innerText,
+                    jobs: Array.from(row.querySelectorAll(".job-sel")).map(s => s.value)
+                });
+            });
+            document.querySelectorAll('#serviceContainer .equipment-tag').forEach(el => data.serviceEquip.push({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }));
+            document.querySelectorAll('#stageContainer .equipment-tag').forEach(el => data.stageEquip.push({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }));
+            set(dataRef, data).then(() => alert("✅ 全局儲存成功"));
+        };
+
+        window.addRow = (isFirst = false, saved = null) => {
+            const tbody = document.getElementById("rundownBody");
+            const tr = document.createElement("tr");
+            let jobHTML = "", staffHTML = "";
+            for(let i=0; i<5; i++){
+                jobHTML += `<select class="job-sel no-print" onchange="updateAllSelects()"><option value="">-</option></select><div class="print:block hidden text-[8px] border-b leading-tight h-3">${saved?.jobs?.[i] || ''}</div>`;
+                staffHTML += `<div class="staff-display h-3 border-b mb-1 text-[9px] flex items-center justify-center"></div>`;
+            }
+            tr.innerHTML = `
+                <td class="col-time text-center">
+                    <div class="time-box">
+                        ${isFirst ? 
+                            `<input type="time" class="start-time text-center w-full" value="${saved?.startTime||'08:00'}" oninput="calculateAllTimes()">` : 
+                            `<span class="start-display"></span>`
+                        }
+                        <span class="end-display border-t w-full mt-1"></span>
+                    </div>
+                </td>
+                <td class="col-dur"><input type="number" class="duration text-center w-full" value="${saved?.duration||60}" oninput="calculateAllTimes()"></td>
+                <td contenteditable="true" class="col-unit unit-cell font-bold text-blue-900">${saved?.unit||''}</td>
+                <td contenteditable="true" class="col-desc desc-cell text-gray-600 text-[10px]">${saved?.desc||''}</td>
+                <td class="col-job">${jobHTML}</td><td class="col-staff">${staffHTML}</td>
+            `;
+            tbody.appendChild(tr);
+            updateAllSelects();
+            calculateAllTimes();
+        };
+
+        window.calculateAllTimes = () => {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            let runningStart = "";
+            
+            rows.forEach((row, i) => {
+                const durInput = row.querySelector(".duration");
+                const dur = parseInt(durInput.value) || 0;
+                
+                // 第一行抓取輸入框的時間，之後的行抓取上一行的結束時間
+                let start = (i === 0) ? row.querySelector(".start-time").value : runningStart;
+                
+                if (start) {
+                    let [h, m] = start.split(":").map(Number);
+                    let em = m + dur; 
+                    let eh = (h + Math.floor(em/60)) % 24; 
+                    em %= 60;
+                    let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+                    
+                    // 顯示當前的結束時間
+                    row.querySelector(".end-display").innerText = end;
+                    
+                    // 如果不是第一行，顯示當前的起始時間
+                    if (i !== 0) {
+                        row.querySelector(".start-display").innerText = start;
+                    }
+                    
+                    // 將當前結束時間傳給下一行作為起始時間
+                    runningStart = end;
+                }
+            });
+        };
+
+        window.updateDayOfWeek = () => {
+            const d = new Date(document.getElementById('eventDate').value);
+            if(!isNaN(d.getTime())) document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+        };
+
+        function initDefault() {
+            document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
+            for (let i = 0; i < 5; i++) addRow(i === 0);
+            updateDayOfWeek();
+        }
+    </script>
+</body>
+</html>
