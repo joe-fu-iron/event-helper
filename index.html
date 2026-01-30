@@ -11,17 +11,16 @@
         .rundown-table th, .rundown-table td { border: 1.2px solid black; padding: 6px; vertical-align: middle; }
         .input-line { border: none; border-bottom: 1px solid #94a3b8; outline: none; background: transparent; font-size: 16px; }
         
+        /* 欄位寬度更新 */
         .col-time { width: 100px; }
-        .col-dur { width: 55px; }
-        .col-unit { width: 200px; }
-        .col-desc { width: auto; } 
-        .col-job { width: 110px; }  
-        .col-staff { width: 85px; }
+        .col-dur { width: 60px; }
+        .col-unit { width: 250px; } /* 固定 250px */
+        .col-desc { width: auto; }   /* 彈性剩餘空間 */
+        .col-job { width: 180px; }   /* 因合併人員，加寬分工欄 */
 
         .time-box { display: flex; flex-direction: column; align-items: center; font-weight: bold; line-height: 1.2; }
         .start-time-input { width: 100%; text-align: center; background: #fffbeb; border: 1px inset #ccc; font-size: 16px; font-weight: bold; }
 
-        /* 手動輸入框樣式 */
         .custom-job-input { font-size: 14px; border-bottom: 1px solid orange; width: 80px; margin-left: 4px; display: none; }
         select:has(option[value="manual"]:checked) + .custom-job-input { display: inline-block; }
 
@@ -33,6 +32,7 @@
             .rundown-table th, .rundown-table td { font-size: 14pt; padding: 4px; }
             .start-time-input { border: none; background: transparent; font-size: 14pt; }
             .row-start-display, .row-end-display { font-size: 14pt; }
+            .col-unit { width: 200px; } /* 列印時稍微壓縮單元欄，留給說明欄空間 */
         }
     </style>
 </head>
@@ -83,7 +83,11 @@
         <table id="rundownTable" class="rundown-table mb-4">
             <thead class="bg-gray-100 text-sm text-center">
                 <tr>
-                    <th class="col-time">時間</th><th class="col-dur">長度</th><th class="col-unit">單元</th><th class="col-desc">說明</th><th class="col-job">分工</th><th class="col-staff">人員</th>
+                    <th class="col-time">時間</th>
+                    <th class="col-dur">長度</th>
+                    <th class="col-unit">單元</th>
+                    <th class="col-desc">說明</th>
+                    <th class="col-job">分工與人員</th>
                 </tr>
             </thead>
             <tbody id="rundownBody"></tbody>
@@ -103,30 +107,26 @@
         const db = getDatabase(app);
         const dataRef = ref(db, 'rundown_v2026_detail_sync');
 
-        // 同步職稱邏輯
         window.updateAllSelects = () => {
-            const mappings = {};
+            const list = [];
             for(let i=1; i<=8; i++) {
                 const sel = document.getElementById(`j${i}`);
                 let jobName = sel.value;
-                if(jobName === "manual") jobName = document.getElementById(`cj${i}`).value || "未命名";
+                if(jobName === "manual") jobName = document.getElementById(`cj${i}`).value || "自定義";
                 const staffName = document.getElementById(`s${i}`).value;
-                
                 if(jobName !== "-") {
-                    const key = staffName ? `${jobName}(${staffName})` : jobName;
-                    mappings[key] = staffName;
+                    list.push(staffName ? `${jobName}(${staffName})` : jobName);
                 }
             }
             document.querySelectorAll("#rundownBody tr").forEach(row => {
-                const jSels = row.querySelectorAll(".job-sel"), sDips = row.querySelectorAll(".staff-display");
-                jSels.forEach((sel, idx) => {
+                const jSels = row.querySelectorAll(".job-sel");
+                jSels.forEach(sel => {
                     const currentVal = sel.value;
                     let options = `<option value="">-</option>`;
-                    Object.keys(mappings).forEach(k => {
+                    list.forEach(k => {
                         options += `<option value="${k}" ${currentVal===k?'selected':''}>${k}</option>`;
                     });
                     sel.innerHTML = options;
-                    sDips[idx].innerText = mappings[sel.value] || "";
                 });
             });
         };
@@ -134,11 +134,12 @@
         window.addRow = (isFirst = false, saved = null) => {
             const tbody = document.getElementById("rundownBody");
             const tr = document.createElement("tr");
-            let jobHTML = "", staffHTML = "";
-            for(let i=0; i<3; i++){ // 縮減為三組分工以利字體大時不重疊
-                jobHTML += `<select class="job-sel no-print w-full mb-1 text-[12px]" onchange="updateAllSelects()"><option value="">-</option></select>
-                            <div class="print:block hidden text-[11pt] border-b leading-tight h-5">${saved?.jobs?.[i] || ''}</div>`;
-                staffHTML += `<div class="staff-display h-5 border-b mb-1 text-[11pt] flex items-center justify-center"></div>`;
+            let jobHTML = "";
+            // 提供三排下拉選單以便同時指派多個分工
+            for(let i=0; i<3; i++){
+                jobHTML += `
+                    <select class="job-sel no-print w-full mb-1 text-[13px]" onchange="updateAllSelects()"><option value="">-</option></select>
+                    <div class="print:block hidden text-[11pt] border-b leading-tight h-5">${saved?.jobs?.[i] || ''}</div>`;
             }
             
             tr.innerHTML = `
@@ -154,7 +155,7 @@
                 <td class="col-dur"><input type="number" class="duration text-center w-full font-bold" value="${saved?.duration||60}" oninput="calculateAllTimes()"></td>
                 <td contenteditable="true" class="col-unit unit-cell font-bold text-blue-900 leading-tight">${saved?.unit||''}</td>
                 <td contenteditable="true" class="col-desc desc-cell text-gray-700 leading-snug">${saved?.desc||''}</td>
-                <td class="col-job">${jobHTML}</td><td class="col-staff">${staffHTML}</td>
+                <td class="col-job">${jobHTML}</td>
             `;
             tbody.appendChild(tr);
             updateAllSelects();
