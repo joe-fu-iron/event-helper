@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動執行細部流程表</title>
+    <title>2026 活動執行細部流程表</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 12px; }
@@ -16,11 +16,11 @@
         select { font-size: 9px; width: 100%; border: 1px solid #ccc; margin-bottom: 1px; }
         
         /* 欄位寬度精確控制 */
-        .col-time { width: 65px; }
+        .col-time { width: 75px; }
         .col-dur { width: 40px; }
-        .col-unit { width: 200px; }
-        .col-desc { width: auto; }
-        .col-job { width: 60px; }
+        .col-unit { width: 100px; }
+        .col-desc { width: auto; } 
+        .col-job { width: 60px; }  
         .col-staff { width: 55px; }
 
         .time-box { display: flex; flex-direction: column; align-items: center; font-weight: bold; line-height: 1.2; }
@@ -238,12 +238,12 @@
                 staffHTML += `<div class="staff-display h-3 border-b mb-1 text-[9px] flex items-center justify-center"></div>`;
             }
             
-            // 結構優化：時間欄位包含起始與結束的顯示容器
             tr.innerHTML = `
                 <td class="col-time text-center">
                     <div class="time-box">
                         ${isFirst ? 
-                            `<input type="time" class="start-time text-center w-full" value="${saved?.startTime||'08:00'}" oninput="calculateAllTimes()">` : 
+                            `<span class="text-[9px] text-orange-600 font-normal no-print">請輸入開始時間</span>
+                             <input type="time" class="start-time text-center w-full" value="${saved?.startTime||''}" oninput="calculateAllTimes()">` : 
                             `<span class="row-start-display">--:--</span>`
                         }
                         <span class="row-end-display border-t w-full mt-1">--:--</span>
@@ -265,8 +265,6 @@
 
             rows.forEach((row, i) => {
                 const dur = parseInt(row.querySelector(".duration").value) || 0;
-                
-                // 獲取當前行的起始時間：第一行從 input 拿，之後的行從上一行的結束時間拿
                 let start = (i === 0) ? row.querySelector(".start-time").value : currentStartTime;
                 
                 if (start) {
@@ -276,14 +274,15 @@
                     em %= 60;
                     let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
                     
-                    // 填入顯示文字
                     if (i !== 0) {
                         row.querySelector(".row-start-display").innerText = start;
                     }
                     row.querySelector(".row-end-display").innerText = end;
-                    
-                    // 將當前結束時間設為下一行的起始時間
                     currentStartTime = end;
+                } else {
+                    // 若無起始時間，清空後續顯示
+                    if (i !== 0) row.querySelector(".row-start-display").innerText = "--:--";
+                    row.querySelector(".row-end-display").innerText = "--:--";
                 }
             });
         };
@@ -295,10 +294,10 @@
 
         function initDefault() {
             document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
-            for (let i = 0; i < 5; i++) addRow(i === 0);
+            addRow(true); // 第一行 (顯示輸入提示)
+            for (let i = 0; i < 4; i++) addRow(false); // 預設產生另外 4 行
             updateDayOfWeek();
         }
     </script>
 </body>
 </html>
-
