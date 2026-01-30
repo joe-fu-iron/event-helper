@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 活動執行細部流程表</title>
+    <title>活動執行細部流程表</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 12px; }
@@ -15,12 +15,13 @@
         .num-input { width: 35px; border-bottom: 1px solid black; text-align: center; background: transparent; }
         select { font-size: 9px; width: 100%; border: 1px solid #ccc; margin-bottom: 1px; }
         
+        /* 欄位寬度精確控制 */
         .col-time { width: 65px; }
         .col-dur { width: 40px; }
         .col-unit { width: 100px; }
-        .col-desc { width: auto; } 
-        .col-job { width: 60px; }  
-        .col-staff { width: 55px; } 
+        .col-desc { width: auto; }
+        .col-job { width: 60px; }
+        .col-staff { width: 55px; }
 
         .time-box { display: flex; flex-direction: column; align-items: center; font-weight: bold; line-height: 1.2; }
 
@@ -115,7 +116,7 @@
 
         const menuItems = {
             service: ["長官簽到表一式", "長官勾選表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱*1式", "新聞資料*{手動}", "黃桌巾*{手動}", "紅桌巾*{手動}", "伴手禮*{手動}"],
-            stage: ["音響+電腦1式", "TRUSS*{手動}", "斜撐*{手動}", "鐵板*{手動}", "帆布+豆扣*All", "紅桌巾*{手動}", "濕紙巾*{手動}", "衛生紙*{手動}", "手板*{手板}", "木架*{手動}"]
+            stage: ["音響+電腦1式", "TRUSS*{手動}", "斜撐*{手動}", "鐵板*{手動}", "帆布+豆扣*All", "紅桌巾*{手動}", "濕紙巾*{手動}", "衛生紙*{手動}", "手板*{手動}", "木架*{手動}"]
         };
 
         window.onload = () => {
@@ -236,14 +237,16 @@
                 jobHTML += `<select class="job-sel no-print" onchange="updateAllSelects()"><option value="">-</option></select><div class="print:block hidden text-[8px] border-b leading-tight h-3">${saved?.jobs?.[i] || ''}</div>`;
                 staffHTML += `<div class="staff-display h-3 border-b mb-1 text-[9px] flex items-center justify-center"></div>`;
             }
+            
+            // 結構優化：時間欄位包含起始與結束的顯示容器
             tr.innerHTML = `
                 <td class="col-time text-center">
                     <div class="time-box">
                         ${isFirst ? 
                             `<input type="time" class="start-time text-center w-full" value="${saved?.startTime||'08:00'}" oninput="calculateAllTimes()">` : 
-                            `<span class="start-display"></span>`
+                            `<span class="row-start-display">--:--</span>`
                         }
-                        <span class="end-display border-t w-full mt-1"></span>
+                        <span class="row-end-display border-t w-full mt-1">--:--</span>
                     </div>
                 </td>
                 <td class="col-dur"><input type="number" class="duration text-center w-full" value="${saved?.duration||60}" oninput="calculateAllTimes()"></td>
@@ -258,32 +261,29 @@
 
         window.calculateAllTimes = () => {
             const rows = document.querySelectorAll("#rundownBody tr");
-            let runningStart = "";
-            
+            let currentStartTime = "";
+
             rows.forEach((row, i) => {
-                const durInput = row.querySelector(".duration");
-                const dur = parseInt(durInput.value) || 0;
+                const dur = parseInt(row.querySelector(".duration").value) || 0;
                 
-                // 第一行抓取輸入框的時間，之後的行抓取上一行的結束時間
-                let start = (i === 0) ? row.querySelector(".start-time").value : runningStart;
+                // 獲取當前行的起始時間：第一行從 input 拿，之後的行從上一行的結束時間拿
+                let start = (i === 0) ? row.querySelector(".start-time").value : currentStartTime;
                 
                 if (start) {
                     let [h, m] = start.split(":").map(Number);
-                    let em = m + dur; 
-                    let eh = (h + Math.floor(em/60)) % 24; 
+                    let em = m + dur;
+                    let eh = (h + Math.floor(em/60)) % 24;
                     em %= 60;
                     let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
                     
-                    // 顯示當前的結束時間
-                    row.querySelector(".end-display").innerText = end;
-                    
-                    // 如果不是第一行，顯示當前的起始時間
+                    // 填入顯示文字
                     if (i !== 0) {
-                        row.querySelector(".start-display").innerText = start;
+                        row.querySelector(".row-start-display").innerText = start;
                     }
+                    row.querySelector(".row-end-display").innerText = end;
                     
-                    // 將當前結束時間傳給下一行作為起始時間
-                    runningStart = end;
+                    // 將當前結束時間設為下一行的起始時間
+                    currentStartTime = end;
                 }
             });
         };
