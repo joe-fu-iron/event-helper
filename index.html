@@ -16,7 +16,7 @@
         select { font-size: 9px; width: 100%; border: 1px solid #ccc; margin-bottom: 1px; }
         
         /* 欄位寬度精確控制 */
-        .col-time { width: 75px; }
+        .col-time { width: 85px; }
         .col-dur { width: 40px; }
         .col-unit { width: 100px; }
         .col-desc { width: auto; } 
@@ -24,6 +24,7 @@
         .col-staff { width: 55px; }
 
         .time-box { display: flex; flex-direction: column; align-items: center; font-weight: bold; line-height: 1.2; }
+        .start-time-input { width: 100%; text-align: center; background: #fffbeb; border: 1px inset #ccc; font-size: 14px; }
 
         @media print {
             .no-print { display: none !important; }
@@ -31,6 +32,7 @@
             @page { size: A4 landscape; margin: 0.8cm; }
             .rundown-table { font-size: 10px; width: 100%; table-layout: fixed; }
             .page-break { page-break-before: always; }
+            .start-time-input { border: none; background: transparent; }
         }
     </style>
 </head>
@@ -94,7 +96,7 @@
                 <div class="mb-4"><strong>📍 舞台區：</strong><div id="stageMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
                 <div class="flex gap-4">
                     <button onclick="addCustomEquip('serviceContainer')" class="bg-blue-600 text-white px-3 py-1 rounded text-[11px] font-bold">+ 服務台項目</button>
-                    <button onclick="addCustomEquip('stageContainer')" class="bg-red-600 text-white px-3 py-1 rounded text-[11px] font-bold">+ 舞台區項目</button>
+                    <button onclick="addCustomEquip('stageContainer')" class="bg-red-600 text-white px-1 py-1 rounded text-[11px] font-bold">+ 舞台區項目</button>
                 </div>
             </div>
 
@@ -242,8 +244,7 @@
                 <td class="col-time text-center">
                     <div class="time-box">
                         ${isFirst ? 
-                            `<span class="text-[9px] text-orange-600 font-normal no-print">請輸入開始時間</span>
-                             <input type="time" class="start-time text-center w-full" value="${saved?.startTime||''}" oninput="calculateAllTimes()">` : 
+                            `<input type="text" class="start-time start-time-input" placeholder="08:00" value="${saved?.startTime||''}" oninput="calculateAllTimes()">` : 
                             `<span class="row-start-display">--:--</span>`
                         }
                         <span class="row-end-display border-t w-full mt-1">--:--</span>
@@ -267,23 +268,25 @@
                 const dur = parseInt(row.querySelector(".duration").value) || 0;
                 let start = (i === 0) ? row.querySelector(".start-time").value : currentStartTime;
                 
-                if (start) {
+                // 檢查輸入格式是否為 hh:mm
+                if (start && start.includes(":")) {
                     let [h, m] = start.split(":").map(Number);
-                    let em = m + dur;
-                    let eh = (h + Math.floor(em/60)) % 24;
-                    em %= 60;
-                    let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
-                    
-                    if (i !== 0) {
-                        row.querySelector(".row-start-display").innerText = start;
+                    if (!isNaN(h) && !isNaN(m)) {
+                        let em = m + dur;
+                        let eh = (h + Math.floor(em/60)) % 24;
+                        em %= 60;
+                        let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+                        
+                        if (i !== 0) row.querySelector(".row-start-display").innerText = start;
+                        row.querySelector(".row-end-display").innerText = end;
+                        currentStartTime = end;
+                        return;
                     }
-                    row.querySelector(".row-end-display").innerText = end;
-                    currentStartTime = end;
-                } else {
-                    // 若無起始時間，清空後續顯示
-                    if (i !== 0) row.querySelector(".row-start-display").innerText = "--:--";
-                    row.querySelector(".row-end-display").innerText = "--:--";
                 }
+                
+                // 格式不正確時清空顯示
+                if (i !== 0) row.querySelector(".row-start-display").innerText = "--:--";
+                row.querySelector(".row-end-display").innerText = "--:--";
             });
         };
 
@@ -294,8 +297,8 @@
 
         function initDefault() {
             document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
-            addRow(true); // 第一行 (顯示輸入提示)
-            for (let i = 0; i < 4; i++) addRow(false); // 預設產生另外 4 行
+            addRow(true); 
+            for (let i = 0; i < 4; i++) addRow(false); 
             updateDayOfWeek();
         }
     </script>
