@@ -16,12 +16,14 @@
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 10px 8px; vertical-align: middle; }
         .table-head { background: #334155; color: white; font-size: 14px; font-weight: bold; }
         
-        /* 欄位寬度邏輯：瀏覽模式自適應，編輯模式固定 */
         .col-id { width: 45px; text-align: center; }
         .col-time { width: 160px; text-align: center; }
-        .col-unit { width: auto; min-width: 150px; } /* 自動縮減寬度核心 */
-        .col-desc { width: auto; }
+        .col-unit { width: auto; min-width: 150px; } 
+        .col-desc { width: auto; min-width: 250px; }
         .col-jobs { width: 220px; }
+
+        /* 統一字體：單元項目與執行說明 */
+        .cell-content { font-weight: bold; font-size: 15px; color: #1e293b; }
 
         .time-range { font-family: monospace; font-weight: bold; color: #2563eb; font-size: 15px; }
         .duration-tag { font-size: 12px; color: #64748b; font-weight: normal; margin-left: 4px; }
@@ -29,7 +31,6 @@
         .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #475569; padding: 6px 12px; border-radius: 4px; margin: 4px; font-weight: bold; cursor: pointer; }
         .equipment-tag.loaded { background-color: #dcfce7 !important; border-color: #166534 !important; color: #166534; }
         
-        /* 負責人員標籤 */
         .job-tag { display: inline-block; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px; font-weight: bold; }
         body.admin-mode .job-tag { cursor: pointer; }
         body.admin-mode .job-tag:hover { background: #fecaca; color: #991b1b; }
@@ -65,8 +66,8 @@
         </div>
 
         <div class="flex justify-between items-center mb-6 no-print">
-            <div class="view-mode:hidden">
-                <h1 class="text-2xl font-black text-slate-800 tracking-tight admin-only">後台編輯模式</h1>
+            <div>
+                <h2 class="text-xl font-black text-slate-800 tracking-tight admin-only">🛠️ 後台編輯模式 (人員已移除細漢)</h2>
             </div>
             <div class="flex items-center gap-3">
                 <button onclick="handleModeSwitch()" id="modeBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">🛠️ 編輯模式</button>
@@ -86,7 +87,7 @@
                     <input type="text" id="eventTitle" placeholder="請輸入專案名稱" class="w-full border border-slate-300 rounded p-2 font-bold" oninput="updateHeaderInfo()">
                 </div>
             </div>
-            <p class="text-[10px] font-bold text-slate-400 mb-2">點擊下方人員可快速加入流程負責人：</p>
+            <p class="text-[10px] font-bold text-slate-400 mb-2">步驟 1: 設定人員與職稱 (設定完後下方下拉選單會自動更新)：</p>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3" id="staffConfig"></div>
         </div>
 
@@ -103,10 +104,12 @@
             <tbody id="rundownBody"></tbody>
         </table>
 
-        <button onclick="addRow()" class="admin-only no-print bg-white text-slate-600 px-6 py-2 rounded-md font-bold border border-slate-300 mb-10 shadow-sm">+ 新增項目</button>
+        <div class="flex gap-4 mb-10">
+            <button onclick="addRow()" class="admin-only no-print bg-white text-slate-600 px-6 py-2 rounded-md font-bold border border-slate-300 shadow-sm hover:bg-slate-50">+ 新增項目</button>
+        </div>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h2 class="text-lg font-black text-slate-800 mb-6 italic">📋 器材清點備忘</h2>
+            <h2 class="text-lg font-black text-slate-800 mb-6 italic">📋 器材清點備忘 (點擊可切換清點狀態)</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div><h3 class="text-blue-600 text-xs font-bold mb-2 border-l-4 border-blue-600 pl-2">📍 服務台</h3><div id="serviceContainer" class="flex flex-wrap min-h-[50px]"></div></div>
                 <div><h3 class="text-red-600 text-xs font-bold mb-2 border-l-4 border-red-600 pl-2">📍 舞台區</h3><div id="stageContainer" class="flex flex-wrap min-h-[50px]"></div></div>
@@ -118,12 +121,12 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const teamList = ["江哥", "瑩驊", "志明", "露比", "鐵仁", "柏緯", "細漢", "維憶", "芳瑜"];
+        // 移除細漢後的名單
+        const teamList = ["江哥", "瑩驊", "志明", "露比", "鐵仁", "柏緯", "維憶", "芳瑜"];
         const jobList = ["控場", "音響", "服務台", "攝影", "機動", "錄影", "儀式"];
         const FIREBASE_URL = localStorage.getItem('iron_db_url') || "https://rundown-worker-default-rtdb.firebaseio.com/";
         let db, dataRef, isAdmin = false;
 
-        // 切換模式邏輯
         window.handleModeSwitch = () => {
             if (!isAdmin) {
                 if (prompt("管理員驗證：") === "364401") toggleMode(true);
@@ -135,10 +138,9 @@
             isAdmin = state;
             document.body.className = isAdmin ? "admin-mode p-2 md:p-6 pb-20" : "view-mode p-2 md:p-6 pb-20";
             document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 瀏覽模式" : "🛠️ 編輯模式";
-            renderTable(); // 重新渲染表格以切換顯示格式
+            renderTable(); 
         };
 
-        // 更新抬頭資訊
         window.updateHeaderInfo = () => {
             const title = document.getElementById('eventTitle').value;
             const date = document.getElementById('eventDate').value;
@@ -150,19 +152,18 @@
             }
         };
 
-        // 渲染人員配置區 (編輯模式)
+        // 初始化人員配置下拉選單 (步驟 1)
         const staffConfig = document.getElementById('staffConfig');
         for(let i=1; i<=8; i++) {
             staffConfig.innerHTML += `
                 <div class="staff-card border rounded p-2 bg-slate-50">
-                    <select id="j${i}" class="w-full text-[11px] mb-1 font-bold"><option value="-">-職稱-</option>${jobList.map(j=>`<option value="${j}">${j}</option>`).join('')}</select>
-                    <input type="text" id="s${i}" placeholder="姓名" class="w-full text-[11px] border-b bg-transparent" oninput="saveLocalStaff()">
+                    <select id="j${i}" class="w-full text-[11px] mb-1 font-bold" onchange="renderTable()"><option value="-">-職稱-</option>${jobList.map(j=>`<option value="${j}">${j}</option>`).join('')}</select>
+                    <input type="text" id="s${i}" placeholder="姓名" class="w-full text-[11px] border-b bg-transparent" oninput="renderTable()">
                 </div>`;
         }
 
         let currentData = { rundown: [] };
 
-        // 渲染表格核心
         window.renderTable = () => {
             const tbody = document.getElementById("rundownBody");
             tbody.innerHTML = "";
@@ -173,7 +174,6 @@
                 const dur = parseInt(item.duration) || 0;
                 let start = (i === 0) ? (item.startTime || "09:00") : nextS;
                 
-                // 計算結束時間
                 let endStr = "";
                 if(start.includes(":")) {
                     let [h, m] = start.split(":").map(Number);
@@ -182,14 +182,15 @@
                     nextS = endStr;
                 }
 
-                // 負責人員標籤生成
                 const jobsHtml = (item.jobs || []).map(j => `<span class="job-tag" onclick="removeJob(${i}, '${j}')">${j}</span>`).join('');
                 
-                // 編輯器專用：增加人員下拉選單
+                // 獲取目前設定好的人員名單
+                const availableStaff = getAvailableStaff();
+                
                 const adminStaffAction = isAdmin ? `
-                    <select class="no-print w-full text-[10px] mt-2 border" onchange="addJob(${i}, this.value); this.value=''">
+                    <select class="no-print w-full text-[10px] mt-2 border border-blue-200 rounded" onchange="addJob(${i}, this.value); this.value=''">
                         <option value="">+ 新增負責人</option>
-                        ${getAvailableStaff().map(s => `<option value="${s}">${s}</option>`).join('')}
+                        ${availableStaff.map(s => `<option value="${s}">${s}</option>`).join('')}
                     </select>
                 ` : "";
 
@@ -197,14 +198,14 @@
                     <td class="col-id">${i+1}</td>
                     <td class="col-time">
                         <div class="time-range">
-                            ${isAdmin && i===0 ? `<input type="text" class="start-time w-14 text-center border" value="${start}" oninput="updateStartTime(this.value)">` : `<span>${start}</span>`}
+                            ${isAdmin && i===0 ? `<input type="text" class="start-time w-14 text-center border bg-yellow-50" value="${start}" oninput="updateStartTime(this.value)">` : `<span>${start}</span>`}
                             <span>-</span><span>${endStr}</span>
                             <span class="duration-tag">(${dur}m)</span>
                         </div>
                         ${isAdmin ? `<input type="number" class="dur-input w-12 text-center border mt-1" value="${dur}" oninput="updateDuration(${i}, this.value)">` : ""}
                     </td>
-                    <td class="col-unit font-bold ${isAdmin?'bg-white':''}" contenteditable="${isAdmin}" onblur="updateText(${i}, 'unit', this.innerText)">${item.unit || ''}</td>
-                    <td class="col-desc text-[12px] text-slate-500 ${isAdmin?'bg-white':''}" contenteditable="${isAdmin}" onblur="updateText(${i}, 'desc', this.innerText)">${item.desc || ''}</td>
+                    <td class="col-unit cell-content ${isAdmin?'bg-white border-blue-100':''}" contenteditable="${isAdmin}" onblur="updateText(${i}, 'unit', this.innerText)">${item.unit || ''}</td>
+                    <td class="col-desc cell-content ${isAdmin?'bg-white border-blue-100':''}" style="font-weight: bold; color: #64748b;" contenteditable="${isAdmin}" onblur="updateText(${i}, 'desc', this.innerText)">${item.desc || ''}</td>
                     <td class="col-jobs">
                         <div id="row-jobs-${i}">${jobsHtml}</div>
                         ${adminStaffAction}
@@ -215,7 +216,6 @@
             highlightNow();
         };
 
-        // 輔助邏輯
         window.getAvailableStaff = () => {
             const list = [];
             for(let i=1; i<=8; i++) {
@@ -245,7 +245,7 @@
         window.updateStartTime = (val) => { currentData.rundown[0].startTime = val; renderTable(); };
 
         window.addRow = () => {
-            currentData.rundown.push({ duration: 10, unit: "新項目", desc: "", jobs: [] });
+            currentData.rundown.push({ duration: 10, unit: "新單元", desc: "請輸入執行說明", jobs: [] });
             renderTable();
         };
 
@@ -260,7 +260,10 @@
                 stage: Array.from(document.querySelectorAll('#stageContainer .equipment-tag')).map(t=>({n:t.querySelector('span').innerText, l:t.classList.contains('loaded')}))
             };
             for(let i=1; i<=8; i++) data.staff[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
-            set(dataRef, data).then(() => alert("✅ 同步成功"));
+            set(dataRef, data).then(() => {
+                alert("✅ 資料已發布至雲端");
+                toggleMode(false); // 儲存後切回瀏覽模式
+            });
         };
 
         function highlightNow() {
@@ -275,7 +278,6 @@
             });
         }
 
-        // 初始化與數據監聽
         const app = initializeApp({ databaseURL: FIREBASE_URL });
         db = getDatabase(app);
         dataRef = ref(db, 'rundown_v2026_final');
@@ -293,7 +295,6 @@
             updateHeaderInfo();
             renderTable();
             
-            // 器材渲染
             const renderEq = (id, arr) => {
                 const c = document.getElementById(id+'Container'); c.innerHTML = "";
                 (arr||[]).forEach((e, idx) => {
