@@ -3,21 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026頭份四月八-執行控台</title>
+    <title>2026頭份四月八-現場執行控台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; transition: 0.3s; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; transition: background 0.3s; }
         .admin-mode { background: #fffbeb !important; }
+        /* 當前執行項目高亮 */
+        .is-now { background: #f0fdf4 !important; border-left: 10px solid #22c55e !important; }
+        .is-now td { color: #166534; font-weight: 900; }
+        
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 12px 8px; vertical-align: middle; }
-        .cell-input { font-weight: bold; width: 100%; outline: none; background: transparent; border: none; font-size: 15px; padding: 4px; border-radius: 4px; }
-        .admin-mode .cell-input { background: #fff; box-shadow: inset 0 0 0 1px #e2e8f0; }
-        .admin-mode .cell-input:focus { box-shadow: inset 0 0 0 2px #3b82f6; }
-        .is-now { background: #f0fdf4 !important; border-left: 8px solid #22c55e !important; }
+        .cell-input { font-weight: bold; width: 100%; outline: none; background: transparent; border: none; font-size: 15px; }
+        .admin-mode .cell-input { background: #fff; box-shadow: inset 0 0 0 1px #e2e8f0; border-radius: 4px; padding: 4px; }
+        
         .admin-only { display: none !important; }
         .admin-mode .admin-only { display: block !important; }
+        
+        /* 名片模式 (Card View) */
+        #cardContainer { display: none; grid-template-columns: 1fr; gap: 1rem; }
+        body.card-view .table-wrapper, body.card-view .admin-only:not(#viewBtn) { display: none !important; }
+        body.card-view #cardContainer { display: grid; }
+        .item-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); position: relative; }
+        .item-card.active-card { ring: 4px solid #22c55e; background: #f0fdf4; border-color: #22c55e; }
+        
+        /* 器材標籤 */
         .eq-tag { cursor: pointer; border: 1.5px solid #cbd5e1; padding: 6px 12px; border-radius: 10px; margin: 4px; font-weight: bold; font-size: 13px; display: inline-block; background: white; transition: 0.2s; }
-        .eq-tag.loaded { background-color: #22c55e; color: white; border-color: #166534; }
+        .eq-tag.loaded { background-color: #22c55e; color: white; border-color: #166534; shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        
         @media print { .no-print { display: none; } }
     </style>
 </head>
@@ -26,50 +39,57 @@
     <div class="max-w-[1400px] mx-auto">
         <div class="flex justify-between items-center mb-6 border-b-4 border-slate-800 pb-4 no-print">
             <div>
-                <h1 class="text-2xl md:text-3xl font-black italic text-slate-800">2026頭份四月八 靚燈好客節 發布會</h1>
-                <p class="text-sm font-bold text-rose-600">3/27(五) 10:00 | 頭份市公所藝術館旁 (前樂客茶館)</p>
+                <h1 class="text-2xl md:text-3xl font-black italic text-slate-800 tracking-tighter">2026頭份四月八 靚燈好客節</h1>
+                <p class="text-sm font-bold text-rose-600">3/27(五) 10:00 發布會 | 執行製作控台</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="handleAdminSwitch()" id="modeBtn" class="bg-amber-500 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-amber-600">🛠️ 編輯模式</button>
-                <button onclick="saveToCloud()" class="admin-only bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-blue-700">💾 儲存發布</button>
+                <button onclick="toggleCardView()" id="viewBtn" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700">🗂️ 名片模式</button>
+                <button onclick="handleAdminSwitch()" id="modeBtn" class="bg-amber-500 text-white px-3 py-2 rounded-lg font-bold shadow-md hover:bg-amber-600">🛠️ 編輯模式</button>
+                <button onclick="saveToCloud()" class="admin-only bg-blue-600 text-white px-3 py-2 rounded-lg font-bold shadow-md hover:bg-blue-700">💾 儲存發布</button>
             </div>
         </div>
 
         <div class="admin-only bg-white rounded-xl mb-6 border-2 border-amber-300 p-4 shadow-xl">
             <h3 class="text-xs font-black mb-3 text-amber-600 flex items-center gap-2">
-                <span class="bg-amber-100 px-2 py-0.5 rounded">👥 現場人員安排</span>
+                <span class="bg-amber-100 px-2 py-0.5 rounded text-amber-800">👥 現場執行人員名單 (用於下方下拉指派)</span>
             </h3>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="staffGrid"></div>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="staffGrid"></div>
         </div>
 
-        <div class="overflow-x-auto rounded-xl shadow-2xl bg-white border border-slate-300">
+        <div class="table-wrapper overflow-x-auto rounded-xl shadow-2xl bg-white border border-slate-300">
             <table class="rundown-table">
-                <thead class="bg-slate-800 text-white">
+                <thead class="bg-slate-800 text-white text-sm">
                     <tr>
                         <th width="45">序</th>
                         <th width="140">時間</th>
                         <th width="80">長度</th>
                         <th width="200">單元名稱</th>
                         <th>執行內容說明</th>
-                        <th width="60" class="admin-only">操作</th>
+                        <th width="140">負責人員</th>
+                        <th width="50" class="admin-only">×</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
             </table>
+            <button onclick="addNewRow()" class="admin-only w-full p-4 border-2 border-dashed border-slate-200 font-black text-slate-400 hover:bg-slate-50 transition">+ 插入新流程 (文字即時記憶)</button>
         </div>
 
-        <button onclick="addNewRow()" class="admin-only mt-4 mb-10 bg-white border-2 border-dashed border-slate-300 p-4 rounded-xl font-black w-full text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition">+ 插入新流程項目 (資料會即時保留)</button>
+        <div id="cardContainer" class="mt-4 no-print"></div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <div class="bg-white p-5 rounded-2xl border-t-4 border-blue-500 shadow-sm">
-                <h2 class="font-black text-blue-600 text-sm mb-3">📍 服務台區域器材</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+            <div class="bg-white p-5 rounded-2xl border-t-8 border-blue-500 shadow-lg">
+                <h2 class="font-black text-blue-600 text-sm mb-3 flex justify-between items-center">
+                    📍 服務台區域器材 <span class="text-[10px] text-slate-400 font-normal">點擊標籤標記到位</span>
+                </h2>
                 <div id="serviceBox" class="min-h-[40px]"></div>
-                <input type="text" class="admin-only w-full border-2 border-blue-50 mt-3 p-2 rounded-lg text-sm" placeholder="+ 輸入器材名稱按 Enter 新增" onkeydown="if(event.key==='Enter'){addEq('service', this.value); this.value=''}">
+                <input type="text" class="admin-only w-full border-2 border-slate-100 mt-3 p-2 rounded-lg text-sm focus:border-blue-300 outline-none" placeholder="+ 輸入器材名稱按 Enter 新增" onkeydown="if(event.key==='Enter'){addEq('service', this.value); this.value=''}">
             </div>
-            <div class="bg-white p-5 rounded-2xl border-t-4 border-rose-500 shadow-sm">
-                <h2 class="font-black text-rose-600 text-sm mb-3">📍 舞台工作區域器材</h2>
+            <div class="bg-white p-5 rounded-2xl border-t-8 border-rose-500 shadow-lg">
+                <h2 class="font-black text-rose-600 text-sm mb-3 flex justify-between items-center">
+                    📍 舞台工作區域器材 <span class="text-[10px] text-slate-400 font-normal">點擊標籤標記到位</span>
+                </h2>
                 <div id="stageBox" class="min-h-[40px]"></div>
-                <input type="text" class="admin-only w-full border-2 border-rose-50 mt-3 p-2 rounded-lg text-sm" placeholder="+ 輸入器材名稱按 Enter 新增" onkeydown="if(event.key==='Enter'){addEq('stage', this.value); this.value=''}">
+                <input type="text" class="admin-only w-full border-2 border-slate-100 mt-3 p-2 rounded-lg text-sm focus:border-rose-300 outline-none" placeholder="+ 輸入器材名稱按 Enter 新增" onkeydown="if(event.key==='Enter'){addEq('stage', this.value); this.value=''}">
             </div>
         </div>
     </div>
@@ -78,32 +98,32 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // 資料庫路徑已更新為 v30_ULTIMATE
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'toufen_48_final_locked_v1');
+        const dataRef = ref(db, 'toufen_final_v30_ultimate');
 
-        let isAdmin = false;
+        let isAdmin = false, isCardView = false;
         let localData = {
             staff: Array(10).fill().map(() => ({ j: "", n: "" })),
             rundown: [
-                { t: "08:30", d: "30M", u: "公司出發/小車", s: "鐵仁-執行、柏緯-服務台、江哥-拍攝、料理-中瑜、餐盒-貝克里" },
-                { t: "08:30-09:00", d: "30M", u: "場佈", s: "1.簽到處 2.攝影燈 3.料理區 4.貝克里送餐盒20份" },
-                { t: "10:00", d: "-", u: "媒體、市長到場", s: "邀請簽到、發放新聞資料與市長說明動作內容" },
-                { t: "10:00-10:10", d: "10m", u: "媒體訪問", s: "進行相關資訊訪問、上手版" },
-                { t: "10:10-10:20", d: "10m", u: "市長炒米粉示範", s: "美人素食美粉料理示範及試吃，中瑜協助" },
-                { t: "10:20-10:30", d: "10m", u: "活動資訊公布", s: "創意供桌、彩繪花燈、炒米粉大賽手板" },
-                { t: "10:30", d: "-", u: "發布會結束", s: "發放餐盒、活動結束" }
+                { t: "08:30", d: "30M", u: "公司出發/小車", s: "鐵仁-執行、柏緯-服務台、江哥-拍攝、料理-中瑜、餐盒-貝克里", person: "" },
+                { t: "08:30-09:00", d: "30M", u: "場佈", s: "1.簽到處 2.攝影燈 3.料理區 4.貝克里送餐盒20份", person: "" },
+                { t: "10:00", d: "-", u: "媒體、市長到場", s: "邀請簽到、發放新聞資料與市長說明動作內容", person: "" },
+                { t: "10:00-10:10", d: "10m", u: "媒體訪問", s: "進行相關資訊訪問、上手版", person: "江哥-拍攝" },
+                { t: "10:10-10:20", d: "10m", u: "市長炒米粉示範", s: "美人素食美粉料理示範及試吃，中瑜協助", person: "中瑜-料理" },
+                { t: "10:20-10:30", d: "10m", u: "活動資訊公布", s: "創意供桌、彩繪花燈、炒米粉大賽手板", person: "鐵仁-執行" },
+                { t: "10:30", d: "-", u: "發布會結束", s: "發放餐盒、活動結束", person: "" }
             ],
-            eq: { service: [], stage: [] }
+            eq: { service: [{n:"簽到表",l:false}, {n:"原子筆",l:false}], stage: [{n:"無線麥克風*2",l:false}, {n:"上手板",l:false}] }
         };
 
-        // 初始化
         const init = () => {
             const grid = document.getElementById('staffGrid');
             grid.innerHTML = localData.staff.map((_, i) => `
                 <div class="p-2 border rounded bg-slate-50">
-                    <input type="text" oninput="localData.staff[${i}].j=this.value" class="sj w-full text-[10px] border-b outline-none mb-1 font-bold" placeholder="職稱">
-                    <input type="text" oninput="localData.staff[${i}].n=this.value" class="sn w-full text-[10px] outline-none" placeholder="姓名">
+                    <input type="text" oninput="localData.staff[${i}].j=this.value" class="sj w-full text-[10px] border-b outline-none mb-1 text-slate-500" placeholder="職稱">
+                    <input type="text" oninput="localData.staff[${i}].n=this.value" class="sn w-full text-[11px] outline-none font-black text-slate-800" placeholder="姓名">
                 </div>
             `).join('');
             renderAll();
@@ -111,68 +131,100 @@
 
         window.renderAll = () => {
             const tbody = document.getElementById('tableBody');
-            const curMin = new Date().getHours() * 60 + new Date().getMinutes();
+            const cardContainer = document.getElementById('cardContainer');
+            const now = new Date();
+            const curMin = now.getHours() * 60 + now.getMinutes();
+            
+            tbody.innerHTML = ""; cardContainer.innerHTML = "";
+            const staffOptions = localData.staff.filter(s => s.n).map(s => `<option value="${s.j}-${s.n}">${s.j}:${s.n}</option>`).join('');
 
-            tbody.innerHTML = localData.rundown.map((item, i) => {
-                // 自動偵測當前項目
+            localData.rundown.forEach((item, i) => {
                 let isActive = false;
                 if(item.t.includes(':')) {
                     const [h, m] = item.t.split('-')[0].split(':').map(Number);
-                    const dur = parseInt(item.d) || 5;
-                    if(curMin >= (h*60+m) && curMin < (h*60+m+dur)) isActive = true;
+                    const duration = parseInt(item.d) || 10;
+                    if(curMin >= (h*60+m) && curMin < (h*60+m+duration)) isActive = true;
                 }
 
-                return `
-                <tr class="r-row ${isActive ? 'is-now' : ''}">
-                    <td class="text-center font-bold text-slate-300">${i+1}</td>
-                    <td><input class="cell-input" value="${item.t||''}" oninput="localData.rundown[${i}].t=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td><input class="cell-input" value="${item.d||''}" oninput="localData.rundown[${i}].d=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td><input class="cell-input" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td><input class="cell-input" value="${item.s||''}" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td class="admin-only text-center"><button onclick="removeRow(${i})" class="text-rose-500 font-bold hover:scale-125 transition">✕</button></td>
-                </tr>`;
-            }).join('');
-            
+                // 表格列生成
+                const tr = document.createElement('tr');
+                if(isActive) tr.className = "is-now";
+                tr.innerHTML = `
+                    <td class="text-center font-bold text-slate-300 text-xs">${i+1}</td>
+                    <td><input class="cell-input" value="${item.t}" oninput="localData.rundown[${i}].t=this.value" ${!isAdmin?'readonly':''}></td>
+                    <td><input class="cell-input" value="${item.d}" oninput="localData.rundown[${i}].d=this.value" ${!isAdmin?'readonly':''}></td>
+                    <td><input class="cell-input" value="${item.u}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}></td>
+                    <td><input class="cell-input font-normal text-slate-500 text-sm" value="${item.s}" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}></td>
+                    <td>
+                        ${isAdmin ? `<select class="w-full text-xs border rounded bg-white p-1" onchange="localData.rundown[${i}].person=this.value; renderAll()"><option value="">未指派</option>${staffOptions.replace('value="'+item.person+'"', 'value="'+item.person+'" selected')}</select>` 
+                                  : `<div class="bg-indigo-50 px-2 py-1 rounded text-indigo-700 text-xs font-bold border border-indigo-100 text-center">${item.person || '-'}</div>`}
+                    </td>
+                    <td class="admin-only text-center"><button onclick="removeRow(${i})" class="text-rose-400 hover:text-rose-600 font-bold">✕</button></td>
+                `;
+                tbody.appendChild(tr);
+
+                // 名片生成
+                const card = document.createElement('div');
+                card.className = `item-card ${isActive ? 'active-card shadow-green-200' : ''}`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="bg-slate-800 text-white text-[10px] px-2 py-0.5 rounded-full">單元 #${i+1}</span>
+                        <span class="text-2xl font-black text-indigo-600 tabular-nums">${item.t}</span>
+                    </div>
+                    <div class="text-2xl font-black text-slate-800 mb-2 leading-tight">${item.u}</div>
+                    <div class="text-sm text-slate-600 mb-4 bg-slate-50 p-3 rounded-lg border-l-4 border-slate-200">${item.s}</div>
+                    <div class="flex justify-between items-center border-t border-dashed pt-4">
+                        <div class="text-xs font-bold text-slate-400">⏱️ 預計時長: ${item.d}</div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-slate-400">負責人員:</span>
+                            <span class="bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-black shadow-md">${item.person || '現場執行'}</span>
+                        </div>
+                    </div>
+                `;
+                cardContainer.appendChild(card);
+            });
+
             // 同步人員輸入框
             const sj = document.querySelectorAll('.sj'), sn = document.querySelectorAll('.sn');
-            localData.staff.forEach((s, i) => { 
-                if(sj[i]) sj[i].value = s.j || ""; 
-                if(sn[i]) sn[i].value = s.n || ""; 
-            });
+            localData.staff.forEach((s, i) => { if(sj[i]) sj[i].value = s.j; if(sn[i]) sn[i].value = s.n; });
             renderEq();
         };
 
-        window.renderEq = () => {
-            ['service', 'stage'].forEach(z => {
-                document.getElementById(z+'Box').innerHTML = (localData.eq[z]||[]).map((e,idx)=>`
-                    <div class="eq-tag ${e.l?'loaded':''}" onclick="toggleEq('${z}', ${idx})">
-                        ${e.n} ${isAdmin ? `<span class="ml-2 opacity-30" onclick="event.stopPropagation(); removeEq('${z}',${idx})">×</span>` : ''}
-                    </div>
-                `).join('');
-            });
+        window.toggleCardView = () => {
+            isCardView = !isCardView;
+            document.body.classList.toggle('card-view', isCardView);
+            document.getElementById('viewBtn').innerText = isCardView ? "📊 表格模式" : "🗂️ 名片模式";
+            renderAll();
         };
 
         window.handleAdminSwitch = () => {
-            if(!isAdmin && prompt("請輸入管理密碼") !== "364401") return;
+            if(!isAdmin && prompt("請輸入執行密碼") !== "364401") return;
             isAdmin = !isAdmin;
             document.body.classList.toggle('admin-mode', isAdmin);
             document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 結束編輯" : "🛠️ 編輯模式";
             renderAll();
         };
 
-        // 資料操作
         window.addNewRow = () => {
-            localData.rundown.push({ t: "", d: "10m", u: "新項目", s: "" });
+            localData.rundown.push({ t: "", d: "10m", u: "新項目", s: "", person: "" });
             renderAll();
         };
-        window.removeRow = (i) => { if(confirm("確定刪除此行？")) { localData.rundown.splice(i, 1); renderAll(); } };
-        window.addEq = (z, n) => { localData.eq[z].push({n, l:false}); renderEq(); };
-        window.removeEq = (z, i) => { localData.eq[z].splice(i, 1); renderEq(); };
-        window.toggleEq = (z, i) => { localData.eq[z][i].l = !localData.eq[z][i].l; renderEq(); };
+
+        window.removeRow = (i) => { if(confirm("確定刪除此流程項目？")) { localData.rundown.splice(i, 1); renderAll(); } };
+        window.addEq = (z, n) => { if(n) { localData.eq[z].push({n, l:false}); renderEq(); } };
+        window.renderEq = () => {
+            ['service', 'stage'].forEach(z => {
+                document.getElementById(z+'Box').innerHTML = (localData.eq[z]||[]).map((e,idx)=>`
+                    <div class="eq-tag ${e.l?'loaded':''}" onclick="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq()">
+                        ${e.n} ${isAdmin ? `<span class="ml-2 text-rose-300" onclick="event.stopPropagation(); localData.eq['${z}'].splice(${idx},1); renderEq()">×</span>` : ''}
+                    </div>
+                `).join('');
+            });
+        };
 
         window.saveToCloud = () => {
             set(dataRef, localData).then(() => {
-                alert("✅ 資料已發布！現場人員將即時看到更新。");
+                alert("✅ 資料發布成功！所有工作人員手機已同步。");
                 isAdmin = false;
                 document.body.classList.remove('admin-mode');
                 document.getElementById('modeBtn').innerText = "🛠️ 編輯模式";
@@ -181,13 +233,13 @@
         };
 
         onValue(dataRef, (snap) => {
-            if(isAdmin) return; // 編輯中鎖定，不接收雲端覆蓋
+            if(isAdmin) return; // 編輯中鎖定雲端同步
             const d = snap.val();
             if(d) { localData = d; renderAll(); }
         });
 
         init();
-        setInterval(renderAll, 30000); // 每 30 秒重新檢查一次「當前項目」綠色高亮
+        setInterval(renderAll, 60000); // 每分鐘自動刷新檢查「執行中」狀態
     </script>
 </body>
 </html>
