@@ -10,7 +10,7 @@
         body.admin-mode { background: #fffbeb; } 
         .is-now { background: #f0fdf4 !important; border-left: 8px solid #22c55e !important; }
         
-        /* 表格與字體統一 */
+        /* 表格與字體基礎設定 */
         .rundown-table { width: 100%; border-collapse: collapse; background: white; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 12px 8px; vertical-align: middle; }
         .table-head { background: #334155; color: white; font-size: 14px; font-weight: bold; }
@@ -19,14 +19,20 @@
         .col-unit { color: #1e293b; width: auto; min-width: 160px; }
         .col-desc { color: #475569; width: auto; min-width: 250px; }
 
+        /* --- 核心修正：編輯模式下的字體顏色與背景 --- */
+        body.admin-mode .cell-content { 
+            background-color: #475569 !important; /* 深灰色背景 */
+            color: #ffffff !important;           /* 統一白色字體 */
+            border: 1px solid #334155;
+        }
+
         .time-range { font-family: monospace; font-weight: bold; color: #2563eb; font-size: 15px; }
         .duration-tag { font-size: 12px; color: #94a3b8; font-weight: normal; margin-left: 4px; }
         
         .job-tag { display: inline-block; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px; font-weight: bold; }
         body.admin-mode .job-tag { cursor: pointer; border: 1px dashed #cbd5e1; }
-        body.admin-mode .job-tag:hover { background: #fecaca; color: #991b1b; }
 
-        /* 名片模式樣式 (手機專用) */
+        /* 名片模式 (手機專用) */
         .card-view-item { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card-view-item.is-now { border-left: 10px solid #22c55e; background: #f0fdf4; }
         
@@ -45,7 +51,7 @@
             body { background: white !important; padding: 0; }
             #displayHeader { display: block !important; }
             .rundown-table { width: 100% !important; border: 2px solid black; }
-            .rundown-table th, .rundown-table td { border: 1px solid black !important; color: black !important; }
+            .rundown-table th, .rundown-table td { border: 1px solid black !important; color: black !important; background: transparent !important; }
         }
     </style>
 </head>
@@ -67,7 +73,7 @@
 
         <div class="flex justify-between items-center mb-6 no-print">
             <div class="admin-only">
-                <h2 class="text-xl font-black text-amber-600 italic">MODE: EDITOR</h2>
+                <h2 class="text-xl font-black text-amber-600 italic">後台編輯模式 (白色字體優化)</h2>
             </div>
             <div class="flex items-center gap-3">
                 <button onclick="handleModeSwitch()" id="modeBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">🛠️ 編輯模式</button>
@@ -166,7 +172,6 @@
 
                 const jobsHtml = (item.jobs || []).map(j => `<span class="job-tag" onclick="removeJob(${i}, '${j}')">${j}</span>`).join('');
                 
-                // 表格列渲染
                 const tr = document.createElement("tr");
                 if(isNowActive) tr.className = "is-now";
                 tr.innerHTML = `
@@ -175,12 +180,11 @@
                         <div class="time-range">${isAdmin && i===0 ? `<input type="text" class="start-time w-16 text-center border-b-2 border-blue-500" value="${start}" oninput="updateStartTime(this.value)">` : `<span>${start}</span>`}<span>-</span><span>${endStr}</span><span class="duration-tag">(${dur}m)</span></div>
                         ${isAdmin ? `<input type="number" class="dur-input w-12 text-center border mt-1 text-xs" value="${dur}" oninput="updateDuration(${i}, this.value)">` : ""}
                     </td>
-                    <td class="col-unit cell-content ${isAdmin?'bg-yellow-50':''}" contenteditable="${isAdmin}" onblur="updateText(${i}, 'unit', this.innerText)">${item.unit || ''}</td>
-                    <td class="col-desc cell-content ${isAdmin?'bg-yellow-50':''}" contenteditable="${isAdmin}" onblur="updateText(${i}, 'desc', this.innerText)">${item.desc || ''}</td>
+                    <td class="col-unit cell-content" contenteditable="${isAdmin}" onblur="updateText(${i}, 'unit', this.innerText)">${item.unit || ''}</td>
+                    <td class="col-desc cell-content" contenteditable="${isAdmin}" onblur="updateText(${i}, 'desc', this.innerText)">${item.desc || ''}</td>
                     <td><div id="row-jobs-${i}">${jobsHtml}</div>${isAdmin ? `<select class="no-print w-full text-[11px] mt-2 border-2 border-blue-200 rounded p-1 bg-white" onchange="addJob(${i}, this.value); this.value=''"><option value="">+ 分派人員</option>${activeStaffList.map(s => `<option value="${s}">${s}</option>`).join('')}</select>` : ""}</td>`;
                 tbody.appendChild(tr);
 
-                // 名片渲染 (直式)
                 const card = document.createElement("div");
                 card.className = `card-view-item ${isNowActive ? 'is-now' : ''}`;
                 card.innerHTML = `
@@ -196,7 +200,6 @@
             });
         };
 
-        // 操作函數
         window.addJob = (rowIdx, val) => { if(!val) return; if(!currentData.rundown[rowIdx].jobs) currentData.rundown[rowIdx].jobs = []; if(!currentData.rundown[rowIdx].jobs.includes(val)) { currentData.rundown[rowIdx].jobs.push(val); renderTable(); } };
         window.removeJob = (rowIdx, val) => { if(!isAdmin) return; currentData.rundown[rowIdx].jobs = currentData.rundown[rowIdx].jobs.filter(j => j !== val); renderTable(); };
         window.updateText = (idx, field, val) => { currentData.rundown[idx][field] = val; };
@@ -208,7 +211,7 @@
             if (!isAdmin) { if (prompt("密碼：") === "364401") isAdmin = true; else return; } else isAdmin = false;
             document.body.className = isAdmin ? "admin-mode p-2 md:p-6 pb-20" : "view-mode p-2 md:p-6 pb-20";
             document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 結束編輯" : "🛠️ 編輯模式";
-            if(isAdmin && isCardMode) toggleCardMode(); // 編輯時強制關閉名片模式
+            if(isAdmin && isCardMode) toggleCardMode();
             renderTable();
         };
 
@@ -226,7 +229,6 @@
             set(dataRef, data).then(() => { alert("✅ 已儲存"); isAdmin = false; renderTable(); });
         };
 
-        // Firebase 連結
         const app = initializeApp({ databaseURL: FIREBASE_URL });
         db = getDatabase(app);
         dataRef = ref(db, 'rundown_v2026_final');
@@ -240,7 +242,7 @@
             updateHeaderInfo(); renderTable();
         });
 
-        setInterval(renderTable, 60000); // 每一分鐘自動更新一次高亮狀態
+        setInterval(renderTable, 60000);
     </script>
 </body>
 </html>
