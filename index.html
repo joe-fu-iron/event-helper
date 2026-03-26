@@ -3,41 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 執行流程表 (序號與時間優化版)</title>
+    <title>2026 執行流程表 (全功能最終版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 14px; color: #334155; }
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 6px; vertical-align: middle; }
-        
-        /* 欄位寬度微調 */
         .col-no { width: 35px; text-align: center; color: #94a3b8; font-size: 11px; }
-        .col-time { width: 130px; } /* 增加寬度以容納 00:00 - 00:00 */
-        .col-dur { width: 55px; } 
+        .col-time { width: 145px; }
+        .col-dur { width: 60px; } 
         .col-unit { width: 180px; } 
         .col-job { width: 220px; }
-
-        .time-range { font-family: monospace; font-weight: bold; color: #f97316; font-size: 14px; text-align: center; }
-        .start-time-input { background: #fffbeb; font-weight: bold; text-align: center; border: 1px solid #ddd; border-radius: 4px; width: 60px; }
-        
-        .job-sel { display: none; margin-bottom: 4px; border: 1px solid #e2e8f0; border-radius: 4px; }
+        .time-range { font-family: monospace; font-weight: bold; color: #f97316; font-size: 14px; text-align: center; white-space: nowrap; }
+        .start-time-input { background: #fffbeb; font-weight: bold; text-align: center; border: 1px solid #fbd38d; border-radius: 4px; width: 65px; outline: none; }
+        .job-sel { display: none; margin-bottom: 4px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 11px; }
         .job-sel.visible { display: block; }
-        .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #475569; padding: 2px 8px; border-radius: 4px; margin: 2px; font-weight: bold; font-size: 12px; }
-        .num-input { width: 45px; border-bottom: 1px solid #000; text-align: center; margin-left: 4px; }
-        
+        .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #475569; padding: 2px 8px; border-radius: 4px; margin: 2px; font-weight: bold; font-size: 12px; box-shadow: 1px 1px 2px rgba(0,0,0,0.05); }
+        .num-input { width: 45px; border-bottom: 1px solid #000; text-align: center; margin-left: 4px; font-size: 11px; background: transparent; }
         .collapsible-content { transition: max-height 0.3s ease-out; overflow: hidden; }
         .collapsed { max-height: 0 !important; margin-bottom: 0 !important; padding: 0 !important; border: none !important; }
         .arrow { transition: transform 0.3s; display: inline-block; }
         .arrow.rotate { transform: rotate(-90deg); }
-
         @media screen and (max-width: 768px) {
             .rundown-table, .rundown-table tr, .rundown-table td { display: block; width: 100% !important; }
             .rundown-table thead { display: none; }
-            .rundown-table tr { margin-bottom: 15px; border: 1.5px solid #f97316; border-radius: 10px; overflow: hidden; }
-            .rundown-table td { position: relative; padding: 10px 10px 10px 35%; border: none; border-bottom: 1px solid #f1f5f9; }
-            .rundown-table td::before { content: attr(data-label); position: absolute; left: 10px; font-weight: bold; color: #f97316; font-size: 12px; }
+            .rundown-table tr { margin-bottom: 15px; border: 1.5px solid #f97316; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+            .rundown-table td { position: relative; padding: 10px 10px 10px 35%; border: none; border-bottom: 1px solid #f1f5f9; min-height: 40px; }
+            .rundown-table td::before { content: attr(data-label); position: absolute; left: 10px; font-weight: bold; color: #f97316; font-size: 11px; }
         }
-        @media print { .no-print { display: none !important; } .job-sel { display: none !important; } .print-text { display: block !important; border-bottom: 1px solid #eee; } }
+        @media print { .no-print { display: none !important; } .job-sel { display: none !important; } .print-text { display: block !important; border-bottom: 1px solid #eee; margin-bottom: 1px; } .collapsible-content { max-height: none !important; } }
     </style>
 </head>
 <body class="p-2 md:p-4">
@@ -46,7 +40,7 @@
         <div class="flex justify-between items-center mb-4 border-b pb-2">
             <div>
                 <h1 class="text-2xl font-black text-orange-700 inline-block mr-4">2026 活動執行流程表</h1>
-                <span id="syncStatus" class="text-xs font-bold px-2 py-1 bg-gray-100 rounded-full border">載入中...</span>
+                <span id="syncStatus" class="text-xs font-bold px-2 py-1 bg-gray-100 rounded-full border">初始化...</span>
             </div>
             <div class="flex gap-2 no-print">
                 <button onclick="saveToFirebase()" class="bg-orange-600 text-white px-5 py-2 rounded font-bold shadow hover:bg-orange-700">💾 儲存</button>
@@ -54,17 +48,17 @@
             </div>
         </div>
 
-        <div class="no-print font-bold text-slate-400 mb-2 cursor-pointer select-none text-xs" onclick="toggleSection('infoSection', 'infoArrow')">
-            <span id="infoArrow" class="arrow">▼</span> 基本資訊與人員設定 (點擊展開/收合)
+        <div class="no-print font-bold text-slate-400 mb-2 cursor-pointer select-none text-xs flex items-center gap-2" onclick="toggleSection('infoSection', 'infoArrow')">
+            <span id="infoArrow" class="arrow">▼</span> 基本資訊與人員名單 (點擊收合)
         </div>
         <div id="infoSection" class="collapsible-content">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 text-sm bg-slate-50 p-3 rounded border">
-                <div>主題：<input type="text" id="eventTitle" class="border-b bg-transparent w-full outline-none"></div>
+                <div>主題：<input type="text" id="eventTitle" class="border-b bg-transparent w-full outline-none focus:border-orange-500"></div>
                 <div>日期：<input type="date" id="eventDate" class="border-b bg-transparent outline-none" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600 font-bold"></span></div>
                 <div>地點：<input type="text" id="eventLocation" class="border-b bg-transparent w-full outline-none"></div>
                 <div>主持人：<input type="text" id="headerHost" class="border-b bg-transparent w-full outline-none"></div>
             </div>
-            <div class="p-3 bg-orange-50 rounded border border-orange-200 mb-4">
+            <div class="p-3 bg-orange-50 rounded border border-orange-200 mb-4 shadow-inner">
                 <div class="grid grid-cols-2 md:grid-cols-8 gap-2" id="staffConfig"></div>
             </div>
         </div>
@@ -76,217 +70,3 @@
                     <th class="col-time">時間區間</th>
                     <th class="col-dur">長度</th>
                     <th class="col-unit">單元項目</th>
-                    <th>執行說明</th>
-                    <th class="col-job">負責人</th>
-                </tr>
-            </thead>
-            <tbody id="rundownBody"></tbody>
-        </table>
-
-        <button onclick="addRow()" class="no-print bg-slate-800 text-white px-6 py-2 rounded font-bold mb-8 hover:bg-slate-700 transition">+ 新增流程項目</button>
-
-        <div class="border-t-2 pt-4">
-            <div class="no-print font-black text-lg text-blue-800 mb-3 cursor-pointer select-none" onclick="toggleSection('equipSection', 'equipArrow')">
-                <span id="equipArrow" class="arrow">▼</span> 📋 器材核對清單
-            </div>
-            <div id="equipSection" class="collapsible-content">
-                <div class="no-print bg-slate-100 p-4 rounded-lg mb-4 border border-dashed border-slate-300 text-xs">
-                    <div class="mb-3"><strong>📍 服務台：</strong><div id="serviceMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
-                    <div class="mb-3"><strong>📍 舞台區：</strong><div id="stageMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="border p-4 rounded-lg bg-white min-h-[120px] shadow-inner">
-                        <strong class="text-blue-700 border-b block mb-2">服務台項目：</strong>
-                        <div id="serviceContainer" class="flex flex-wrap"></div>
-                    </div>
-                    <div class="border p-4 rounded-lg bg-white min-h-[120px] shadow-inner">
-                        <strong class="text-red-700 border-b block mb-2">舞台區項目：</strong>
-                        <div id="stageContainer" class="flex flex-wrap"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        const firebaseConfig = { databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const dataRef = ref(db, 'rundown_v2026_time_v1');
-
-        // 器材選單定義
-        const menuItems = {
-            service: ["長官簽到表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱", "伴手禮*{手動}"],
-            stage: ["音響電腦", "TRUSS", "斜撐", "鐵板", "木架"]
-        };
-
-        // 工作人員設定區初始化
-        const staffConfig = document.getElementById('staffConfig');
-        for(let i=1; i<=8; i++) {
-            staffConfig.innerHTML += `
-                <div class="bg-white p-2 border rounded shadow-sm">
-                    <select id="j${i}" class="w-full text-[11px] border mb-1" onchange="updateAllSelects()">
-                        <option value="-">-</option><option value="控場">控場</option><option value="音響">音響</option>
-                        <option value="服務台">服務台</option><option value="manual">(自訂)</option>
-                    </select>
-                    <input type="text" id="cj${i}" placeholder="名稱" class="w-full text-[11px] border-b hidden mb-1" oninput="updateAllSelects()">
-                    <input type="text" id="s${i}" placeholder="姓名" class="w-full text-[11px] border-b" oninput="updateAllSelects()">
-                </div>`;
-        }
-
-        window.toggleSection = (id, arrowId) => {
-            const el = document.getElementById(id);
-            const isCollapsed = el.classList.toggle('collapsed');
-            document.getElementById(arrowId).classList.toggle('rotate');
-            localStorage.setItem('collapsed_' + id, isCollapsed);
-        };
-
-        window.addEquipment = (containerId, template, savedQty = "") => {
-            const container = document.getElementById(containerId);
-            const name = template.split('*')[0], isManual = template.includes('{手動}');
-            const tag = document.createElement('div'); tag.className = 'equipment-tag';
-            tag.innerHTML = `<span>${name}</span>${isManual ? `*<input type="text" class="num-input" value="${savedQty}">` : ''}<button class="ml-1 text-red-500 no-print" onclick="this.parentElement.remove()">✕</button>`;
-            container.appendChild(tag);
-        };
-
-        window.refreshRowJobs = (row) => {
-            const list = [];
-            for(let i=1; i<=8; i++) {
-                const j = document.getElementById(`j${i}`).value, s = document.getElementById(`s${i}`).value, cj = document.getElementById(`cj${i}`).value;
-                document.getElementById(`cj${i}`).style.display = (j === "manual") ? "block" : "none";
-                if(j === "manual" && cj) list.push(`${cj}(${s})`); else if(j !== "-") list.push(`${j}(${s})`);
-            }
-            let lastIdx = -1;
-            const selects = row.querySelectorAll('.job-sel');
-            const prints = row.querySelectorAll('.print-text');
-            selects.forEach((sel, i) => {
-                const saved = sel.getAttribute('data-temp-val') || "";
-                sel.innerHTML = `<option value="">- 選取 -</option>` + list.map(n => `<option value="${n}" ${n===saved?'selected':''}>${n}</option>`).join('');
-                if(saved && list.includes(saved)) { sel.value = saved; lastIdx = i; prints[i].innerText = saved; }
-                else { prints[i].innerText = ""; }
-            });
-            selects.forEach((sel, i) => { if(i === 0 || i <= lastIdx + 1) sel.classList.add('visible'); else sel.classList.remove('visible'); });
-        };
-
-        window.updateAllSelects = () => document.querySelectorAll("#rundownBody tr").forEach(row => refreshRowJobs(row));
-
-        // 新增流程行 (新增序號列)
-        window.addRow = (isFirst = false, saved = null) => {
-            const tbody = document.getElementById("rundownBody");
-            const tr = document.createElement("tr");
-            let jobHTML = `<div class="job-container">`;
-            for(let i=0; i<6; i++) {
-                const val = saved?.jobs?.[i] || "";
-                jobHTML += `<div><select class="job-sel no-print w-full text-xs p-1" data-temp-val="${val}" onchange="this.setAttribute('data-temp-val', this.value); refreshRowJobs(this.closest('tr'))"></select><div class="print-text hidden font-bold text-blue-900 border-b text-[11px]">${val}</div></div>`;
-            }
-            jobHTML += `</div>`;
-
-            tr.innerHTML = `
-                <td data-label="序號" class="col-no"></td>
-                <td data-label="時間區間" class="text-center">
-                    <div class="time-range">
-                        ${isFirst ? `<input type="text" class="start-time start-time-input" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start">00:00</span>'}
-                        <span class="mx-1">-</span>
-                        <span class="row-end">00:00</span>
-                    </div>
-                </td>
-                <td data-label="長度"><input type="number" class="duration w-full text-center border-b font-bold" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
-                <td data-label="單元項目" contenteditable="true" class="unit-cell font-bold px-1 text-blue-800 outline-none">${saved?.unit||''}</td>
-                <td data-label="執行說明" contenteditable="true" class="desc-cell text-xs px-1 text-slate-500 outline-none">${saved?.desc||''}</td>
-                <td data-label="負責人" class="col-job">${jobHTML}</td>`;
-            tbody.appendChild(tr);
-            refreshRowJobs(tr);
-            calculateAllTimes();
-        };
-
-        window.calculateAllTimes = () => {
-            let nextStartTime = "";
-            const rows = document.querySelectorAll("#rundownBody tr");
-            rows.forEach((row, i) => {
-                // 更新序號
-                row.querySelector(".col-no").innerText = i + 1;
-
-                const dur = parseInt(row.querySelector(".duration").value) || 0;
-                let start = (i === 0) ? row.querySelector(".start-time").value : nextStartTime;
-                
-                if(start && start.includes(":")) {
-                    let [h, m] = start.split(":").map(Number);
-                    let em = m + dur; 
-                    let eh = (h + Math.floor(em/60)) % 24; 
-                    let finalEnd = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2,'0')}`;
-                    
-                    if(i !== 0) row.querySelector(".row-start").innerText = start;
-                    row.querySelector(".row-end").innerText = finalEnd;
-                    nextStartTime = finalEnd;
-                }
-            });
-        };
-
-        window.saveToFirebase = () => {
-            const data = {
-                title: document.getElementById('eventTitle').value, date: document.getElementById('eventDate').value,
-                location: document.getElementById('eventLocation').value, host: document.getElementById('headerHost').value,
-                staff: {}, rundown: [], service: [], stage: []
-            };
-            for(let i=1; i<=8; i++) data.staff[i] = {j: document.getElementById(`j${i}`).value, cj: document.getElementById(`cj${i}`).value, s: document.getElementById(`s${i}`).value};
-            document.querySelectorAll("#rundownBody tr").forEach(row => {
-                data.rundown.push({
-                    startTime: row.querySelector(".start-time")?.value || "", duration: row.querySelector(".duration").value,
-                    unit: row.querySelector(".unit-cell").innerText, desc: row.querySelector(".desc-cell").innerText,
-                    jobs: Array.from(row.querySelectorAll('.job-sel')).map(s => s.getAttribute('data-temp-val') || "")
-                });
-            });
-            document.querySelectorAll('#serviceContainer .equipment-tag').forEach(el => data.service.push({t: el.querySelector('span').innerText+(el.querySelector('input')?"*{手動}":""), q: el.querySelector('input')?.value||""}));
-            document.querySelectorAll('#stageContainer .equipment-tag').forEach(el => data.stage.push({t: el.querySelector('span').innerText+(el.querySelector('input')?"*{手動}":""), q: el.querySelector('input')?.value||""}));
-            set(dataRef, data).then(() => alert("✅ 已儲存至 Firebase"));
-        };
-
-        onValue(dataRef, (snapshot) => {
-            const data = snapshot.val(); if(!data) { addRow(true); return; }
-            document.getElementById('eventTitle').value = data.title || "";
-            document.getElementById('eventDate').value = data.date || "";
-            document.getElementById('eventLocation').value = data.location || "";
-            document.getElementById('headerHost').value = data.host || "";
-            for(let i=1; i<=8; i++) {
-                document.getElementById(`j${i}`).value = data.staff?.[i]?.j || "-";
-                document.getElementById(`cj${i}`).value = data.staff?.[i]?.cj || "";
-                document.getElementById(`s${i}`).value = data.staff?.[i]?.s || "";
-            }
-            document.getElementById("rundownBody").innerHTML = ""; (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
-            document.getElementById('serviceContainer').innerHTML = ""; (data.service || []).forEach(e => addEquipment('serviceContainer', e.t, e.q));
-            document.getElementById('stageContainer').innerHTML = ""; (data.stage || []).forEach(e => addEquipment('stageContainer', e.t, e.q));
-            updateDayOfWeek();
-        });
-
-        window.updateDayOfWeek = () => {
-            const d = new Date(document.getElementById('eventDate').value);
-            document.getElementById('dayOfWeek').innerText = isNaN(d) ? "" : `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
-        };
-
-        const initMenus = () => {
-            ['service', 'stage'].forEach(type => {
-                const menu = document.getElementById(type + 'Menu');
-                menuItems[type].forEach(item => {
-                    const btn = document.createElement('button');
-                    btn.className = 'bg-white border text-[10px] px-2 py-1 rounded hover:bg-orange-100';
-                    btn.innerText = `+ ${item.split('*')[0]}`;
-                    btn.onclick = () => addEquipment(type + 'Container', item);
-                    menu.appendChild(btn);
-                });
-            });
-            ['infoSection', 'equipSection'].forEach(id => {
-                if(localStorage.getItem('collapsed_' + id) === 'true') {
-                    document.getElementById(id).classList.add('collapsed');
-                    document.getElementById(id.replace('Section', 'Arrow')).classList.add('rotate');
-                }
-            });
-        };
-        initMenus();
-
-        onValue(ref(db, ".info/connected"), (s) => document.getElementById('syncStatus').innerText = s.val() ? "🟢 連線中" : "🔴 離線");
-    </script>
-</body>
-</html>
