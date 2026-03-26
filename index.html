@@ -6,87 +6,84 @@
     <title>2026頭份四月八-終極執行控台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; transition: 0.3s; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; transition: 0.3s; }
+        .is-now { background: #f0fdf4 !important; border-left: 12px solid #22c55e !important; box-shadow: inset 0 0 10px rgba(34,197,94,0.1); }
         .admin-mode { background: #fffbeb !important; }
-        /* 執行中項目：深綠高對比 */
-        .is-now { background: #f0fdf4 !important; border-left: 10px solid #22c55e !important; box-shadow: inset 0 0 10px rgba(34,197,94,0.1); }
-        .is-now td { color: #166534; font-weight: 900; }
         
+        /* 表格樣式 */
+        .table-wrapper { overflow-x: auto; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
-        .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 12px 8px; vertical-align: middle; }
+        .rundown-table th, .rundown-table td { border: 1px solid #e2e8f0; padding: 12px 8px; vertical-align: middle; }
         .cell-input { font-weight: bold; width: 100%; outline: none; background: transparent; border: none; font-size: 14px; }
-        .admin-mode .cell-input { background: #fff; box-shadow: inset 0 0 0 1px #e2e8f0; border-radius: 4px; padding: 4px; }
+        .admin-mode .cell-input { background: #fff; box-shadow: inset 0 0 0 1px #cbd5e1; border-radius: 4px; padding: 4px; }
         
         .admin-only { display: none !important; }
         .admin-mode .admin-only { display: block !important; }
         
-        /* 名片模式 (手機執行專用) */
+        /* 名片模式 (手機執行) */
         #cardContainer { display: none; grid-template-columns: 1fr; gap: 1rem; }
         body.card-view .table-wrapper, body.card-view .admin-only:not(#viewBtn) { display: none !important; }
         body.card-view #cardContainer { display: grid; }
-        .item-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: 0.3s; }
-        .active-card { ring: 4px solid #22c55e; background: #f0fdf4; border-color: #22c55e; transform: scale(1.02); }
+        .item-card { background: white; padding: 24px; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         
-        /* 器材標籤 */
-        .eq-tag { cursor: pointer; border: 1.5px solid #cbd5e1; padding: 6px 12px; border-radius: 10px; margin: 4px; font-weight: bold; font-size: 13px; display: inline-block; background: white; transition: 0.2s; }
-        .eq-tag.loaded { background-color: #22c55e; color: white; border-color: #166534; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        /* 器材標籤與數量 */
+        .eq-tag { cursor: pointer; border: 2px solid #cbd5e1; padding: 8px 14px; border-radius: 12px; margin: 5px; font-weight: 800; font-size: 13px; display: inline-flex; align-items: center; background: white; transition: 0.2s; }
+        .eq-tag.loaded { background-color: #22c55e; color: white; border-color: #166534; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .eq-input { background: transparent; border-bottom: 1px solid #cbd5e1; outline: none; padding: 0 4px; font-weight: 900; }
         
-        @media print { .no-print { display: none; } }
+        /* 簽到按鈕 */
+        .btn-checkin { background: #22c55e; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 900; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-checkin:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="p-2 md:p-6 pb-20">
+<body class="p-2 md:p-6 pb-24">
 
     <div class="max-w-[1400px] mx-auto">
-        <div class="flex justify-between items-center mb-6 border-b-4 border-slate-800 pb-4 no-print">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b-4 border-slate-900 pb-6 gap-4">
             <div>
-                <h1 class="text-2xl md:text-3xl font-black italic text-slate-800 tracking-tighter">2026頭份四月八 靚燈好客節</h1>
-                <p class="text-sm font-bold text-rose-600">3/27(五) 發布會 | 執行製作最終控台</p>
+                <h1 class="text-3xl font-black italic text-slate-900 tracking-tighter">2026頭份四月八 靚燈好客節</h1>
+                <p class="text-sm font-bold text-rose-600">3/27(五) 發布會 | 執行製作最終控台 (800次對談全功能版)</p>
             </div>
-            <div class="flex gap-2">
-                <button onclick="toggleCardView()" id="viewBtn" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700">🗂️ 名片模式</button>
-                <button onclick="handleAdminSwitch()" id="modeBtn" class="bg-amber-500 text-white px-3 py-2 rounded-lg font-bold shadow-md">🛠️ 編輯模式</button>
-                <button onclick="saveToCloud()" class="admin-only bg-blue-600 text-white px-3 py-2 rounded-lg font-bold shadow-md">💾 儲存發布</button>
+            <div class="flex gap-2 w-full md:w-auto">
+                <button onclick="toggleCardView()" id="viewBtn" class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold shadow-lg">🗂️ 名片模式</button>
+                <button onclick="handleAdminSwitch()" id="modeBtn" class="flex-1 bg-amber-500 text-white px-4 py-2 rounded-xl font-bold shadow-lg">🛠️ 編輯模式</button>
+                <button onclick="saveToCloud()" class="admin-only flex-1 bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-lg">💾 儲存發布</button>
             </div>
         </div>
 
-        <div class="table-wrapper overflow-x-auto rounded-xl shadow-2xl bg-white border border-slate-300">
+        <div class="admin-only bg-white rounded-2xl mb-8 border-4 border-amber-400 p-6 shadow-2xl">
+            <h3 class="text-sm font-black mb-4 text-amber-700 flex items-center">👥 執行人員名單與職稱 (手動修改區)</h3>
+            <div id="staffGrid" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+        </div>
+
+        <div class="table-wrapper">
             <table class="rundown-table text-sm">
-                <thead class="bg-slate-800 text-white">
+                <thead class="bg-slate-900 text-white">
                     <tr>
-                        <th width="40">序</th><th width="120">時間</th><th width="60">長度</th><th width="180">單元名稱</th><th>執行內容說明</th><th width="150">負責人員</th><th width="40" class="admin-only">✕</th>
+                        <th width="45">序</th><th width="120">時間</th><th width="65">長度</th><th width="190">執行單元</th><th>執行說明重點</th><th width="150">負責人員</th><th width="90">簽到</th><th width="45" class="admin-only">✕</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
             </table>
-            <button onclick="addNewRow()" class="admin-only w-full p-4 border-2 border-dashed border-slate-200 font-black text-slate-400 hover:bg-slate-50">+ 插入新流程 (即時同步不掉字)</button>
+            <button onclick="addNewRow()" class="admin-only w-full p-5 border-4 border-dashed border-slate-200 font-black text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition">+ 插入新流程項目 (自動鎖定文字)</button>
         </div>
 
-        <div id="cardContainer" class="mt-4 no-print"></div>
+        <div id="cardContainer" class="mt-4"></div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
-            <div class="bg-white p-5 rounded-2xl border-t-8 border-blue-500 shadow-lg">
-                <h2 class="font-black text-blue-600 text-sm mb-3">📍 服務台區域器材</h2>
-                <div id="serviceBox"></div>
-                <div class="admin-only mt-3 flex gap-2">
-                    <select class="flex-1 border-2 border-slate-100 p-2 rounded-lg text-xs font-bold bg-white" onchange="if(this.value){addEq('service', this.value); this.value=''}">
-                        <option value="">快速選取常用器材...</option>
-                        <option value="簽到表/筆">簽到表/筆</option><option value="貴賓名牌/座卡">貴賓名牌/座卡</option>
-                        <option value="新聞資料袋">新聞資料袋</option><option value="摸彩箱/摸彩券">摸彩箱/摸彩券</option>
-                        <option value="瓶裝水/杯墊">瓶裝水/杯墊</option>
-                    </select>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+            <div class="bg-white p-6 rounded-3xl border-t-[12px] border-blue-600 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-black text-blue-700">📍 服務台物料點貨 (含數量)</h2>
+                    <button onclick="addEq('service')" class="admin-only text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">+ 新增器材</button>
                 </div>
+                <div id="serviceBox" class="min-h-[60px]"></div>
             </div>
-            <div class="bg-white p-5 rounded-2xl border-t-8 border-rose-500 shadow-lg">
-                <h2 class="font-black text-rose-600 text-sm mb-3">📍 舞台/媒體工作區器材</h2>
-                <div id="stageBox"></div>
-                <div class="admin-only mt-3 flex gap-2">
-                    <select class="flex-1 border-2 border-slate-100 p-2 rounded-lg text-xs font-bold bg-white" onchange="if(this.value){addEq('stage', this.value); this.value=''}">
-                        <option value="">快速選取常用器材...</option>
-                        <option value="無線麥克風*2">無線麥克風*2</option><option value="市長上手板">市長上手板</option>
-                        <option value="炒米粉展示道具">炒米粉展示道具</option><option value="攝影補燈組">攝影補燈組</option>
-                        <option value="活動背板組">活動背板組</option>
-                    </select>
+            <div class="bg-white p-6 rounded-3xl border-t-[12px] border-rose-600 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-black text-rose-700">📍 舞台/媒體區物料 (含數量)</h2>
+                    <button onclick="addEq('stage')" class="admin-only text-xs bg-rose-100 text-rose-700 px-2 py-1 rounded font-bold">+ 新增器材</button>
                 </div>
+                <div id="stageBox" class="min-h-[60px]"></div>
             </div>
         </div>
     </div>
@@ -95,28 +92,37 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // 資料庫初始化
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'toufen_48_v100_Ultimate');
+        const dataRef = ref(db, 'toufen_48_Ultimate_Final');
 
-        // 鎖定 10 人公司名單與職位
-        const staffList = [
-            { j: "執行製作", n: "鐵仁" }, { j: "服務台", n: "柏緯" },
-            { j: "平面攝影", n: "江哥" }, { j: "活動執行", n: "中瑜" },
-            { j: "餐飲物料", n: "貝克里" }, { j: "機動助理", n: "阿強" },
-            { j: "媒體聯絡", n: "美玲" }, { j: "現場總控", n: "阿杰" },
-            { j: "音控組", n: "小明" }, { j: "主持助理", n: "小芬" }
+        // 預載名單與職稱 (對齊 800 次對談要求)
+        const initialStaff = [
+            { j: "控場", n: "鐵仁" }, { j: "執行", n: "崧瑋" }, { j: "執行", n: "露比" },
+            { j: "執行", n: "志明" }, { j: "執行", n: "維憶" }, { j: "執行", n: "芳瑜" },
+            { j: "服務台", n: "柏緯" }, { j: "攝影", n: "江哥" }, { j: "執行", n: "中瑜" }, { j: "物料", n: "貝克里" }
         ];
 
         let isAdmin = false, isCardView = false;
         let localData = {
-            rundown: [
-                { t: "08:30", d: "30M", u: "公司出發/小車", s: "全員集合出發、器材上車", person: "執行製作-鐵仁" },
-                { t: "09:00", d: "60M", u: "場地佈置", s: "舞台區、簽到區定位", person: "現場總控-阿杰" },
-                { t: "10:00-10:10", d: "10M", u: "媒體訪問", s: "市長接受聯訪、上手版準備", person: "平面攝影-江哥" },
-                { t: "10:10-10:20", d: "10M", u: "市長炒米粉示範", s: "米粉示範與拍攝、中瑜協助", person: "活動執行-中瑜" }
-            ],
-            eq: { service: [], stage: [] }
+            staff: initialStaff,
+            rundown: [{ t: "10:00", d: "10m", u: "發布會啟動", s: "市長示範炒米粉", person: "控場-鐵仁", checkin: "" }],
+            eq: { 
+                service: [{n: "簽到表/原子筆", q: "10", l: false}, {n: "新聞資料袋", q: "30", l: false}], 
+                stage: [{n: "無線麥克風", q: "2", l: false}, {n: "市長上手板", q: "1", l: false}] 
+            }
+        };
+
+        // 人員名單手動編輯區
+        const renderStaffSettings = () => {
+            const grid = document.getElementById('staffGrid');
+            grid.innerHTML = localData.staff.map((s, i) => `
+                <div class="p-2 border-2 border-amber-100 rounded-xl bg-amber-50 shadow-sm transition hover:border-amber-400">
+                    <input type="text" value="${s.j}" oninput="localData.staff[${i}].j=this.value; renderAll()" class="w-full text-[10px] border-b border-amber-200 outline-none bg-transparent mb-1 font-bold text-amber-800" placeholder="職稱">
+                    <input type="text" value="${s.n}" oninput="localData.staff[${i}].n=this.value; renderAll()" class="w-full text-[13px] outline-none font-black bg-transparent" placeholder="姓名">
+                </div>
+            `).join('');
         };
 
         window.renderAll = () => {
@@ -124,7 +130,7 @@
             const cardContainer = document.getElementById('cardContainer');
             const curMin = new Date().getHours() * 60 + new Date().getMinutes();
             tbody.innerHTML = ""; cardContainer.innerHTML = "";
-            const staffOptions = staffList.map(s => `<option value="${s.j}-${s.n}">${s.j}:${s.n}</option>`).join('');
+            const staffOptions = localData.staff.filter(s => s.n).map(s => `<option value="${s.j}-${s.n}">${s.j}:${s.n}</option>`).join('');
 
             localData.rundown.forEach((item, i) => {
                 let isActive = false;
@@ -136,42 +142,66 @@
                 const tr = document.createElement('tr');
                 if(isActive) tr.className = "is-now";
                 tr.innerHTML = `
-                    <td class="text-center text-slate-300 font-bold">${i+1}</td>
+                    <td class="text-center font-black text-slate-300">${i+1}</td>
                     <td><input class="cell-input" value="${item.t}" oninput="localData.rundown[${i}].t=this.value" ${!isAdmin?'readonly':''}></td>
                     <td><input class="cell-input" value="${item.d}" oninput="localData.rundown[${i}].d=this.value" ${!isAdmin?'readonly':''}></td>
                     <td><input class="cell-input" value="${item.u}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}></td>
                     <td><input class="cell-input font-normal text-slate-500 text-xs" value="${item.s}" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}></td>
                     <td>
-                        ${isAdmin ? `<select class="w-full text-[11px] border bg-white p-1 font-bold" onchange="localData.rundown[${i}].person=this.value; renderAll()">
+                        ${isAdmin ? `<select class="w-full text-[11px] border bg-white font-bold p-1 rounded" onchange="localData.rundown[${i}].person=this.value; renderAll()">
                             <option value="">未指派</option>${staffOptions.replace('value="'+item.person+'"', 'selected value="'+item.person+'"')}
-                        </select>` : `<div class="bg-indigo-50 px-2 py-1 rounded text-indigo-700 text-[10px] font-black text-center border border-indigo-100">${item.person || '-'}</div>`}
+                        </select>` : `<div class="bg-indigo-50 px-2 py-1 rounded text-indigo-700 text-[11px] font-black text-center border border-indigo-100">${item.person || '-'}</div>`}
+                    </td>
+                    <td class="text-center">
+                        ${item.checkin ? `<span class="text-[12px] font-black text-green-600">✅ ${item.checkin}</span>` : `<button onclick="doCheckIn(${i})" class="btn-checkin">簽到</button>`}
                     </td>
                     <td class="admin-only text-center"><button onclick="removeRow(${i})" class="text-rose-400 font-bold">✕</button></td>
                 `;
                 tbody.appendChild(tr);
 
                 const card = document.createElement('div');
-                card.className = `item-card ${isActive ? 'active-card' : ''}`;
-                card.innerHTML = `<div class="flex justify-between mb-2"><span class="text-[10px] font-black text-slate-400">#${i+1} UNIT</span><span class="text-2xl font-black text-indigo-600">${item.t}</span></div>
-                    <div class="text-2xl font-black mb-1 text-slate-800">${item.u}</div><div class="text-sm text-slate-600 mb-4 bg-slate-50 p-3 rounded-lg border-l-4 border-slate-200">${item.s}</div>
+                card.className = `item-card ${isActive ? 'ring-4 ring-green-500 bg-green-50' : ''}`;
+                card.innerHTML = `<div class="flex justify-between mb-2"><span class="text-[10px] font-black text-slate-400">UNIT #${i+1}</span><span class="text-3xl font-black text-indigo-600">${item.t}</span></div>
+                    <div class="text-2xl font-black mb-1 text-slate-800">${item.u}</div><div class="text-sm text-slate-500 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">${item.s}</div>
                     <div class="flex justify-between items-center border-t border-dashed pt-4">
-                        <div class="text-xs font-bold text-slate-400">⏱️時長: ${item.d}</div>
-                        <div class="bg-indigo-600 text-white px-4 py-1 rounded-full text-xs font-black shadow-md">${item.person || '現場執行'}</div>
+                        <div class="text-xs font-bold text-slate-400 uppercase">⌛ ${item.d} | 簽到: ${item.checkin || '待命中'}</div>
+                        <div class="bg-indigo-700 text-white px-4 py-2 rounded-full text-xs font-black shadow-md">${item.person || '現場執行'}</div>
                     </div>`;
                 cardContainer.appendChild(card);
             });
             renderEq();
         };
 
+        window.renderEq = () => {
+            ['service', 'stage'].forEach(z => {
+                document.getElementById(z+'Box').innerHTML = (localData.eq[z]||[]).map((e, idx) => `
+                    <div class="eq-tag ${e.l?'loaded':''}" onclick="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq(); if(!isAdmin) saveToCloud();">
+                        ${isAdmin ? 
+                            `<input class="eq-input w-24 text-blue-900" value="${e.n}" oninput="localData.eq['${z}'][${idx}].n=this.value" onclick="event.stopPropagation()"> x 
+                             <input class="eq-input w-8 text-center" value="${e.q}" oninput="localData.eq['${z}'][${idx}].q=this.value" onclick="event.stopPropagation()">`
+                            : `<span>${e.n}</span> <span class="ml-2 text-[10px] opacity-70">x</span> <span class="ml-1">${e.q}</span>`
+                        }
+                        ${isAdmin ? `<span class="ml-2 text-rose-300 hover:text-rose-600" onclick="event.stopPropagation(); localData.eq['${z}'].splice(${idx},1); renderEq()">✕</span>` : ''}
+                    </div>
+                `).join('');
+            });
+        };
+
+        window.doCheckIn = (i) => {
+            const now = new Date();
+            localData.rundown[i].checkin = now.getHours() + ":" + String(now.getMinutes()).padStart(2, '0');
+            renderAll();
+            if(!isAdmin) saveToCloud(); 
+        };
+        window.addEq = (z) => { localData.eq[z].push({n: "新器材", q: "1", l: false}); renderEq(); };
         window.toggleCardView = () => { isCardView = !isCardView; document.body.classList.toggle('card-view', isCardView); document.getElementById('viewBtn').innerText = isCardView ? "📊 表格模式" : "🗂️ 名片模式"; renderAll(); };
-        window.handleAdminSwitch = () => { if(!isAdmin && prompt("請輸入執行密碼") !== "364401") return; isAdmin = !isAdmin; document.body.classList.toggle('admin-mode', isAdmin); document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 結束預覽" : "🛠️ 編輯模式"; renderAll(); };
-        window.addNewRow = () => { localData.rundown.push({ t: "", d: "10m", u: "新單元", s: "", person: "" }); renderAll(); };
-        window.removeRow = (i) => { if(confirm("確定刪除？")) { localData.rundown.splice(i, 1); renderAll(); } };
-        window.addEq = (z, n) => { localData.eq[z].push({n, l:false}); renderEq(); };
-        window.renderEq = () => { ['service', 'stage'].forEach(z => { document.getElementById(z+'Box').innerHTML = (localData.eq[z]||[]).map((e,idx)=>`<div class="eq-tag ${e.l?'loaded':''}" onclick="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq()">${e.n} ${isAdmin?'<span class="ml-1 opacity-20" onclick="event.stopPropagation(); localData.eq[\''+z+'\'].splice('+idx+',1); renderEq()">✕</span>':''}</div>`).join(''); }); };
-        window.saveToCloud = () => { set(dataRef, localData).then(() => { alert("✅ 雲端同步發布成功！所有夥伴手機已同步。"); isAdmin = false; document.body.classList.remove('admin-mode'); renderAll(); }); };
+        window.handleAdminSwitch = () => { if(!isAdmin && prompt("執行密碼") !== "364401") return; isAdmin = !isAdmin; document.body.classList.toggle('admin-mode', isAdmin); document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 結束編輯" : "🛠️ 編輯模式"; renderStaffSettings(); renderAll(); };
+        window.addNewRow = () => { localData.rundown.push({ t: "", d: "10m", u: "新單元", s: "", person: "", checkin: "" }); renderAll(); };
+        window.removeRow = (i) => { if(confirm("確定刪除此流程？")) { localData.rundown.splice(i, 1); renderAll(); } };
+        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ 雲端同步發布成功！所有夥伴手機已同步最新名單與數量。")); };
         onValue(dataRef, (snap) => { if(!isAdmin) { const d = snap.val(); if(d) { localData = d; renderAll(); } } });
-        setInterval(renderAll, 60000); // 每一分鐘重新檢查「執行中」狀態
+        
+        renderStaffSettings();
         renderAll();
     </script>
 </body>
