@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 執行流程控台-終極整合版 (修正預設行數)</title>
+    <title>2026 執行流程控台-終極整合版 (職稱自動記憶)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; color: #1e293b; transition: 0.3s; }
@@ -12,7 +12,7 @@
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 12px 8px; vertical-align: middle; word-break: break-all; }
         .table-head { background: #334155; color: white; font-size: 14px; font-weight: bold; }
-        .cell-content { font-weight: bold; font-size: 15px; color: #1e293b !important; background-color: white !important; min-height: 1.5em; }
+        .cell-content { font-weight: bold; font-size: 15px; color: #1e293b !important; background-color: white !important; min-height: 1.5em; outline: none; }
         .time-range { font-family: monospace; font-weight: bold; color: #2563eb; font-size: 15px; }
         .job-tag { display: inline-block; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px; font-weight: bold; cursor: pointer; }
         .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1.5px solid #cbd5e1; padding: 4px 10px; border-radius: 8px; margin: 4px; font-weight: bold; font-size: 13px; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
@@ -23,7 +23,6 @@
         #warehouseModal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); z-index: 100; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
         .warehouse-content { background: white; width: 100%; max-width: 650px; border-radius: 24px; padding: 24px; max-height: 85vh; overflow-y: auto; }
         .warehouse-item { cursor: pointer; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; background: #f8fafc; text-align: left; transition: 0.2s; margin-bottom: 4px; width: 100%; }
-        .warehouse-item:hover { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
         .admin-only { display: none !important; }
         body.admin-mode .admin-only { display: block !important; }
         #cardViewContainer { display: none; }
@@ -57,12 +56,14 @@
 
         <table class="rundown-table shadow-lg rounded-lg overflow-hidden mb-8" id="mainTable">
             <thead class="table-head">
-                <tr><th style="width:50px">序</th><th style="width:160px">時間</th><th style="width:200px">單元</th><th>執行說明</th><th style="width:200px">負責人員</th></tr>
+                <tr><th style="width:50px">序</th><th style="width:160px">時間</th><th style="width:200px">單元</th><th>執行說明</th><th style="width:220px">負責人員</th></tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
+
         <div id="cardViewContainer" class="no-print"></div>
-        <button onclick="addRow()" class="admin-only no-print mb-10 bg-white border-2 border-slate-300 px-6 py-3 rounded-lg font-black hover:bg-slate-100 transition shadow-sm">+ 新增流程項目</button>
+
+        <button onclick="addRow()" class="admin-only no-print mb-10 bg-white border-2 border-slate-300 px-6 py-3 rounded-xl font-black hover:bg-slate-100 transition shadow-sm w-full md:w-auto">+ 新增流程項目</button>
 
         <div id="eqSection" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-10">
             <div class="flex justify-between items-center mb-6">
@@ -100,24 +101,41 @@
     </div>
 
     <datalist id="teamNames"><option value="江哥"><option value="瑩驊"><option value="志明"><option value="鐵仁"><option value="露比"><option value="柏緯"><option value="維憶"><option value="芳瑜"><option value="燕妮"></datalist>
-    <datalist id="teamJobs"><option value="控場"><option value="製作人"><option value="音控"><option value="攝影"><option value="主持人"><option value="接待"></datalist>
+    <datalist id="teamJobs"></datalist>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const FIREBASE_URL = "https://rundown-worker-default-rtdb.firebaseio.com/";
-        let db, dataRef, eqDbRef, isAdmin = false, isCardMode = false;
+        let db, dataRef, eqDbRef, jobDbRef, isAdmin = false, isCardMode = false;
         let currentData = { rundown: [], title: "", date: "", service: [], stage: [], staff: {} };
         let equipmentLibrary = { service: ["簽到表", "瓶水", "便當"], stage: ["無線麥", "手板", "講稿夾"] };
+        let jobLibrary = ["控場", "製作人", "音控", "攝影", "主持人", "接待"];
 
+        // 頁面初始化
         const staffConfig = document.getElementById('staffConfig');
         for(let i=1; i<=10; i++) {
             staffConfig.innerHTML += `<div class="staff-card border rounded p-1 bg-slate-50">
-                <input type="text" id="j${i}" list="teamJobs" placeholder="職稱" class="w-full text-[10px] font-bold border-b mb-1">
-                <input type="text" id="s${i}" list="teamNames" placeholder="姓名" class="w-full text-[10px] font-bold">
+                <input type="text" id="j${i}" list="teamJobs" placeholder="職稱" class="w-full text-[10px] font-bold border-b mb-1 outline-none bg-transparent" onchange="checkAndSaveJob(this.value)">
+                <input type="text" id="s${i}" list="teamNames" placeholder="姓名" class="w-full text-[10px] font-bold outline-none bg-transparent">
             </div>`;
         }
+
+        // 自動記憶職稱功能
+        window.checkAndSaveJob = (newJob) => {
+            if (newJob && !jobLibrary.includes(newJob)) {
+                jobLibrary.push(newJob);
+                set(jobDbRef, jobLibrary); // 存入雲端
+                updateJobDatalist();
+            }
+        };
+
+        const updateJobDatalist = () => {
+            const dl = document.getElementById('teamJobs');
+            dl.innerHTML = jobLibrary.map(job => `<option value="${job}">`).join('');
+            renderTable(); // 重新整理表格中的派員選單
+        };
 
         window.toggleCardMode = () => { isCardMode = !isCardMode; document.body.classList.toggle('card-mode', isCardMode); renderTable(); };
         window.openWarehouse = () => { document.getElementById('warehouseModal').style.display = 'flex'; renderWarehouseItems(); };
@@ -155,7 +173,6 @@
             const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
 
             if(!currentData.rundown || currentData.rundown.length === 0) {
-                // 如果完全沒資料，預設生成 5 行
                 for(let k=0; k<5; k++) currentData.rundown.push({ duration: 10, unit: "新單元", desc: "說明內容", jobs: [] });
             }
 
@@ -171,16 +188,21 @@
                 const tr = document.createElement("tr");
                 if(isNowActive) tr.className = "is-now";
                 tr.innerHTML = `
-                    <td class="text-center text-slate-300 text-xs">${i+1}</td>
+                    <td class="text-center font-bold text-slate-400 text-sm">${i+1}</td>
                     <td class="text-center">
-                        <div class="time-range">${isAdmin && i===0 ? `<input type="text" class="w-16 border-b text-center" value="${start}" onchange="currentData.rundown[0].startTime=this.value; renderTable();">` : `<span>${start}</span>`}<span>-</span><span>${endStr}</span></div>
-                        ${isAdmin ? `<input type="number" class="w-10 text-[10px] text-slate-400" value="${dur}" onchange="currentData.rundown[${i}].duration=this.value; renderTable();">` : ""}
+                        <div class="time-range">${isAdmin && i===0 ? `<input type="text" class="w-16 border-b text-center outline-none bg-amber-50" value="${start}" onchange="currentData.rundown[0].startTime=this.value; renderTable();">` : `<span>${start}</span>`}<span>-</span><span>${endStr}</span></div>
+                        ${isAdmin ? `<input type="number" class="w-10 text-[10px] text-slate-400 outline-none" value="${dur}" onchange="currentData.rundown[${i}].duration=this.value; renderTable();">` : ""}
                     </td>
                     <td class="cell-content" contenteditable="${isAdmin}" onblur="currentData.rundown[${i}].unit=this.innerText">${item.unit || ''}</td>
                     <td class="cell-content text-slate-600 font-normal" contenteditable="${isAdmin}" onblur="currentData.rundown[${i}].desc=this.innerText">${item.desc || ''}</td>
                     <td>
                         <div class="flex flex-wrap">${(item.jobs || []).map(j=>`<span class="job-tag" onclick="removeJob(${i},'${j}')">${j}</span>`).join('')}</div>
-                        ${isAdmin ? `<select class="w-full text-[10px] mt-1 border" onchange="addJob(${i}, this.value); this.value=''"><option value="">＋ 派員</option>${activeStaff.map(s=>`<option value="${s.j}: ${s.s}">${s.j}: ${s.s}</option>`).join('')}</select>` : ""}
+                        ${isAdmin ? `
+                            <div class="flex gap-1 items-center mt-2 border-t pt-2">
+                                <select class="flex-1 text-[10px] border rounded p-1 outline-none" onchange="addJob(${i}, this.value); this.value=''"><option value="">＋ 派員</option>${activeStaff.map(s=>`<option value="${s.j}: ${s.s}">${s.j}: ${s.s}</option>`).join('')}</select>
+                                <button onclick="deleteRow(${i})" class="text-rose-500 hover:bg-rose-50 p-1 rounded transition" title="刪除此行">🗑️</button>
+                            </div>
+                        ` : ""}
                     </td>`;
                 tbody.appendChild(tr);
 
@@ -202,13 +224,8 @@
 
         window.addJob = (i, v) => { if(v && !currentData.rundown[i].jobs.includes(v)) { currentData.rundown[i].jobs.push(v); renderTable(); } };
         window.removeJob = (i, v) => { if(isAdmin) { currentData.rundown[i].jobs = currentData.rundown[i].jobs.filter(x=>x!==v); renderTable(); } };
-        
-        // 修正後的 AddRow 函數
-        window.addRow = () => {
-            if(!currentData.rundown) currentData.rundown = [];
-            currentData.rundown.push({ duration: 10, unit: "新單元", desc: "說明", jobs: [] });
-            renderTable();
-        };
+        window.addRow = () => { if(!currentData.rundown) currentData.rundown = []; currentData.rundown.push({ duration: 10, unit: "新單元", desc: "說明", jobs: [] }); renderTable(); };
+        window.deleteRow = (index) => { if(confirm(`確定要刪除第 ${index+1} 行流程嗎？`)) { currentData.rundown.splice(index, 1); renderTable(); } };
 
         window.handleModeSwitch = () => {
             if (!isAdmin) { if (prompt("密碼：") === "364401") isAdmin = true; else return; } else isAdmin = false;
@@ -227,12 +244,17 @@
         window.saveToFirebase = () => {
             currentData.title = document.getElementById('eventTitle').value; currentData.date = document.getElementById('eventDate').value;
             currentData.staff = {}; for(let i=1; i<=10; i++) currentData.staff[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
-            set(dataRef, currentData).then(() => alert("✅ 同步成功"));
+            set(dataRef, currentData).then(() => alert("✅ 同步發布成功！職稱庫已更新。"));
         };
         const saveToFirebaseQuietly = () => set(dataRef, currentData);
 
         const app = initializeApp({ databaseURL: FIREBASE_URL });
-        db = getDatabase(app); dataRef = ref(db, 'rundown_v2026_final_v2'); eqDbRef = ref(db, 'eq_library_v2');
+        db = getDatabase(app); 
+        dataRef = ref(db, 'rundown_v2026_final_v4'); 
+        eqDbRef = ref(db, 'eq_library_v4');
+        jobDbRef = ref(db, 'job_library_v4');
+
+        onValue(jobDbRef, (snap) => { if(snap.val()) { jobLibrary = snap.val(); updateJobDatalist(); } });
         onValue(eqDbRef, (snap) => { if(snap.val()) equipmentLibrary = snap.val(); });
         onValue(dataRef, (snap) => {
             const d = snap.val();
@@ -241,7 +263,7 @@
                 for(let i=1; i<=10; i++) if(d.staff?.[i]) { document.getElementById(`j${i}`).value = d.staff[i].j || ""; document.getElementById(`s${i}`).value = d.staff[i].s || ""; }
                 updateHeaderInfo(); renderTable(); renderEquipments();
             } else {
-                renderTable(); // 觸發預設 5 行邏輯
+                renderTable();
             }
         });
         setInterval(renderTable, 60000);
