@@ -3,32 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 執行流程控台-最終功能版</title>
+    <title>2026 執行流程控台-器材優化版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; color: #1e293b; transition: 0.3s; }
         body.admin-mode { background: #fffbeb; } 
         .is-now { background: #f0fdf4 !important; border-left: 8px solid #22c55e !important; }
         
-        /* 表格基礎 */
         .rundown-table { width: 100%; border-collapse: collapse; background: white; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 12px 8px; vertical-align: middle; }
         .table-head { background: #334155; color: white; font-size: 14px; font-weight: bold; }
         
         .cell-content { font-weight: bold; font-size: 15px; line-height: 1.5; color: #1e293b; background: white; }
-        
+        .col-unit { width: auto; min-width: 160px; }
+        .col-desc { width: auto; min-width: 250px; }
+
         .time-range { font-family: monospace; font-weight: bold; color: #2563eb; font-size: 15px; }
+        .duration-tag { font-size: 12px; color: #94a3b8; font-weight: normal; margin-left: 4px; }
+        
         .job-tag { display: inline-block; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px; font-weight: bold; }
         body.admin-mode .job-tag { cursor: pointer; border: 1px dashed #cbd5e1; }
 
-        /* 器材標籤：左邊點擊狀態，右邊手動輸入數量 */
+        /* 器材樣式：支援數量輸入 */
         .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1.5px solid #cbd5e1; padding: 4px 10px; border-radius: 8px; margin: 4px; font-weight: bold; font-size: 13px; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .equipment-tag.loaded { background-color: #22c55e !important; border-color: #166534 !important; color: white; }
         .eq-name { cursor: pointer; padding-right: 8px; border-right: 1px solid #ddd; margin-right: 8px; }
         .equipment-tag.loaded .eq-name { border-right-color: rgba(255,255,255,0.3); }
-        
-        /* 數量輸入框樣式 */
-        .eq-count { width: 45px; background: transparent; text-align: center; font-family: monospace; font-weight: 900; color: inherit; outline: none; border: none; }
+        .eq-count { width: 45px; background: transparent; text-align: center; font-family: monospace; font-weight: black; }
         .delete-eq { margin-left: 8px; color: #f87171; cursor: pointer; }
 
         .admin-only { display: none !important; }
@@ -40,6 +41,13 @@
         #cardViewContainer { display: none; }
         body.card-mode .rundown-table, body.card-mode #staffConfig, body.card-mode .admin-only { display: none !important; }
         body.card-mode #cardViewContainer { display: block; }
+
+        @media print {
+            .no-print, button, #staffConfig, input, select { display: none !important; }
+            body { background: white !important; padding: 0; }
+            #displayHeader { display: block !important; }
+            .rundown-table { width: 100% !important; border: 2px solid black; }
+        }
     </style>
 </head>
 <body class="view-mode p-2 md:p-6 pb-20">
@@ -68,24 +76,25 @@
 
         <div class="admin-only no-print bg-white rounded-xl mb-6 border-2 border-amber-300 shadow-xl p-4">
             <div class="grid grid-cols-2 gap-4 mb-4">
-                <div><label class="block text-xs font-bold text-slate-500 mb-1">日期</label><input type="date" id="eventDate" class="w-full border p-2 font-bold" onchange="updateHeaderInfo()"></div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">活動日期</label><input type="date" id="eventDate" class="w-full border p-2 font-bold" onchange="updateHeaderInfo()"></div>
                 <div><label class="block text-xs font-bold text-slate-500 mb-1">專案名稱</label><input type="text" id="eventTitle" class="w-full border p-2 font-bold" oninput="updateHeaderInfo()"></div>
             </div>
+            <p class="text-xs font-black text-slate-400 mb-3 underline">1. 人員設定：</p>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3" id="staffConfig"></div>
         </div>
 
         <table class="rundown-table shadow-lg rounded-lg overflow-hidden mb-8" id="mainTable">
             <thead class="table-head">
-                <tr><th style="width:50px">序</th><th style="width:180px">時間區段</th><th class="col-unit">單元項目</th><th class="col-desc">執行說明</th><th style="width:240px">負責人員</th></tr>
+                <tr><th style="width:50px">序</th><th style="width:180px">時間區段 (長度)</th><th class="col-unit">單元項目</th><th class="col-desc">執行說明</th><th style="width:240px">負責人員</th></tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
 
         <div id="cardViewContainer" class="no-print"></div>
-        <button onclick="addRow()" class="admin-only no-print mt-4 mb-10 bg-white text-slate-600 px-6 py-2 rounded font-bold border border-slate-300">+ 新增流程</button>
+        <button onclick="addRow()" class="admin-only no-print mt-4 mb-10 bg-white text-slate-600 px-6 py-2 rounded font-bold border border-slate-300 hover:bg-slate-50">+ 新增流程項目</button>
 
         <div id="eqSection" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-10">
-            <h2 class="text-lg font-black text-slate-800 mb-6 italic">📋 器材清點 (右側數字可手動輸入)</h2>
+            <h2 class="text-lg font-black text-slate-800 mb-6 italic">📋 器材清點清單 (點擊名稱標記，修改數值同步)</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div>
                     <div class="flex justify-between items-center mb-3">
@@ -113,7 +122,17 @@
         let db, dataRef, isAdmin = false, isCardMode = false;
         let currentData = { rundown: [], title: "", date: "", service: [], stage: [] };
 
-        // 核心邏輯
+        // 預設清單內容 (依據使用者提供)
+        const initService = [
+            {n:"長官貴賓簽到表", c:1}, {n:"勾選表", c:1}, {n:"新聞資料", c:20}, {n:"QR-CODE", c:1}, 
+            {n:"餐盒", c:50}, {n:"瓶水(箱)", c:2}, {n:"簽到箱", c:1}, {n:"文宣品", c:50}
+        ];
+        const initStage = [
+            {n:"音響+電腦", c:1}, {n:"TRUSS 5*3組", c:1}, {n:"紅桌巾", c:3}, {n:"濕紙巾", c:3}, 
+            {n:"衛生紙", c:2}, {n:"項目手板", c:5}, {n:"主持人手板", c:1}, {n:"歲末集章卡發放牌+木架", c:1}
+        ];
+
+        // 初始化人員欄位
         const staffConfig = document.getElementById('staffConfig');
         for(let i=1; i<=8; i++) {
             staffConfig.innerHTML += `
@@ -122,6 +141,13 @@
                     <input type="text" id="s${i}" placeholder="姓名" class="w-full text-[11px] font-bold bg-transparent">
                 </div>`;
         }
+
+        window.toggleCardMode = () => {
+            isCardMode = !isCardMode;
+            document.body.classList.toggle('card-mode', isCardMode);
+            document.getElementById('toggleViewBtn').innerText = isCardMode ? "📊 表格模式" : "🗂️ 名片模式";
+            renderTable();
+        };
 
         window.renderTable = () => {
             const tbody = document.getElementById("rundownBody");
@@ -148,17 +174,41 @@
                         <div class="time-range">${isAdmin && i===0 ? `<input type="text" class="w-16 text-center border-b border-blue-500" value="${start}" oninput="updateStartTime(this.value)">` : `<span>${start}</span>`}<span>-</span><span>${endStr}</span></div>
                         ${isAdmin ? `<input type="number" class="w-12 text-center border text-xs" value="${dur}" oninput="updateDuration(${i}, this.value)">` : ""}
                     </td>
-                    <td class="cell-content" contenteditable="${isAdmin}" onblur="updateText(${i}, 'unit', this.innerText)">${item.unit || ''}</td>
-                    <td class="cell-content" contenteditable="${isAdmin}" onblur="updateText(${i}, 'desc', this.innerText)">${item.desc || ''}</td>
+                    <td class="col-unit cell-content" contenteditable="${isAdmin}" onblur="updateText(${i}, 'unit', this.innerText)">${item.unit || ''}</td>
+                    <td class="col-desc cell-content" contenteditable="${isAdmin}" onblur="updateText(${i}, 'desc', this.innerText)">${item.desc || ''}</td>
                     <td>
                         <div class="flex flex-wrap">${(item.jobs || []).map(j=>`<span class="job-tag" onclick="removeJob(${i}, '${j}')">${j}</span>`).join('')}</div>
                         ${isAdmin ? `<select class="w-full text-[10px] mt-1 border rounded" onchange="addJob(${i}, this.value); this.value=''"><option value="">+ 分派</option>${activeStaffList.map(s=>`<option value="${s.j}: ${s.s}">${s.j}: ${s.s}</option>`).join('')}</select>` : ""}
                     </td>`;
                 tbody.appendChild(tr);
+
+                const card = document.createElement("div");
+                card.className = `card-view-item p-4 mb-3 border rounded-xl bg-white shadow-sm ${isNow ? 'border-l-8 border-green-500' : ''}`;
+                card.innerHTML = `<div class="text-xs text-blue-600 font-bold">${start}-${endStr}</div><h3 class="font-black text-lg">${item.unit}</h3><p class="text-sm text-slate-500">${item.desc}</p><div>${(item.jobs||[]).map(j=>`<span class="job-tag">${j}</span>`).join('')}</div>`;
+                cardContainer.appendChild(card);
             });
         };
 
-        window.renderEquipments = () => {
+        // 器材管理邏輯
+        window.toggleEq = (zone, idx) => {
+            currentData[zone][idx].l = !currentData[zone][idx].l;
+            renderEquipments();
+        };
+
+        window.updateEqCount = (zone, idx, val) => {
+            currentData[zone][idx].c = val;
+        };
+
+        window.addEquipment = (zone) => {
+            const name = prompt("器材名稱：");
+            if(name) { currentData[zone].push({ n: name, c: 1, l: false }); renderEquipments(); }
+        };
+
+        window.removeEq = (zone, idx) => {
+            if(confirm("刪除此項？")) { currentData[zone].splice(idx, 1); renderEquipments(); }
+        };
+
+        const renderEquipments = () => {
             const draw = (zone) => {
                 const c = document.getElementById(zone + 'Container');
                 c.innerHTML = "";
@@ -176,17 +226,13 @@
             draw('service'); draw('stage');
         };
 
-        window.toggleEq = (zone, idx) => { currentData[zone][idx].l = !currentData[zone][idx].l; renderEquipments(); };
-        window.updateEqCount = (zone, idx, val) => { currentData[zone][idx].c = val; }; // 這裡保留手動輸入數值功能
-        window.addEquipment = (zone) => { const n = prompt("名稱："); if(n) { currentData[zone].push({ n, c:1, l:false }); renderEquipments(); } };
-        window.removeEq = (zone, idx) => { currentData[zone].splice(idx,1); renderEquipments(); };
-
+        // 核心功能
         window.updateText = (idx, f, v) => currentData.rundown[idx][f] = v;
         window.updateDuration = (idx, v) => { currentData.rundown[idx].duration = v; renderTable(); };
         window.updateStartTime = (v) => { currentData.rundown[0].startTime = v; renderTable(); };
         window.addJob = (i, v) => { if(v && !currentData.rundown[i].jobs.includes(v)) { currentData.rundown[i].jobs.push(v); renderTable(); } };
         window.removeJob = (i, v) => { if(isAdmin) { currentData.rundown[i].jobs = currentData.rundown[i].jobs.filter(x=>x!==v); renderTable(); } };
-        window.addRow = () => { currentData.rundown.push({ duration: 10, unit: "新項目", desc: "內容", jobs: [] }); renderTable(); };
+        window.addRow = () => { currentData.rundown.push({ duration: 10, unit: "新單元", desc: "說明", jobs: [] }); renderTable(); };
 
         window.handleModeSwitch = () => {
             if (!isAdmin) { if (prompt("密碼：") === "364401") isAdmin = true; else return; } else isAdmin = false;
@@ -197,7 +243,7 @@
 
         window.updateHeaderInfo = () => {
             const title = document.getElementById('eventTitle').value, date = document.getElementById('eventDate').value;
-            document.getElementById('viewEventTitle').innerText = title || "加載中";
+            document.getElementById('viewEventTitle').innerText = title || "專案加載中";
             document.getElementById('viewEventDate').innerText = date || "";
             if(date) document.getElementById('viewWeekdayDisplay').innerText = `(${['週日','週一','週二','週三','週四','週五','週六'][new Date(date).getDay()]})`;
         };
@@ -207,7 +253,7 @@
             currentData.date = document.getElementById('eventDate').value;
             currentData.staff = {};
             for(let i=1; i<=8; i++) currentData.staff[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
-            set(dataRef, currentData).then(() => alert("✅ 已儲存至雲端"));
+            set(dataRef, currentData).then(() => alert("✅ 雲端資料已儲存"));
         };
 
         const app = initializeApp({ databaseURL: FIREBASE_URL });
@@ -218,6 +264,8 @@
             const d = snap.val();
             if(d) {
                 currentData = d;
+                if(!currentData.service || currentData.service.length === 0) currentData.service = initService;
+                if(!currentData.stage || currentData.stage.length === 0) currentData.stage = initStage;
                 document.getElementById('eventTitle').value = d.title || "";
                 document.getElementById('eventDate').value = d.date || "";
                 for(let i=1; i<=8; i++) if(d.staff?.[i]) {
@@ -227,6 +275,8 @@
                 updateHeaderInfo(); renderTable(); renderEquipments();
             }
         });
+
+        setInterval(renderTable, 60000);
     </script>
 </body>
 </html>
