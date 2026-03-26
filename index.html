@@ -3,74 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026頭份四月八-終極執行控台</title>
+    <title>執行平台 Ver. 1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; }
-        .is-now { background: #f0fdf4 !important; border-left: 12px solid #22c55e !important; box-shadow: inset 0 0 15px rgba(34,197,94,0.15); }
-        .admin-mode { background: #fffbeb !important; }
-        .table-wrapper { overflow-x: auto; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
-        .rundown-table th, .rundown-table td { border: 1px solid #e2e8f0; padding: 10px 6px; vertical-align: middle; }
-        .cell-input { font-weight: bold; width: 100%; outline: none; background: transparent; border: none; font-size: 14px; }
-        .admin-mode .cell-input { background: #fff; box-shadow: inset 0 0 0 1px #cbd5e1; border-radius: 4px; padding: 4px; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #ffffff; }
+        .is-now { background: #f0fdf4 !important; border-left: 8px solid #22c55e !important; }
+        
+        /* 藍圖色彩對齊 */
+        .bg-main-blue { background: #4a72c2; color: white; }
+        .bg-main-orange { background: #ed7d31; color: white; }
+        .border-main-blue { border: 2px solid #4a72c2; }
+        
+        /* 按鈕樣式 */
+        .btn-header { background: #4a72c2; color: white; border: 1px solid #3b5da3; border-radius: 0; padding: 12px; font-weight: bold; text-align: center; }
+        
+        /* 區塊標題 */
+        .section-header { text-align: center; font-weight: bold; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.3); }
+        
         .admin-only { display: none !important; }
         .admin-mode .admin-only { display: block !important; }
-        #cardContainer { display: none; grid-template-columns: 1fr; gap: 1rem; }
-        body.card-view .table-wrapper, body.card-view .admin-only:not(#viewBtn) { display: none !important; }
-        body.card-view #cardContainer { display: grid; }
-        .item-card { background: white; padding: 24px; border-radius: 20px; border: 1px solid #e2e8f0; }
+        body.card-view .table-wrapper { display: none; }
+        #cardContainer { display: none; }
+        body.card-view #cardContainer { display: grid; grid-template-columns: 1fr; gap: 10px; color: #333; }
         
-        /* 器材區新樣式 */
-        .eq-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #e2e8f0; }
-        .memory-tag { cursor: pointer; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px; font-size: 11px; color: #475569; transition: 0.2s; }
-        .memory-tag:hover { background: #e2e8f0; border-color: #94a3b8; }
-        .eq-check { width: 20px; height: 20px; cursor: pointer; accent-color: #22c55e; }
-        .loaded-text { color: #94a3b8; text-decoration: line-through; }
+        input, select { color: inherit; background: transparent; border: none; outline: none; }
+        .dark-text input, .dark-text select { color: #333; }
     </style>
 </head>
-<body class="p-2 md:p-6 pb-24">
+<body class="p-4">
 
-    <div class="max-w-[1400px] mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b-4 border-slate-900 pb-6 gap-4">
-            <div>
-                <h1 class="text-3xl font-black italic text-slate-900 tracking-tighter">2026頭份四月八</h1>
-                <p class="text-sm font-bold text-rose-600">3/27 執行控台 (器材智慧記憶版)</p>
+    <div class="max-w-[1400px] mx-auto space-y-4">
+        
+        <div class="grid grid-cols-12 gap-2">
+            <div class="col-span-12 md:col-span-6 bg-main-blue p-6 flex items-center text-lg font-bold">
+                <span>日期：</span><input type="text" placeholder="請輸入日期" class="border-b border-white w-32 mr-6 px-2">
+                <span>活動主題：</span><input type="text" placeholder="請輸入主題" class="border-b border-white flex-1 px-2">
             </div>
-            <div class="flex flex-wrap gap-2 w-full md:w-auto">
-                <a href="https://your-sign-in-board-url.web.app" target="_blank" class="flex-1 text-center bg-red-500 text-white px-4 py-2 rounded-xl font-black shadow-lg flex items-center justify-center text-xs">📊 看板</a>
-                <button onclick="toggleCardView()" id="viewBtn" class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold shadow-lg text-xs">🗂️ 手機</button>
-                <button onclick="handleAdminSwitch()" id="modeBtn" class="flex-1 bg-amber-500 text-white px-4 py-2 rounded-xl font-bold shadow-lg text-xs">🛠️ 編輯</button>
-                <button onclick="saveToCloud()" class="admin-only flex-1 bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-lg text-xs">💾 儲存</button>
-            </div>
+            <a href="#" target="_blank" class="col-span-4 md:col-span-2 btn-header flex items-center justify-center">即時簽到看板連結鈕</a>
+            <button onclick="toggleCardView()" id="viewBtn" class="col-span-4 md:col-span-2 btn-header">名片模式</button>
+            <button onclick="handleAdminSwitch()" id="modeBtn" class="col-span-4 md:col-span-2 btn-header">後台模式</button>
         </div>
 
-        <div class="table-wrapper mb-12">
-            <table class="rundown-table text-sm">
-                <thead class="bg-slate-900 text-white">
-                    <tr><th width="40">序</th><th width="100">時間</th><th width="60">長度</th><th width="160">單元</th><th>說明重點</th><th width="150">負責人員</th><th width="80">簽到</th><th width="45" class="admin-only">✕</th></tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-            <button onclick="addNewRow()" class="admin-only w-full p-5 border-4 border-dashed border-slate-200 font-black text-slate-400 hover:bg-slate-100">+ 插入流程</button>
+        <div class="bg-main-blue rounded-sm overflow-hidden border-main-blue">
+            <div class="section-header">執行人員分工及名單</div>
+            <div id="staffGrid" class="grid grid-cols-2 md:grid-cols-5 gap-1 p-2 bg-white text-slate-800">
+                </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="bg-white p-6 rounded-3xl border-t-[12px] border-blue-600 shadow-xl">
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="font-black text-blue-700">📍 服務台物料清點</h2>
-                    <button onclick="addEqRow('service')" class="admin-only text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">+ 新增物料</button>
-                </div>
-                <div id="serviceTags" class="flex flex-wrap gap-1 mb-4"></div> <div id="serviceBox"></div>
+        <div class="bg-main-blue rounded-sm overflow-hidden border-main-blue">
+            <div class="section-header">
+                流程表<br>
+                <span class="text-xs font-normal">序 / 時間(長度) / 單元項目 / 執行說明 / 負責人員 / 增加 or 刪除</span>
             </div>
+            
+            <div class="table-wrapper bg-white">
+                <table class="w-full text-sm text-slate-800">
+                    <thead class="bg-slate-100">
+                        <tr>
+                            <th class="p-2 border" width="40">序</th>
+                            <th class="p-2 border" width="120">時間(長度)</th>
+                            <th class="p-2 border">單元項目</th>
+                            <th class="p-2 border">執行說明</th>
+                            <th class="p-2 border" width="150">負責人員</th>
+                            <th class="p-2 border" width="80">簽到</th>
+                            <th class="p-2 border admin-only" width="40">✕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+                <button onclick="addNewRow()" class="admin-only w-full p-4 text-slate-400 border-t border-dashed font-bold">+ 增加項目</button>
+            </div>
+            <div id="cardContainer" class="p-2 bg-slate-100"></div>
+        </div>
 
-            <div class="bg-white p-6 rounded-3xl border-t-[12px] border-rose-600 shadow-xl">
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="font-black text-rose-700">📍 舞台工作區清點</h2>
-                    <button onclick="addEqRow('stage')" class="admin-only text-xs bg-rose-100 text-rose-700 px-3 py-1 rounded-full font-bold">+ 新增物料</button>
+        <div class="bg-main-blue p-4 rounded-sm border-main-blue">
+            <div class="font-bold mb-4">器材清單</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-main-orange p-4 min-h-[250px]">
+                    <div class="flex justify-between items-center border-b border-white/50 mb-4 pb-2">
+                        <span class="text-xl font-black">服務台</span>
+                        <button onclick="addEqRow('service')" class="admin-only bg-white/20 px-2 py-1 text-xs">新增</button>
+                    </div>
+                    <div id="serviceTags" class="mb-2 flex flex-wrap gap-1"></div>
+                    <div id="serviceBox" class="space-y-2"></div>
                 </div>
-                <div id="stageTags" class="flex flex-wrap gap-1 mb-4"></div> <div id="stageBox"></div>
+                <div class="bg-main-orange p-4 min-h-[250px]">
+                    <div class="flex justify-between items-center border-b border-white/50 mb-4 pb-2">
+                        <span class="text-xl font-black">舞台區</span>
+                        <button onclick="addEqRow('stage')" class="admin-only bg-white/20 px-2 py-1 text-xs">新增</button>
+                    </div>
+                    <div id="stageTags" class="mb-2 flex flex-wrap gap-1"></div>
+                    <div id="stageBox" class="space-y-2"></div>
+                </div>
             </div>
+            <button onclick="saveToCloud()" class="admin-only w-full bg-slate-900 text-white p-4 mt-4 font-black">💾 儲存並發布 Ver. 1</button>
         </div>
     </div>
 
@@ -80,123 +106,95 @@
 
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'toufen_48_Eq_Memory_Final');
+        const dataRef = ref(db, 'execution_platform_v1');
 
-        let isAdmin = false;
+        let isAdmin = false, isCardView = false;
+        
+        // 公司初始名單
+        const initialStaff = [
+            { j: "控場", n: "鐵仁" }, { j: "執行", n: "崧瑋" }, { j: "執行", n: "露比" },
+            { j: "執行", n: "志明" }, { j: "執行", n: "維憶" }, { j: "執行", n: "芳瑜" },
+            { j: "服務台", n: "柏緯" }, { j: "攝影", n: "江哥" }, { j: "執行", n: "中瑜" }, { j: "物料", n: "貝克里" }
+        ];
+
         let localData = {
-            rundown: [{ t: "10:00", d: "10", u: "發布會啟動", s: "市長示範炒米粉", person: "全選-ALL STAFF", checkin: "" }],
-            eq: { service: [{n: "新聞袋", q: "30", l: false}], stage: [{n: "麥克風", q: "2", l: false}] },
-            memory: ["新聞袋", "麥克風", "摸彩箱", "瓶裝水", "講稿", "指示牌"] // 智慧記憶庫
+            staff: initialStaff,
+            rundown: [{ t: "10:00", d: "10", u: "活動開始", s: "現場說明", person: "全選-ALL STAFF", checkin: "" }],
+            eq: { service: [], stage: [] },
+            memory: ["麥克風", "無線電", "新聞袋", "摸彩箱"]
         };
 
-        const renderEq = () => {
-            ['service', 'stage'].forEach(z => {
-                const box = document.getElementById(z + 'Box');
-                const tagBox = document.getElementById(z + 'Tags');
-                
-                // 渲染記憶標籤
-                tagBox.innerHTML = localData.memory.map(m => `
-                    <span class="memory-tag" onclick="useMemory('${z}', '${m}')">${m}</span>
-                `).join('');
+        const renderStaff = () => {
+            const grid = document.getElementById('staffGrid');
+            grid.innerHTML = localData.staff.map((s, i) => `
+                <div class="border p-1 ${isAdmin?'bg-amber-50':''}">
+                    <input class="text-[10px] w-full border-b block" value="${s.j}" onchange="localData.staff[${i}].j=this.value; renderAll()" ${!isAdmin?'readonly':''}>
+                    <input class="font-bold w-full" value="${s.n}" onchange="localData.staff[${i}].n=this.value; renderAll()" ${!isAdmin?'readonly':''}>
+                </div>
+            `).join('');
+        };
 
-                // 渲染手動輸入行
-                box.innerHTML = localData.eq[z].map((item, idx) => `
-                    <div class="eq-row">
-                        <input type="checkbox" class="eq-check" ${item.l ? 'checked' : ''} onchange="toggleEqStatus('${z}', ${idx})">
-                        <input type="text" class="cell-input flex-1 ${item.l ? 'loaded-text' : ''}" value="${item.n}" 
-                               placeholder="名稱" onchange="updateEqName('${z}', ${idx}, this.value)" ${!isAdmin ? 'readonly' : ''}>
-                        <input type="number" class="w-12 text-center font-black text-blue-600 outline-none" 
-                               value="${item.q}" onchange="updateEqQty('${z}', ${idx}, this.value)" ${!isAdmin ? 'readonly' : ''}>
-                        ${isAdmin ? `<button onclick="removeEqRow('${z}', ${idx})" class="text-rose-300 text-xs">✕</button>` : ''}
+        window.renderAll = () => {
+            renderStaff();
+            const tbody = document.getElementById('tableBody');
+            const cardContainer = document.getElementById('cardContainer');
+            tbody.innerHTML = ""; cardContainer.innerHTML = "";
+            
+            // 下拉選單人員清單
+            let staffOptions = `<option value="">負責人</option><option value="全選-ALL STAFF">📢 全選: ALL STAFF</option>`;
+            localData.staff.forEach(s => { if(s.n) staffOptions += `<option value="${s.j}-${s.n}">${s.j}:${s.n}</option>`; });
+
+            localData.rundown.forEach((item, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2 border text-center font-bold text-slate-400">${i+1}</td>
+                    <td class="p-2 border"><input class="w-full font-bold" value="${item.t||''} (${item.d||''})" onchange="[localData.rundown[${i}].t, localData.rundown[${i}].d]=this.value.replace(')','').split('('); renderAll()" ${!isAdmin?'readonly':''}></td>
+                    <td class="p-2 border"><input class="w-full font-bold" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}></td>
+                    <td class="p-2 border"><input class="w-full text-xs" value="${item.s||''}" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}></td>
+                    <td class="p-2 border">
+                        ${isAdmin ? `<select class="w-full text-xs p-1 border font-bold" onchange="localData.rundown[${i}].person=this.value; renderAll()">${staffOptions.replace(`value="${item.person}"`, `value="${item.person}" selected`)}</select>` 
+                        : `<div class="text-[11px] font-bold text-center p-1 rounded ${item.person.includes('全選')?'bg-rose-500 text-white':'bg-slate-100'}">${item.person || '-'}</div>`}
+                    </td>
+                    <td class="p-2 border text-center">${item.checkin ? `<span class="text-green-600 font-bold">✅${item.checkin}</span>` : `<button onclick="doCheckIn(${i})" class="bg-green-500 text-white text-[10px] px-2 py-1 rounded">簽到</button>`}</td>
+                    <td class="p-2 border admin-only text-center"><button onclick="localData.rundown.splice(${i}, 1); renderAll()" class="text-rose-500">✕</button></td>
+                `;
+                tbody.appendChild(tr);
+
+                // 名片渲染
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 border-2 border-slate-200";
+                card.innerHTML = `<div class="flex justify-between font-black text-blue-800"><span>${item.t} (${item.d}m)</span><span>${item.u}</span></div>
+                                  <div class="text-sm mt-2">${item.s}</div>
+                                  <div class="flex justify-between mt-3 border-t pt-2">
+                                      <span class="text-xs font-bold text-slate-400">簽到: ${item.checkin||'待命'}</span>
+                                      <span class="bg-blue-100 text-blue-800 px-2 py-1 text-[10px] font-black">${item.person}</span>
+                                  </div>`;
+                cardContainer.appendChild(card);
+            });
+            renderEq();
+        };
+
+        window.renderEq = () => {
+            ['service', 'stage'].forEach(z => {
+                document.getElementById(z+'Tags').innerHTML = localData.memory.map(m => `<span class="bg-white/20 border border-white text-[10px] px-2 py-0.5 cursor-pointer" onclick="useMemory('${z}','${m}')">${m}</span>`).join('');
+                document.getElementById(z+'Box').innerHTML = localData.eq[z].map((e, idx) => `
+                    <div class="flex items-center gap-2 bg-white/10 p-2">
+                        <input type="checkbox" class="w-5 h-5" ${e.l?'checked':''} onchange="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq(); if(!isAdmin) saveToCloud();">
+                        <input type="text" class="bg-transparent flex-1 font-bold border-b border-white/30" value="${e.n}" onchange="updateEqName('${z}',${idx},this.value)" ${!isAdmin?'readonly':''}>
+                        <input type="number" class="bg-transparent w-10 text-center font-bold" value="${e.q}" onchange="localData.eq['${z}'][${idx}].q=this.value; renderEq()" ${!isAdmin?'readonly':''}>
                     </div>
                 `).join('');
             });
         };
 
-        window.addEqRow = (z) => {
-            localData.eq[z].push({ n: "", q: 1, l: false });
-            renderEq();
-        };
-
-        window.removeEqRow = (z, idx) => {
-            localData.eq[z].splice(idx, 1);
-            renderEq();
-        };
-
-        window.updateEqName = (z, idx, val) => {
-            localData.eq[z][idx].n = val;
-            if (val && !localData.memory.includes(val)) {
-                localData.memory.push(val); // 記住新輸入的內容
-            }
-            renderEq();
-        };
-
-        window.useMemory = (z, val) => {
-            if (!isAdmin) return;
-            // 尋找第一個空白的行，或是新增一行
-            let emptyRow = localData.eq[z].find(i => i.n === "");
-            if (emptyRow) emptyRow.n = val;
-            else localData.eq[z].push({ n: val, q: 1, l: false });
-            renderEq();
-        };
-
-        window.updateEqQty = (z, idx, val) => { localData.eq[z][idx].q = val; renderEq(); };
-        window.toggleEqStatus = (z, idx) => { localData.eq[z][idx].l = !localData.eq[z][idx].l; renderEq(); if(!isAdmin) saveToCloud(); };
-
-        // ---------------- 以下維持流程表功能 ----------------
-        window.renderAll = () => {
-            const tbody = document.getElementById('tableBody');
-            const now = new Date();
-            const curMin = now.getHours() * 60 + now.getMinutes();
-            tbody.innerHTML = "";
-            
-            let optionsHtml = `<option value="">未指派</option><option value="全選-ALL STAFF">📢 全選: ALL STAFF</option>`;
-            // 這裡簡化人員，您可視需求補回 staffGrid 邏輯
-            
-            localData.rundown.forEach((item, i) => {
-                let isActive = false;
-                if(item.t && item.t.includes(':')) {
-                    const [h, m] = item.t.split(':').map(Number);
-                    const start = h * 60 + m;
-                    const duration = parseInt(item.d) || 5;
-                    if(curMin >= start && curMin < (start + duration)) isActive = true;
-                }
-                const tr = document.createElement('tr');
-                if(isActive) tr.className = "is-now";
-                tr.innerHTML = `
-                    <td class="text-center font-black text-slate-300">${i+1}</td>
-                    <td><input class="cell-input" value="${item.t||''}" oninput="localData.rundown[${i}].t=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td><input class="cell-input" value="${item.d||''}" oninput="localData.rundown[${i}].d=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td><input class="cell-input" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td><input class="cell-input font-normal text-slate-500 text-xs" value="${item.s||''}" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td class="text-center">
-                        <div class="${item.person.includes('全選')?'bg-rose-600 text-white':'bg-indigo-50 text-indigo-700'} px-2 py-1 rounded text-[11px] font-black border">
-                            ${item.person || '-'}
-                        </div>
-                    </td>
-                    <td class="text-center">${item.checkin ? `<span class="text-[11px] font-black text-green-600">✅ ${item.checkin}</span>` : `<button onclick="doCheckIn(${i})" class="px-2 py-1 bg-green-500 text-white rounded text-[10px] font-bold">簽到</button>`}</td>
-                    <td class="admin-only text-center"><button onclick="removeRow(${i})" class="text-rose-400 font-bold">✕</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-            renderEq();
-        };
-
-        window.doCheckIn = (i) => {
-            const now = new Date();
-            localData.rundown[i].checkin = now.getHours() + ":" + String(now.getMinutes()).padStart(2, '0');
-            renderAll(); if(!isAdmin) saveToCloud(); 
-        };
-
-        window.handleAdminSwitch = () => { 
-            if(!isAdmin && prompt("執行密碼") !== "364401") return; 
-            isAdmin = !isAdmin; 
-            document.body.classList.toggle('admin-mode', isAdmin); 
-            document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 結束" : "🛠️ 編輯"; 
-            renderAll(); 
-        };
-        
-        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ 同步發布成功！")); };
+        window.useMemory = (z, val) => { if(!isAdmin) return; localData.eq[z].push({n:val, q:1, l:false}); renderEq(); };
+        window.updateEqName = (z, idx, val) => { localData.eq[z][idx].n = val; if(val && !localData.memory.includes(val)) localData.memory.push(val); renderEq(); };
+        window.addEqRow = (z) => { localData.eq[z].push({n:"", q:1, l:false}); renderEq(); };
+        window.doCheckIn = (i) => { const n = new Date(); localData.rundown[i].checkin = n.getHours()+":"+String(n.getMinutes()).padStart(2,'0'); renderAll(); if(!isAdmin) saveToCloud(); };
+        window.toggleCardView = () => { isCardView = !isCardView; document.body.classList.toggle('card-view', isCardView); document.getElementById('viewBtn').innerText = isCardView ? "表格模式" : "名片模式"; renderAll(); };
+        window.handleAdminSwitch = () => { if(!isAdmin && prompt("管理密碼") !== "364401") return; isAdmin = !isAdmin; document.body.classList.toggle('admin-mode', isAdmin); document.getElementById('modeBtn').innerText = isAdmin ? "結束後台" : "後台模式"; renderAll(); };
+        window.addNewRow = () => { localData.rundown.push({t:"", d:"10", u:"新單元", s:"", person:"", checkin:""}); renderAll(); };
+        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ 執行平台 Ver. 1 已同步儲存")); };
         onValue(dataRef, (snap) => { if(!isAdmin) { const d = snap.val(); if(d) { localData = d; renderAll(); } } });
         
         renderAll();
