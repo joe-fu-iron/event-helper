@@ -3,264 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 執行流程控台-成員名單匯入版</title>
+    <title>2026 執行流程控台-終極優化版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; color: #1e293b; transition: 0.3s; }
         body.admin-mode { background: #fffbeb; } 
         .is-now { background: #f0fdf4 !important; border-left: 8px solid #22c55e !important; }
         
+        /* 表格與字體統一 */
         .rundown-table { width: 100%; border-collapse: collapse; background: white; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 12px 8px; vertical-align: middle; }
         .table-head { background: #334155; color: white; font-size: 14px; font-weight: bold; }
-        .cell-content { font-weight: bold; font-size: 14px; line-height: 1.5; color: #1e293b; }
-
-        .job-tag { display: inline-block; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px; font-weight: bold; cursor: pointer; }
         
-        /* 器材樣式 */
-        .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1.5px solid #cbd5e1; padding: 4px 10px; border-radius: 8px; margin: 4px; font-weight: bold; font-size: 13px; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .equipment-tag.loaded { background-color: #22c55e !important; border-color: #166534 !important; color: white; }
-        .eq-count { width: 40px; background: transparent; text-align: center; font-family: monospace; font-weight: 900; }
+        .cell-content { font-weight: bold; font-size: 15px; line-height: 1.5; }
+        .col-unit { color: #1e293b; width: auto; min-width: 160px; }
+        .col-desc { color: #475569; width: auto; min-width: 250px; }
 
-        /* 器材倉庫彈窗 */
-        #warehouseModal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); z-index: 100; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
-        .warehouse-content { background: white; width: 100%; max-width: 650px; border-radius: 24px; padding: 24px; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        .warehouse-item { cursor: pointer; border: 1px solid #e2e8f0; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: bold; transition: 0.2s; text-align: left; background: #f8fafc; }
-        .warehouse-item:hover { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+        .time-range { font-family: monospace; font-weight: bold; color: #2563eb; font-size: 15px; }
+        .duration-tag { font-size: 12px; color: #94a3b8; font-weight: normal; margin-left: 4px; }
+        
+        .job-tag { display: inline-block; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px; font-weight: bold; }
+        body.admin-mode .job-tag { cursor: pointer; border: 1px dashed #cbd5e1; }
+        body.admin-mode .job-tag:hover { background: #fecaca; color: #991b1b; }
 
+        /* 名片模式樣式 (手機專用) */
+        .card-view-item { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-view-item.is-now { border-left: 10px solid #22c55e; background: #f0fdf4; }
+        
         .admin-only { display: none !important; }
         body.admin-mode .admin-only { display: block !important; }
         
+        #displayHeader { display: none; }
+        body.view-mode #displayHeader { display: block; border-bottom: 4px solid #334155; margin-bottom: 20px; padding-bottom: 10px; }
+
         #cardViewContainer { display: none; }
-        body.card-mode .rundown-table, body.card-mode .admin-only { display: none !important; }
+        body.card-mode .rundown-table, body.card-mode #staffConfig, body.card-mode .admin-only { display: none !important; }
         body.card-mode #cardViewContainer { display: block; }
 
-        @media print { .no-print { display: none !important; } }
+        @media print {
+            .no-print, button, #staffConfig, input, select { display: none !important; }
+            body { background: white !important; padding: 0; }
+            #displayHeader { display: block !important; }
+            .rundown-table { width: 100% !important; border: 2px solid black; }
+            .rundown-table th, .rundown-table td { border: 1px solid black !important; color: black !important; }
+        }
     </style>
 </head>
 <body class="view-mode p-2 md:p-6 pb-20">
 
     <div class="max-w-[1500px] mx-auto">
-        <div class="flex justify-between items-center mb-6 border-b-2 pb-4">
-            <div>
-                <h1 id="viewEventTitle" class="text-3xl font-black text-slate-900 tracking-tight italic">專案加載中...</h1>
-                <p class="text-lg font-bold text-rose-600"><span id="viewEventDate"></span> <span id="viewWeekdayDisplay"></span></p>
+        <div id="displayHeader" class="no-print">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h1 id="viewEventTitle" class="text-3xl font-black text-slate-900 tracking-tight">載入中...</h1>
+                    <p class="text-lg font-bold text-rose-600"><span id="viewEventDate"></span> <span id="viewWeekdayDisplay"></span></p>
+                </div>
+                <div class="flex flex-col gap-2 items-end">
+                    <button id="toggleViewBtn" onclick="toggleCardMode()" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-black shadow-lg">🗂️ 以名片模式顯示</button>
+                    <div id="syncStatus" class="text-[10px] font-bold px-3 py-1 rounded-full border border-slate-200 bg-white">同步中</div>
+                </div>
             </div>
-            <div class="flex gap-2 no-print">
+        </div>
+
+        <div class="flex justify-between items-center mb-6 no-print">
+            <div class="admin-only">
+                <h2 class="text-xl font-black text-amber-600 italic">MODE: EDITOR</h2>
+            </div>
+            <div class="flex items-center gap-3">
                 <button onclick="handleModeSwitch()" id="modeBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">🛠️ 編輯模式</button>
                 <button onclick="saveToFirebase()" class="admin-only bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-md">💾 儲存發布</button>
             </div>
         </div>
 
-        <div class="admin-only bg-white rounded-xl mb-6 border-2 border-amber-300 shadow-xl p-4 no-print">
+        <div class="admin-only no-print bg-white rounded-xl mb-6 border-2 border-amber-300 shadow-xl p-4">
             <div class="grid grid-cols-2 gap-4 mb-4">
-                <div><label class="block text-[10px] font-bold text-slate-400">活動日期</label><input type="date" id="eventDate" class="w-full border p-2 font-bold rounded" onchange="updateHeaderInfo()"></div>
-                <div><label class="block text-[10px] font-bold text-slate-400">專案名稱</label><input type="text" id="eventTitle" placeholder="輸入活動名稱" class="w-full border p-2 font-bold rounded" oninput="updateHeaderInfo()"></div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">活動日期</label><input type="date" id="eventDate" class="w-full border p-2 font-bold" onchange="updateHeaderInfo()"></div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">專案名稱</label><input type="text" id="eventTitle" class="w-full border p-2 font-bold" oninput="updateHeaderInfo()"></div>
             </div>
-            <p class="text-xs font-black text-slate-500 mb-3 italic">👤 工作人員設定 (點選下拉或直接輸入姓名)：</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-10 gap-2" id="staffConfig"></div>
+            <p class="text-xs font-black text-slate-400 mb-3 underline">1. 設定場次人員名單：</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3" id="staffConfig"></div>
         </div>
 
-        <table class="rundown-table shadow-lg rounded-lg overflow-hidden mb-8" id="mainTable">
+        <table class="rundown-table shadow-lg rounded-lg overflow-hidden" id="mainTable">
             <thead class="table-head">
-                <tr><th style="width:50px">序</th><th style="width:160px">時間區段</th><th style="width:200px">單元項目</th><th>執行說明</th><th style="width:220px">負責人員</th></tr>
+                <tr>
+                    <th style="width:50px">序</th>
+                    <th style="width:180px">時間區段 (長度)</th>
+                    <th class="col-unit">單元項目</th>
+                    <th class="col-desc">執行說明</th>
+                    <th style="width:240px">負責人員</th>
+                </tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
-        <button onclick="addRow()" class="admin-only no-print mb-10 bg-white border border-slate-300 px-4 py-2 rounded font-bold hover:bg-slate-50">+ 新增流程</button>
 
-        <div id="eqSection" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-10">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-lg font-black text-slate-800 italic">📋 器材清點 (從庫中點選加入)</h2>
-                <button onclick="openWarehouse()" class="admin-only bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg hover:bg-slate-700">📦 開啟器材資料庫</button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div class="bg-blue-50/30 p-4 rounded-xl border border-blue-100">
-                    <h3 class="text-blue-600 text-xs font-black mb-3 border-l-4 border-blue-600 pl-2">📍 服務台分區</h3>
-                    <div id="serviceContainer" class="flex flex-wrap min-h-[50px]"></div>
-                </div>
-                <div class="bg-rose-50/30 p-4 rounded-xl border border-rose-100">
-                    <h3 class="text-rose-600 text-xs font-black mb-3 border-l-4 border-rose-600 pl-2">📍 舞台工作分區</h3>
-                    <div id="stageContainer" class="flex flex-wrap min-h-[50px]"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+        <div id="cardViewContainer" class="no-print"></div>
 
-    <div id="warehouseModal" class="no-print">
-        <div class="warehouse-content">
-            <div class="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 class="text-xl font-black text-slate-800 tracking-tighter">📦 器材資源庫 (點擊即加入前台)</h2>
-                <button onclick="closeWarehouse()" class="text-3xl text-slate-300 hover:text-slate-600">✕</button>
-            </div>
-            <div class="grid grid-cols-2 gap-6">
-                <div>
-                    <p class="text-[10px] font-black text-blue-500 mb-2 uppercase">服務台常用庫存</p>
-                    <div id="dbService" class="grid grid-cols-1 gap-2"></div>
-                </div>
-                <div>
-                    <p class="text-[10px] font-black text-rose-500 mb-2 uppercase">舞台常用庫存</p>
-                    <div id="dbStage" class="grid grid-cols-1 gap-2"></div>
-                </div>
-            </div>
-            <div class="mt-8 pt-6 border-t bg-slate-50 -mx-6 -mb-6 p-6 rounded-b-24">
-                <p class="text-xs font-bold text-slate-500 mb-2">手動新增特殊器材：</p>
-                <div class="flex gap-2">
-                    <input type="text" id="customEqName" placeholder="輸入名稱 (如：發電機)" class="flex-1 border p-2 rounded-lg font-bold">
-                    <select id="customEqZone" class="border p-2 rounded-lg font-bold"><option value="service">服務台</option><option value="stage">舞台區</option></select>
-                    <button onclick="addCustomEq()" class="bg-blue-600 text-white px-6 rounded-lg font-bold">新增</button>
-                </div>
-            </div>
-        </div>
+        <button onclick="addRow()" class="admin-only no-print mt-4 bg-white text-slate-600 px-6 py-2 rounded font-bold border border-slate-300 hover:bg-slate-50">+ 新增流程項目</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        const teamList = ["江哥", "瑩驊", "志明", "露比", "鐵仁", "柏緯", "維憶", "芳瑜"];
+        const jobList = ["控場", "音響", "服務台", "攝影", "機動", "錄影", "儀式"];
         const FIREBASE_URL = "https://rundown-worker-default-rtdb.firebaseio.com/";
-        let db, dataRef, isAdmin = false;
-        let currentData = { rundown: [], title: "", date: "", service: [], stage: [], staff: {} };
+        let db, dataRef, isAdmin = false, isCardMode = false;
+        let currentData = { rundown: [], title: "", date: "" };
 
-        // 【成員名單匯入】
-        const companyStaff = ["江哥", "瑩驊", "志明", "鐵仁", "露比", "柏緯", "崧緯", "維憶", "芳瑜", "燕妮"];
-        const jobOptions = ["控場", "機動", "音控", "服務台", "錄影", "儀式", "攝影", "主持人"];
-
-        // 【器材庫清單】
-        const dbServiceList = ["長官貴賓簽到表", "長官到場勾選表", "簽到物流箱", "新聞QR-CODE牌", "新聞稿發布資料", "餐盒", "瓶水", "文宣品", "花布桌巾", "紅布桌巾"];
-        const dbStageList = ["背景帆布(寬*高)", "TRUSS組件", "音響系統", "無線麥克風", "面光燈+燈架", "活動手板", "主持人講稿夾", "歲末集章牌+木架"];
-
-        // 初始化人員設定欄位 (10組)
+        // 介面初始化
         const staffConfig = document.getElementById('staffConfig');
-        for(let i=1; i<=10; i++) {
+        for(let i=1; i<=8; i++) {
             staffConfig.innerHTML += `
-                <div class="staff-card border rounded-lg p-2 bg-slate-50 shadow-sm">
-                    <input type="text" id="j${i}" placeholder="職稱" class="w-full text-[11px] mb-1 font-bold border-b bg-transparent focus:outline-none" list="jobList">
-                    <input type="text" id="s${i}" placeholder="姓名" class="w-full text-[11px] font-bold bg-transparent focus:outline-none" list="nameList">
+                <div class="staff-card border rounded p-2 bg-slate-50">
+                    <select id="j${i}" class="w-full text-[11px] mb-1 font-bold" onchange="renderTable()"><option value="-">-職稱-</option>${jobList.map(j=>`<option value="${j}">${j}</option>`).join('')}</select>
+                    <select id="s${i}" class="w-full text-[11px] border-t pt-1" onchange="renderTable()"><option value="">-姓名-</option>${teamList.map(n=>`<option value="${n}">${n}</option>`).join('')}</select>
                 </div>`;
         }
 
-        // 建立 Datalist 選單
-        document.body.insertAdjacentHTML('beforeend', `
-            <datalist id="jobList">${jobOptions.map(o => `<option value="${o}">`).join('')}</datalist>
-            <datalist id="nameList">${companyStaff.map(o => `<option value="${o}">`).join('')}</datalist>
-        `);
-
-        // 器材彈窗邏輯
-        window.openWarehouse = () => {
-            document.getElementById('warehouseModal').style.display = 'flex';
-            const renderDb = (id, list, zone) => {
-                document.getElementById(id).innerHTML = list.map(name => `<button class="warehouse-item" onclick="pushToActive('${zone}', '${name}')">${name} ＋</button>`).join('');
-            };
-            renderDb('dbService', dbServiceList, 'service');
-            renderDb('dbStage', dbStageList, 'stage');
+        window.toggleCardMode = () => {
+            isCardMode = !isCardMode;
+            document.body.classList.toggle('card-mode', isCardMode);
+            document.getElementById('toggleViewBtn').innerText = isCardMode ? "📊 以表格模式顯示" : "🗂️ 以名片模式顯示";
+            renderTable();
         };
-        window.closeWarehouse = () => document.getElementById('warehouseModal').style.display = 'none';
 
-        window.pushToActive = (zone, name) => {
-            if(!currentData[zone].find(e => e.n === name)) {
-                currentData[zone].push({ n: name, c: 1, l: false });
-                renderEquipments();
+        window.getAvailableStaff = () => {
+            const list = [];
+            for(let i=1; i<=8; i++) {
+                const job = document.getElementById(`j${i}`).value;
+                const name = document.getElementById(`s${i}`).value;
+                if(job !== "-" && name !== "") list.push(`${job}: ${name}`);
             }
+            return list;
         };
 
-        window.addCustomEq = () => {
-            const n = document.getElementById('customEqName').value;
-            const z = document.getElementById('customEqZone').value;
-            if(n) { currentData[z].push({ n, c: 1, l: false }); document.getElementById('customEqName').value = ""; renderEquipments(); }
-        };
-
-        // 核心渲染與功能
         window.renderTable = () => {
             const tbody = document.getElementById("rundownBody");
+            const cardContainer = document.getElementById("cardViewContainer");
             tbody.innerHTML = "";
+            cardContainer.innerHTML = "";
             let nextS = "";
-            const activeStaff = Array.from({length:10}, (_,i)=>({j:document.getElementById(`j${i+1}`).value, s:document.getElementById(`s${i+1}`).value})).filter(x=>x.j&&x.s);
+            const activeStaffList = getAvailableStaff();
+            const now = new Date();
+            const curMin = now.getHours() * 60 + now.getMinutes();
             
             currentData.rundown.forEach((item, i) => {
                 const dur = parseInt(item.duration) || 0;
                 let start = (i === 0) ? (item.startTime || "09:00") : nextS;
-                let [h, m] = start.split(":").map(Number);
-                let emTotal = m + dur, eh = (h + Math.floor(emTotal/60)) % 24, em = emTotal % 60;
-                let endStr = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
-                nextS = endStr;
+                let endStr = "";
+                let isNowActive = false;
+
+                if(start.includes(":")) {
+                    let [h, m] = start.split(":").map(Number);
+                    let em = m + dur, eh = (h + Math.floor(em/60)) % 24;
+                    endStr = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2,'0')}`;
+                    nextS = endStr;
+                    const sm = h*60+m, emTotal = eh*60+(em%60);
+                    if(curMin >= sm && curMin < emTotal) isNowActive = true;
+                }
+
+                const jobsHtml = (item.jobs || []).map(j => `<span class="job-tag" onclick="removeJob(${i}, '${j}')">${j}</span>`).join('');
                 
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="text-center text-slate-300 text-xs">${i+1}</td>
-                        <td class="text-center">
-                            <div class="time-range">${isAdmin && i===0 ? `<input type="text" class="w-16 text-center border-b" value="${start}" onchange="currentData.rundown[0].startTime=this.value; renderTable();">` : `<span>${start}</span>`}<span>-</span><span>${endStr}</span></div>
-                            ${isAdmin ? `<input type="number" class="w-10 text-[10px] text-slate-400" value="${dur}" onchange="currentData.rundown[${i}].duration=this.value; renderTable();">` : ""}
-                        </td>
-                        <td class="cell-content" contenteditable="${isAdmin}" onblur="currentData.rundown[${i}].unit=this.innerText">${item.unit || ''}</td>
-                        <td class="cell-content text-slate-600 font-normal" contenteditable="${isAdmin}" onblur="currentData.rundown[${i}].desc=this.innerText">${item.desc || ''}</td>
-                        <td>
-                            <div class="flex flex-wrap">${(item.jobs || []).map(j=>`<span class="job-tag" onclick="removeJob(${i},'${j}')">${j}</span>`).join('')}</div>
-                            ${isAdmin ? `<select class="w-full text-[10px] mt-1 border" onchange="addJob(${i}, this.value); this.value=''"><option value="">＋ 派員</option>${activeStaff.map(s=>`<option value="${s.j}: ${s.s}">${s.j}: ${s.s}</option>`).join('')}</select>` : ""}
-                        </td>
-                    </tr>`;
+                // 表格列渲染
+                const tr = document.createElement("tr");
+                if(isNowActive) tr.className = "is-now";
+                tr.innerHTML = `
+                    <td class="text-center text-slate-400 text-xs">${i+1}</td>
+                    <td class="text-center">
+                        <div class="time-range">${isAdmin && i===0 ? `<input type="text" class="start-time w-16 text-center border-b-2 border-blue-500" value="${start}" oninput="updateStartTime(this.value)">` : `<span>${start}</span>`}<span>-</span><span>${endStr}</span><span class="duration-tag">(${dur}m)</span></div>
+                        ${isAdmin ? `<input type="number" class="dur-input w-12 text-center border mt-1 text-xs" value="${dur}" oninput="updateDuration(${i}, this.value)">` : ""}
+                    </td>
+                    <td class="col-unit cell-content ${isAdmin?'bg-yellow-50':''}" contenteditable="${isAdmin}" onblur="updateText(${i}, 'unit', this.innerText)">${item.unit || ''}</td>
+                    <td class="col-desc cell-content ${isAdmin?'bg-yellow-50':''}" contenteditable="${isAdmin}" onblur="updateText(${i}, 'desc', this.innerText)">${item.desc || ''}</td>
+                    <td><div id="row-jobs-${i}">${jobsHtml}</div>${isAdmin ? `<select class="no-print w-full text-[11px] mt-2 border-2 border-blue-200 rounded p-1 bg-white" onchange="addJob(${i}, this.value); this.value=''"><option value="">+ 分派人員</option>${activeStaffList.map(s => `<option value="${s}">${s}</option>`).join('')}</select>` : ""}</td>`;
+                tbody.appendChild(tr);
+
+                // 名片渲染 (直式)
+                const card = document.createElement("div");
+                card.className = `card-view-item ${isNowActive ? 'is-now' : ''}`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="bg-slate-800 text-white px-2 py-1 rounded text-xs">序號 ${i+1}</span>
+                        <span class="time-range text-lg">${start} - ${endStr} (${dur}m)</span>
+                    </div>
+                    <h3 class="text-xl font-black text-slate-900 mb-1">${item.unit || '未設定單元'}</h3>
+                    <p class="text-slate-600 font-bold mb-3 border-l-4 border-slate-300 pl-2">${item.desc || '無說明'}</p>
+                    <div class="flex flex-wrap gap-1">${(item.jobs || []).map(j => `<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-black">${j}</span>`).join('')}</div>
+                `;
+                cardContainer.appendChild(card);
             });
         };
 
-        window.renderEquipments = () => {
-            ['service', 'stage'].forEach(zone => {
-                const c = document.getElementById(zone + 'Container');
-                c.innerHTML = "";
-                (currentData[zone] || []).forEach((e, idx) => {
-                    const tag = document.createElement('div');
-                    tag.className = `equipment-tag ${e.l ? 'loaded' : ''}`;
-                    tag.innerHTML = `
-                        <span class="cursor-pointer pr-2 border-r mr-2" onclick="currentData['${zone}'][${idx}].l=!currentData['${zone}'][${idx}].l; renderEquipments(); saveToFirebaseQuietly();">${e.n}</span>
-                        <input type="number" class="eq-count" value="${e.c}" onchange="currentData['${zone}'][${idx}].c=this.value; saveToFirebaseQuietly();">
-                        ${isAdmin ? `<span class="ml-2 text-rose-400 cursor-pointer font-bold" onclick="currentData['${zone}'].splice(${idx},1); renderEquipments(); saveToFirebaseQuietly();">✕</span>` : ''}
-                    `;
-                    c.appendChild(tag);
-                });
-            });
-        };
+        // 操作函數
+        window.addJob = (rowIdx, val) => { if(!val) return; if(!currentData.rundown[rowIdx].jobs) currentData.rundown[rowIdx].jobs = []; if(!currentData.rundown[rowIdx].jobs.includes(val)) { currentData.rundown[rowIdx].jobs.push(val); renderTable(); } };
+        window.removeJob = (rowIdx, val) => { if(!isAdmin) return; currentData.rundown[rowIdx].jobs = currentData.rundown[rowIdx].jobs.filter(j => j !== val); renderTable(); };
+        window.updateText = (idx, field, val) => { currentData.rundown[idx][field] = val; };
+        window.updateDuration = (idx, val) => { currentData.rundown[idx].duration = val; renderTable(); };
+        window.updateStartTime = (val) => { currentData.rundown[0].startTime = val; renderTable(); };
+        window.addRow = () => { currentData.rundown.push({ duration: 10, unit: "新項目", desc: "說明內容", jobs: [] }); renderTable(); };
 
-        window.addJob = (i, v) => { if(v && !currentData.rundown[i].jobs.includes(v)) { currentData.rundown[i].jobs.push(v); renderTable(); } };
-        window.removeJob = (i, v) => { if(isAdmin) { currentData.rundown[i].jobs = currentData.rundown[i].jobs.filter(x=>x!==v); renderTable(); } };
-        window.addRow = () => { currentData.rundown.push({ duration: 10, unit: "新單元", desc: "輸入內容", jobs: [] }); renderTable(); };
         window.handleModeSwitch = () => {
-            if (!isAdmin) { if (prompt("管理密碼：") === "364401") isAdmin = true; else return; } else isAdmin = false;
+            if (!isAdmin) { if (prompt("密碼：") === "364401") isAdmin = true; else return; } else isAdmin = false;
             document.body.className = isAdmin ? "admin-mode p-2 md:p-6 pb-20" : "view-mode p-2 md:p-6 pb-20";
             document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 結束編輯" : "🛠️ 編輯模式";
-            renderTable(); renderEquipments();
+            if(isAdmin && isCardMode) toggleCardMode(); // 編輯時強制關閉名片模式
+            renderTable();
         };
+
         window.updateHeaderInfo = () => {
-            const title = document.getElementById('eventTitle').value, date = document.getElementById('eventDate').value;
-            document.getElementById('viewEventTitle').innerText = title || "2026 執行流程";
+            const title = document.getElementById('eventTitle').value;
+            const date = document.getElementById('eventDate').value;
+            document.getElementById('viewEventTitle').innerText = title || "未命名專案";
             document.getElementById('viewEventDate').innerText = date || "";
-            if(date) document.getElementById('viewWeekdayDisplay').innerText = `(${['週日','週一','週二','週三','週四','週五','週六'][new Date(date).getDay()]})`;
+            if(date) document.getElementById('viewWeekdayDisplay').innerText = `(${['週日', '週一', '週二', '週三', '週四', '週五', '週六'][new Date(date).getDay()]})`;
         };
 
         window.saveToFirebase = () => {
-            currentData.title = document.getElementById('eventTitle').value;
-            currentData.date = document.getElementById('eventDate').value;
-            currentData.staff = {};
-            for(let i=1; i<=10; i++) currentData.staff[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
-            set(dataRef, currentData).then(() => alert("✅ 雲端發布成功"));
+            const data = { title: document.getElementById('eventTitle').value, date: document.getElementById('eventDate').value, staff: {}, rundown: currentData.rundown };
+            for(let i=1; i<=8; i++) data.staff[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
+            set(dataRef, data).then(() => { alert("✅ 已儲存"); isAdmin = false; renderTable(); });
         };
-        const saveToFirebaseQuietly = () => set(dataRef, currentData);
 
+        // Firebase 連結
         const app = initializeApp({ databaseURL: FIREBASE_URL });
         db = getDatabase(app);
-        dataRef = ref(db, 'rundown_v2026_final_optimized');
+        dataRef = ref(db, 'rundown_v2026_final');
 
         onValue(dataRef, (snap) => {
-            const d = snap.val();
-            if(d) {
-                currentData = d;
-                document.getElementById('eventTitle').value = d.title || "";
-                document.getElementById('eventDate').value = d.date || "";
-                for(let i=1; i<=10; i++) if(d.staff?.[i]) {
-                    document.getElementById(`j${i}`).value = d.staff[i].j || "";
-                    document.getElementById(`s${i}`).value = d.staff[i].s || "";
-                }
-                updateHeaderInfo(); renderTable(); renderEquipments();
-            }
+            const data = snap.val(); if(!data) return;
+            currentData = data;
+            document.getElementById('eventTitle').value = data.title || "";
+            document.getElementById('eventDate').value = data.date || "";
+            for(let i=1; i<=8; i++) if(data.staff?.[i]) { document.getElementById(`j${i}`).value = data.staff[i].j; document.getElementById(`s${i}`).value = data.staff[i].s; }
+            updateHeaderInfo(); renderTable();
         });
+
+        setInterval(renderTable, 60000); // 每一分鐘自動更新一次高亮狀態
     </script>
 </body>
 </html>
