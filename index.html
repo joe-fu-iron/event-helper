@@ -207,5 +207,61 @@
 
         window.calculateAllTimes = () => {
             let time = "";
-            document.querySelectorAll("#rundownBody tr").forEach((row, i
-                                                                  
+            document.querySelectorAll("#rundownBody tr").forEach((row, i) => {
+                const dur = parseInt(row.querySelector(".duration").value) || 0;
+                let start = (i === 0) ? row.querySelector(".start-time").value : time;
+                if(start.includes(":")) {
+                    let [h, m] = start.split(":").map(Number);
+                    let em = m + dur, eh = (h + Math.floor(em/60)) % 24, endStr = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2,'0')}`;
+                    if(i !== 0) row.querySelector(".row-start-display").innerText = start;
+                    row.querySelector(".row-end-display").innerText = "結束: " + endStr;
+                    time = endStr;
+                }
+            });
+        };
+
+        window.saveToFirebase = () => {
+            const data = {
+                title: document.getElementById('eventTitle').value, date: document.getElementById('eventDate').value,
+                location: document.getElementById('eventLocation').value, host: document.getElementById('headerHost').value,
+                staff: {}, rundown: [], service: [], stage: []
+            };
+            for(let i=1; i<=8; i++) data.staff[i] = {j: document.getElementById(`j${i}`).value, cj: document.getElementById(`cj${i}`).value, s: document.getElementById(`s${i}`).value};
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                data.rundown.push({
+                    startTime: row.querySelector(".start-time")?.value || "", duration: row.querySelector(".duration").value,
+                    unit: row.querySelector(".unit-cell").innerText, desc: row.querySelector(".desc-cell").innerText,
+                    jobs: Array.from(row.querySelectorAll('.job-sel')).map(s => s.getAttribute('data-temp-val') || "")
+                });
+            });
+            document.querySelectorAll('#serviceContainer .equipment-tag').forEach(el => data.service.push({t: el.querySelector('span').innerText+(el.querySelector('input')?"*{手動}":""), q: el.querySelector('input')?.value||""}));
+            document.querySelectorAll('#stageContainer .equipment-tag').forEach(el => data.stage.push({t: el.querySelector('span').innerText+(el.querySelector('input')?"*{手動}":""), q: el.querySelector('input')?.value||""}));
+            set(dataRef, data).then(() => alert("✅ 已儲存"));
+        };
+
+        onValue(dataRef, (snapshot) => {
+            const data = snapshot.val(); if(!data) { addRow(true); return; }
+            document.getElementById('eventTitle').value = data.title || "";
+            document.getElementById('eventDate').value = data.date || "";
+            document.getElementById('eventLocation').value = data.location || "";
+            document.getElementById('headerHost').value = data.host || "";
+            for(let i=1; i<=8; i++) {
+                document.getElementById(`j${i}`).value = data.staff?.[i]?.j || "-";
+                document.getElementById(`cj${i}`).value = data.staff?.[i]?.cj || "";
+                document.getElementById(`s${i}`).value = data.staff?.[i]?.s || "";
+            }
+            document.getElementById("rundownBody").innerHTML = ""; (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
+            document.getElementById('serviceContainer').innerHTML = ""; (data.service || []).forEach(e => addEquipment('serviceContainer', e.t, e.q));
+            document.getElementById('stageContainer').innerHTML = ""; (data.stage || []).forEach(e => addEquipment('stageContainer', e.t, e.q));
+            updateDayOfWeek();
+        });
+
+        window.updateDayOfWeek = () => {
+            const d = new Date(document.getElementById('eventDate').value);
+            document.getElementById('dayOfWeek').innerText = isNaN(d) ? "" : `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+        };
+
+        onValue(ref(db, ".info/connected"), (s) => document.getElementById('syncStatus').innerText = s.val() ? "🟢 連線同步中" : "🔴 斷線中");
+    </script>
+</body>
+</html>
