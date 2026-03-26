@@ -9,44 +9,24 @@
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 16px; }
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1.2px solid black; padding: 6px; vertical-align: middle; }
-        
-        /* 欄位寬度設定 (電腦版) */
-        .col-time { width: 100px; }
-        .col-dur { width: 60px; }
-        .col-unit { width: 220px; } 
-        .col-job { width: 180px; }  
-
+        .col-time { width: 100px; } .col-dur { width: 60px; } .col-unit { width: 220px; } .col-job { width: 180px; }  
         .input-line { border: none; border-bottom: 1px solid #94a3b8; outline: none; background: transparent; font-size: 16px; }
         .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #000; padding: 2px 6px; border-radius: 4px; margin: 2px; font-size: 14px; }
         .num-input { width: 45px; border-bottom: 1px solid black; text-align: center; background: transparent; }
         .start-time-input { width: 100%; text-align: center; background: #fffbeb; border: 1px inset #ccc; font-weight: bold; }
 
-        /* 手機版 RWD 核心代碼 */
         @media screen and (max-width: 768px) {
-            .rundown-table, .rundown-table thead, .rundown-table tbody, .rundown-table th, .rundown-table td, .rundown-table tr {
-                display: block; width: 100% !important;
-            }
+            .rundown-table, .rundown-table thead, .rundown-table tbody, .rundown-table th, .rundown-table td, .rundown-table tr { display: block; width: 100% !important; }
             .rundown-table thead { display: none; } 
-            .rundown-table tr {
-                margin-bottom: 15px; border: 2px solid #ea580c; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            }
-            .rundown-table td {
-                border: none; border-bottom: 1px solid #f1f5f9; position: relative; padding: 12px 12px 12px 35%; text-align: left; min-height: 48px;
-            }
-            .rundown-table td::before {
-                content: attr(data-label); position: absolute; left: 12px; font-weight: 800; color: #ea580c; font-size: 14px;
-            }
+            .rundown-table tr { margin-bottom: 15px; border: 2px solid #ea580c; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+            .rundown-table td { border: none; border-bottom: 1px solid #f1f5f9; position: relative; padding: 12px 12px 12px 35%; text-align: left; min-height: 48px; }
+            .rundown-table td::before { content: attr(data-label); position: absolute; left: 12px; font-weight: 800; color: #ea580c; font-size: 14px; }
             .col-time .time-box { flex-direction: row !important; gap: 10px; }
-            .col-job select { margin-bottom: 8px; }
-            .no-print.flex { flex-direction: column; }
-            .no-print button { width: 100%; }
         }
-
         @media print {
             .no-print { display: none !important; }
             body { background: white; padding: 0; }
             @page { size: A4 landscape; margin: 0.5cm; }
-            .page-break { page-break-before: always; }
             .rundown-table td { font-size: 11pt; }
         }
     </style>
@@ -58,8 +38,7 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                 <div class="flex flex-wrap items-center gap-4">
                     <span class="font-black text-2xl text-orange-700">活動執行細部流程表</span>
-                    <a href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" 
-                       target="_blank" class="no-print bg-red-600 text-white px-3 py-1.5 rounded font-bold text-xs shadow hover:bg-red-700">🚨 長官簽到即時情況</a>
+                    <a href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" target="_blank" class="no-print bg-red-600 text-white px-3 py-1.5 rounded font-bold text-xs shadow hover:bg-red-700">🚨 長官簽到即時情況</a>
                 </div>
                 <div class="flex gap-2 w-full md:w-auto no-print">
                     <button onclick="saveToFirebase()" class="flex-1 md:flex-none bg-orange-600 text-white px-6 py-2 rounded text-sm font-bold shadow">💾 儲存</button>
@@ -80,16 +59,15 @@
                     <script>
                         const fixedJobs = ["-", "控場", "音響", "服務台", "攝影", "機動"];
                         for(let i=1; i<=8; i++) {
-                            let options = fixedJobs.map(job => `<option value="${job}">${job}</option>`).join('');
                             document.write(`
                                 <div class="bg-white p-2 rounded border border-gray-200 text-xs">
                                     <div class="flex justify-between text-gray-400 mb-1 font-bold">#${i}</div>
-                                    <select id="j${i}" class="border rounded w-full mb-1 p-1 bg-white" onchange="updateAllSelects()">
-                                        ${options}
+                                    <select id="j${i}" class="border rounded w-full mb-1 p-1 bg-white staff-config" onchange="updateAllSelects()">
+                                        ${fixedJobs.map(job => `<option value="${job}">${job}</option>`).join('')}
                                         <option value="manual">(手動)</option>
                                     </select>
-                                    <input type="text" id="cj${i}" placeholder="工項" class="input-line w-full hidden mb-1 !text-xs" oninput="updateAllSelects()">
-                                    <input type="text" id="s${i}" placeholder="姓名" class="input-line w-full !text-xs" oninput="updateAllSelects()">
+                                    <input type="text" id="cj${i}" placeholder="工項" class="input-line w-full hidden mb-1 !text-xs staff-config" oninput="updateAllSelects()">
+                                    <input type="text" id="s${i}" placeholder="姓名" class="input-line w-full !text-xs staff-config" oninput="updateAllSelects()">
                                 </div>
                             `);
                         }
@@ -100,13 +78,7 @@
 
         <table id="rundownTable" class="rundown-table mb-4 shadow-sm">
             <thead class="bg-gray-800 text-white text-sm text-center">
-                <tr>
-                    <th class="col-time">時間</th>
-                    <th class="col-dur">長度</th>
-                    <th class="col-unit">單元項目</th>
-                    <th class="col-desc">執行說明</th>
-                    <th class="col-job">負責人</th>
-                </tr>
+                <tr><th class="col-time">時間</th><th class="col-dur">長度</th><th class="col-unit">單元項目</th><th class="col-desc">執行說明</th><th class="col-job">負責人</th></tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
@@ -121,19 +93,17 @@
                 <h3 class="font-black text-xl text-blue-800">📋 器材清單核對</h3>
                 <button onclick="toggleMenuArea()" id="toggleBtn" class="no-print bg-blue-100 text-blue-700 px-4 py-2 rounded text-sm">🔼 收合選單</button>
             </div>
-            
             <div id="menuArea" class="no-print mb-6 p-4 bg-slate-50 rounded border border-dashed">
-                <div class="mb-4"><strong>📍 服務台項目：</strong><div id="serviceMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
-                <div class="mb-4"><strong>📍 舞台區項目：</strong><div id="stageMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
+                <div class="mb-4"><strong>📍 服務台：</strong><div id="serviceMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
+                <div class="mb-4"><strong>📍 舞台區：</strong><div id="stageMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
                 <div class="flex gap-4">
                     <button onclick="addCustomEquip('serviceContainer')" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold">+ 自訂服務台</button>
                     <button onclick="addCustomEquip('stageContainer')" class="bg-red-600 text-white px-4 py-2 rounded text-xs font-bold">+ 自訂舞台區</button>
                 </div>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="border p-4 rounded min-h-[120px] bg-slate-50"><h4 class="font-bold text-blue-700 mb-2 border-b border-blue-200">服務台：</h4><div id="serviceContainer" class="flex flex-wrap items-start"></div></div>
-                <div class="border p-4 rounded min-h-[120px] bg-slate-50"><h4 class="font-bold text-red-700 mb-2 border-b border-red-200">舞台區：</h4><div id="stageContainer" class="flex flex-wrap items-start"></div></div>
+                <div class="border p-4 rounded min-h-[120px] bg-slate-50"><h4 class="font-bold text-blue-700 mb-2 border-b">服務台：</h4><div id="serviceContainer" class="flex flex-wrap items-start"></div></div>
+                <div class="border p-4 rounded min-h-[120px] bg-slate-50"><h4 class="font-bold text-red-700 mb-2 border-b">舞台區：</h4><div id="stageContainer" class="flex flex-wrap items-start"></div></div>
             </div>
         </div>
     </div>
@@ -148,9 +118,6 @@
         const dataRef = ref(db, 'rundown_v2026_detail_sync');
 
         let isDirty = false;
-        const markDirty = () => { isDirty = true; };
-
-        // --- 核心選單資料區 (確保存在) ---
         const menuItems = {
             service: ["長官簽到表一式", "長官勾選表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱*1式", "新聞資料*{手動}", "黃桌巾*{手動}", "紅桌巾*{手動}", "伴手禮*{手動}"],
             stage: ["音響+電腦1式", "TRUSS*{手動}", "斜撐*{手動}", "鐵板*{手動}", "帆布+豆扣*All", "紅桌巾*{手動}", "濕紙巾*{手動}", "衛生紙*{手動}", "手板*{手動}", "木架*{手動}"]
@@ -159,9 +126,8 @@
         window.onload = () => {
             initMenu('serviceMenu', menuItems.service, 'serviceContainer');
             initMenu('stageMenu', menuItems.stage, 'stageContainer');
-            document.addEventListener('input', markDirty);
-            // Q2: 2 分鐘自動儲存
-            setInterval(() => { if (isDirty) { saveToFirebase(true); } }, 120000);
+            document.addEventListener('input', () => { isDirty = true; });
+            setInterval(() => { if (isDirty) saveToFirebase(true); }, 120000);
         };
 
         function initMenu(menuId, list, containerId) {
@@ -170,69 +136,34 @@
                 const btn = document.createElement('span'); 
                 btn.className = 'bg-white border px-3 py-1 rounded-full text-xs cursor-pointer hover:bg-orange-50';
                 btn.innerText = `+ ${item.split('*')[0]}`;
-                btn.onclick = () => { addEquipment(containerId, item); markDirty(); };
+                btn.onclick = () => { addEquipment(containerId, item); isDirty = true; };
                 menu.appendChild(btn);
             });
         }
 
-        // Q1 修復: 刪除行數
-        window.deleteRowPrompt = () => {
-            const rows = document.querySelectorAll("#rundownBody tr");
-            const num = prompt(`目前共有 ${rows.length} 行，請輸入要刪除的行號 (1-${rows.length})：`);
-            const index = parseInt(num) - 1;
-            if (index >= 0 && index < rows.length) {
-                if (confirm(`確定要刪除第 ${num} 行嗎？`)) {
-                    rows[index].remove();
-                    window.calculateAllTimes();
-                    markDirty();
-                }
-            }
-        };
-
-        // Q1 修復: 自訂器材
-        window.addCustomEquip = (containerId) => {
-            const name = prompt("請輸入器材名稱：");
-            if (name) { addEquipment(containerId, name + "*{手動}"); markDirty(); }
-        };
-
-        window.toggleMenuArea = () => {
-            const area = document.getElementById('menuArea'), btn = document.getElementById('toggleBtn');
-            const isHidden = area.style.display === "none";
-            area.style.display = isHidden ? "block" : "none";
-            btn.innerText = isHidden ? "🔼 收合選單" : "🔽 展開選單";
-        };
-
         window.updateAllSelects = () => {
-            const list = [];
+            const currentStaffList = [];
             for(let i=1; i<=8; i++) {
                 const sel = document.getElementById(`j${i}`);
                 const cInput = document.getElementById(`cj${i}`);
                 if(sel.value === "manual") { cInput.classList.remove('hidden'); } else { cInput.classList.add('hidden'); }
                 let jobName = sel.value === "manual" ? cInput.value || "自定義" : sel.value;
                 const staffName = document.getElementById(`s${i}`).value;
-                if(jobName !== "-") list.push(staffName ? `${jobName}(${staffName})` : jobName);
+                if(jobName !== "-") currentStaffList.push(staffName ? `${jobName}(${staffName})` : jobName);
             }
+
             document.querySelectorAll("#rundownBody tr").forEach(row => {
                 row.querySelectorAll(".job-sel").forEach(sel => {
-                    const val = sel.value;
+                    const savedVal = sel.getAttribute('data-temp-val') || sel.value;
                     let options = `<option value="">- 無 -</option>`;
-                    list.forEach(k => options += `<option value="${k}" ${val===k?'selected':''}>${k}</option>`);
+                    currentStaffList.forEach(name => {
+                        options += `<option value="${name}" ${savedVal === name ? 'selected' : ''}>${name}</option>`;
+                    });
                     sel.innerHTML = options;
+                    if(savedVal) sel.value = savedVal; 
                 });
             });
-            markDirty();
-        };
-
-        window.addEquipment = (containerId, template, savedQty = "") => {
-            const container = document.getElementById(containerId);
-            const tag = document.createElement('div'); tag.className = 'equipment-tag shadow-sm';
-            const name = template.split('*')[0], isManual = template.includes('{手動}');
-            tag.innerHTML = `
-                <input type="checkbox" class="no-print mr-1">
-                <span class="font-bold">${name}</span>
-                ${isManual ? `*<input type="text" class="num-input" value="${savedQty}" oninput="isDirty=true">` : ''}
-                <span class="no-print text-red-400 cursor-pointer ml-1 font-bold" onclick="this.parentElement.remove(); isDirty=true;">✕</span>`;
-            container.appendChild(tag);
+            isDirty = true;
         };
 
         window.addRow = (isFirst = false, saved = null) => {
@@ -240,9 +171,8 @@
             const tr = document.createElement("tr");
             let jobHTML = "";
             for(let i=0; i<3; i++){
-                jobHTML += `
-                    <select class="job-sel no-print w-full mb-1 text-[13px] border rounded" onchange="updateAllSelects()"><option value="">-</option></select>
-                    <div class="print:block hidden text-[11pt] border-b leading-tight h-5">${saved?.jobs?.[i] || ''}</div>`;
+                const val = saved?.jobs?.[i] || "";
+                jobHTML += `<select class="job-sel no-print w-full mb-1 text-[13px] border rounded" data-temp-val="${val}" onchange="this.setAttribute('data-temp-val', this.value); isDirty=true;"><option value="">-</option></select>`;
             }
             tr.innerHTML = `
                 <td data-label="時間" class="col-time text-center">
@@ -253,29 +183,12 @@
                     </div>
                 </td>
                 <td data-label="長度" class="col-dur"><input type="number" class="duration text-center w-full font-bold border-b" value="${saved?.duration||60}" oninput="calculateAllTimes()"></td>
-                <td data-label="單元" contenteditable="true" class="col-unit unit-cell font-bold text-blue-900 px-2" onblur="isDirty=true">${saved?.unit||''}</td>
-                <td data-label="說明" contenteditable="true" class="col-desc desc-cell text-gray-700 px-2" onblur="isDirty=true">${saved?.desc||''}</td>
+                <td data-label="單元" contenteditable="true" class="col-unit unit-cell font-bold text-blue-900 px-2">${saved?.unit||''}</td>
+                <td data-label="說明" contenteditable="true" class="col-desc desc-cell text-gray-700 px-2">${saved?.desc||''}</td>
                 <td data-label="人員" class="col-job">${jobHTML}</td>`;
             tbody.appendChild(tr);
-            updateAllSelects(); calculateAllTimes(); markDirty();
-        };
-
-        window.calculateAllTimes = () => {
-            const rows = document.querySelectorAll("#rundownBody tr");
-            let currentStartTime = "";
-            rows.forEach((row, i) => {
-                const dur = parseInt(row.querySelector(".duration").value) || 0;
-                let start = (i === 0) ? (row.querySelector(".start-time")?.value || "") : currentStartTime;
-                if (start && start.includes(":")) {
-                    let [h, m] = start.split(":").map(Number);
-                    let em = m + dur;
-                    let eh = (h + Math.floor(em/60)) % 24; em %= 60;
-                    let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
-                    if (i !== 0) row.querySelector(".row-start-display").innerText = start;
-                    row.querySelector(".row-end-display").innerText = end;
-                    currentStartTime = end;
-                }
-            });
+            window.updateAllSelects(); // 建立時立即同步名單與選中值
+            calculateAllTimes();
         };
 
         window.saveToFirebase = (isAuto = false) => {
@@ -300,31 +213,81 @@
             });
             document.querySelectorAll('#serviceContainer .equipment-tag').forEach(el => data.serviceEquip.push({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }));
             document.querySelectorAll('#stageContainer .equipment-tag').forEach(el => data.stageEquip.push({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }));
-            
-            set(dataRef, data).then(() => { isDirty = false; if (!isAuto) alert("✅ 資料已同步儲存"); });
+            set(dataRef, data).then(() => { isDirty = false; if (!isAuto) alert("✅ 已儲存"); });
         };
 
         onValue(dataRef, (snapshot) => {
             const data = snapshot.val();
-            if (data) {
-                document.getElementById('eventTitle').value = data.title || "";
-                document.getElementById('eventDate').value = data.date || "";
-                document.getElementById('eventLocation').value = data.location || "";
-                document.getElementById('headerHost').value = data.host || "";
-                for(let i=1; i<=8; i++){
-                    document.getElementById(`j${i}`).value = data.maps?.[i]?.j || "-";
-                    document.getElementById(`cj${i}`).value = data.maps?.[i]?.cj || "";
-                    document.getElementById(`s${i}`).value = data.maps?.[i]?.s || "";
-                }
-                const tbody = document.getElementById("rundownBody"); tbody.innerHTML = "";
-                (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
-                document.getElementById('serviceContainer').innerHTML = "";
-                (data.serviceEquip || []).forEach(e => addEquipment('serviceContainer', e.t, e.q));
-                document.getElementById('stageContainer').innerHTML = "";
-                (data.stageEquip || []).forEach(e => addEquipment('stageContainer', e.t, e.q));
-                calculateAllTimes(); updateDayOfWeek(); updateAllSelects(); isDirty = false;
-            } else { initDefault(); }
+            if (!data) { initDefault(); return; }
+            document.getElementById('eventTitle').value = data.title || "";
+            document.getElementById('eventDate').value = data.date || "";
+            document.getElementById('eventLocation').value = data.location || "";
+            document.getElementById('headerHost').value = data.host || "";
+            for(let i=1; i<=8; i++){
+                document.getElementById(`j${i}`).value = data.maps?.[i]?.j || "-";
+                document.getElementById(`cj${i}`).value = data.maps?.[i]?.cj || "";
+                document.getElementById(`s${i}`).value = data.maps?.[i]?.s || "";
+            }
+            const tbody = document.getElementById("rundownBody"); tbody.innerHTML = "";
+            (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
+            document.getElementById('serviceContainer').innerHTML = "";
+            (data.serviceEquip || []).forEach(e => addEquipment('serviceContainer', e.t, e.q));
+            document.getElementById('stageContainer').innerHTML = "";
+            (data.stageEquip || []).forEach(e => addEquipment('stageContainer', e.t, e.q));
+            calculateAllTimes(); updateDayOfWeek();
+            isDirty = false;
         });
+
+        window.calculateAllTimes = () => {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            let currentStartTime = "";
+            rows.forEach((row, i) => {
+                const dur = parseInt(row.querySelector(".duration").value) || 0;
+                let start = (i === 0) ? (row.querySelector(".start-time")?.value || "") : currentStartTime;
+                if (start && start.includes(":")) {
+                    let [h, m] = start.split(":").map(Number);
+                    let em = m + dur;
+                    let eh = (h + Math.floor(em/60)) % 24; em %= 60;
+                    let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+                    if (i !== 0) row.querySelector(".row-start-display").innerText = start;
+                    row.querySelector(".row-end-display").innerText = end;
+                    currentStartTime = end;
+                }
+            });
+        };
+
+        window.addEquipment = (containerId, template, savedQty = "") => {
+            const container = document.getElementById(containerId);
+            const tag = document.createElement('div'); tag.className = 'equipment-tag shadow-sm';
+            const name = template.split('*')[0], isManual = template.includes('{手動}');
+            tag.innerHTML = `
+                <input type="checkbox" class="no-print mr-1">
+                <span class="font-bold">${name}</span>
+                ${isManual ? `*<input type="text" class="num-input" value="${savedQty}" oninput="isDirty=true">` : ''}
+                <span class="no-print text-red-400 cursor-pointer ml-1 font-bold" onclick="this.parentElement.remove(); isDirty=true;">✕</span>`;
+            container.appendChild(tag);
+        };
+
+        window.deleteRowPrompt = () => {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            const num = prompt(`請輸入要刪除的行號 (1-${rows.length})：`);
+            const index = parseInt(num) - 1;
+            if (index >= 0 && index < rows.length && confirm(`確定刪除第 ${num} 行？`)) {
+                rows[index].remove(); window.calculateAllTimes(); isDirty = true;
+            }
+        };
+
+        window.addCustomEquip = (containerId) => {
+            const name = prompt("請輸入器材名稱：");
+            if (name) { addEquipment(containerId, name + "*{手動}"); isDirty = true; }
+        };
+
+        window.toggleMenuArea = () => {
+            const area = document.getElementById('menuArea'), btn = document.getElementById('toggleBtn');
+            const isHidden = area.style.display === "none";
+            area.style.display = isHidden ? "block" : "none";
+            btn.innerText = isHidden ? "🔼 收合選單" : "🔽 展開選單";
+        };
 
         window.updateDayOfWeek = () => {
             const d = new Date(document.getElementById('eventDate').value);
