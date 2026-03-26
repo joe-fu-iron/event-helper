@@ -3,27 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 活動執行細部流程表 (折疊優化版)</title>
+    <title>2026 執行流程表 (Final Stable)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 14px; color: #334155; }
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 6px; vertical-align: middle; }
         .col-time { width: 95px; } .col-dur { width: 60px; } .col-unit { width: 200px; } .col-job { width: 220px; }
-        .row-start-display { font-weight: bold; color: #f97316; font-size: 15px; }
         .job-sel { display: none; margin-bottom: 4px; border: 1px solid #e2e8f0; border-radius: 4px; }
         .job-sel.visible { display: block; }
         .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #475569; padding: 2px 8px; border-radius: 4px; margin: 2px; font-weight: bold; font-size: 12px; }
         .num-input { width: 45px; border-bottom: 1px solid #000; text-align: center; margin-left: 4px; }
-        
-        /* 折疊動畫與樣式 */
         .collapsible-content { transition: max-height 0.3s ease-out; overflow: hidden; }
-        .collapsed { max-height: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; border: none !important; }
-        .toggle-btn { cursor: pointer; display: flex; align-items: center; gap: 8px; transition: color 0.2s; }
-        .toggle-btn:hover { color: #ea580c; }
-        .arrow { transition: transform 0.3s; }
+        .collapsed { max-height: 0 !important; margin-bottom: 0 !important; padding: 0 !important; border: none !important; }
+        .arrow { transition: transform 0.3s; display: inline-block; }
         .arrow.rotate { transform: rotate(-90deg); }
-
         @media screen and (max-width: 768px) {
             .rundown-table, .rundown-table tr, .rundown-table td { display: block; width: 100% !important; }
             .rundown-table thead { display: none; }
@@ -31,7 +25,7 @@
             .rundown-table td { position: relative; padding: 12px 12px 12px 35%; border: none; border-bottom: 1px solid #f1f5f9; }
             .rundown-table td::before { content: attr(data-label); position: absolute; left: 10px; font-weight: bold; color: #f97316; }
         }
-        @media print { .no-print { display: none !important; } .job-sel { display: none !important; .collapsible-content { max-height: none !important; } }
+        @media print { .no-print { display: none !important; } .job-sel { display: none !important; } .print-text { display: block !important; border-bottom: 1px solid #eee; } }
     </style>
 </head>
 <body class="p-2 md:p-4">
@@ -39,45 +33,45 @@
     <div class="max-w-[1580px] mx-auto bg-white p-4 shadow-lg rounded-xl border-t-4 border-orange-600">
         <div class="flex justify-between items-center mb-4 border-b pb-2">
             <div>
-                <h1 class="text-2xl font-black text-orange-700 inline-block mr-4">活動執行細部流程表</h1>
+                <h1 class="text-2xl font-black text-orange-700 inline-block mr-4">2026 活動執行流程表</h1>
                 <span id="syncStatus" class="text-xs font-bold px-2 py-1 bg-gray-100 rounded-full border">連線中...</span>
             </div>
             <div class="flex gap-2 no-print">
-                <button onclick="saveToFirebase()" class="bg-orange-600 text-white px-5 py-2 rounded font-bold shadow hover:bg-orange-700 transition">💾 儲存</button>
+                <button onclick="saveToFirebase()" class="bg-orange-600 text-white px-5 py-2 rounded font-bold shadow hover:bg-orange-700">💾 儲存</button>
                 <button onclick="window.print()" class="bg-slate-700 text-white px-5 py-2 rounded font-bold shadow">🖨️ 列印</button>
             </div>
         </div>
 
-        <div class="no-print toggle-btn font-bold text-slate-500 mb-2 px-1" onclick="toggleSection('infoSection', 'infoArrow')">
+        <div class="no-print font-bold text-slate-500 mb-2 cursor-pointer select-none" onclick="toggleSection('infoSection', 'infoArrow')">
             <span id="infoArrow" class="arrow">▼</span> 基本資訊與人員設定
         </div>
         <div id="infoSection" class="collapsible-content">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 text-sm bg-slate-50 p-3 rounded border">
-                <div>主題：<input type="text" id="eventTitle" class="border-b bg-transparent w-full"></div>
-                <div>日期：<input type="date" id="eventDate" class="border-b bg-transparent" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600 font-bold"></span></div>
-                <div>地點：<input type="text" id="eventLocation" class="border-b bg-transparent w-full"></div>
-                <div>主持人：<input type="text" id="headerHost" class="border-b bg-transparent w-full"></div>
+                <div>主題：<input type="text" id="eventTitle" class="border-b bg-transparent w-full outline-none"></div>
+                <div>日期：<input type="date" id="eventDate" class="border-b bg-transparent outline-none" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600 font-bold"></span></div>
+                <div>地點：<input type="text" id="eventLocation" class="border-b bg-transparent w-full outline-none"></div>
+                <div>主持人：<input type="text" id="headerHost" class="border-b bg-transparent w-full outline-none"></div>
             </div>
             <div class="p-3 bg-orange-50 rounded border border-orange-200 mb-4">
                 <div class="grid grid-cols-2 md:grid-cols-8 gap-2" id="staffConfig"></div>
             </div>
         </div>
 
-        <table id="rundownTable" class="rundown-table mb-6">
+        <table class="rundown-table mb-6">
             <thead class="bg-slate-800 text-white text-sm">
                 <tr><th class="col-time">時間</th><th class="col-dur">長度</th><th class="col-unit">單元項目</th><th>執行說明</th><th class="col-job">負責人</th></tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
 
-        <button onclick="addRow()" class="no-print bg-slate-800 text-white px-6 py-2 rounded font-bold mb-8 transition hover:scale-105">+ 新增流程項目</button>
+        <button onclick="addRow()" class="no-print bg-slate-800 text-white px-6 py-2 rounded font-bold mb-8 transition hover:bg-slate-700">+ 新增流程</button>
 
         <div class="border-t-2 pt-4">
-            <div class="no-print toggle-btn font-black text-lg text-blue-800 mb-3" onclick="toggleSection('equipSection', 'equipArrow')">
+            <div class="no-print font-black text-lg text-blue-800 mb-3 cursor-pointer select-none" onclick="toggleSection('equipSection', 'equipArrow')">
                 <span id="equipArrow" class="arrow">▼</span> 📋 器材核對清單
             </div>
             <div id="equipSection" class="collapsible-content">
-                <div id="menuArea" class="no-print bg-slate-100 p-4 rounded-lg mb-4 border border-dashed border-slate-300">
+                <div class="no-print bg-slate-100 p-4 rounded-lg mb-4 border border-dashed border-slate-300">
                     <div class="mb-3"><strong>📍 服務台：</strong><div id="serviceMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
                     <div class="mb-3"><strong>📍 舞台區：</strong><div id="stageMenu" class="flex flex-wrap gap-2 mt-2"></div></div>
                 </div>
@@ -102,59 +96,37 @@
         const firebaseConfig = { databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const dataRef = ref(db, 'rundown_v2026_foldable');
+        const dataRef = ref(db, 'rundown_v2026_final_v1');
 
-        // 折疊邏輯
-        window.toggleSection = (id, arrowId) => {
-            const el = document.getElementById(id);
-            const arrow = document.getElementById(arrowId);
-            const isCollapsed = el.classList.toggle('collapsed');
-            arrow.classList.toggle('rotate');
-            localStorage.setItem('collapsed_' + id, isCollapsed);
+        // 器材選單定義
+        const menuItems = {
+            service: ["長官簽到表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱", "伴手禮*{手動}"],
+            stage: ["音響電腦", "TRUSS", "斜撐", "鐵板", "木架"]
         };
 
-        // 工作人員設定 (保持原本邏輯)
+        // 工作人員設定區初始化
         const staffConfig = document.getElementById('staffConfig');
         for(let i=1; i<=8; i++) {
             staffConfig.innerHTML += `
-                <div class="bg-white p-2 border rounded">
-                    <select id="j${i}" class="w-full text-xs border mb-1" onchange="updateAllSelects()">
+                <div class="bg-white p-2 border rounded shadow-sm">
+                    <select id="j${i}" class="w-full text-[11px] border mb-1" onchange="updateAllSelects()">
                         <option value="-">-</option><option value="控場">控場</option><option value="音響">音響</option>
-                        <option value="服務台">服務台</option><option value="攝影">攝影</option><option value="manual">(自訂)</option>
+                        <option value="服務台">服務台</option><option value="manual">(自訂)</option>
                     </select>
-                    <input type="text" id="cj${i}" placeholder="名稱" class="w-full text-xs border-b hidden mb-1" oninput="updateAllSelects()">
-                    <input type="text" id="s${i}" placeholder="姓名" class="w-full text-xs border-b" oninput="updateAllSelects()">
+                    <input type="text" id="cj${i}" placeholder="名稱" class="w-full text-[11px] border-b hidden mb-1" oninput="updateAllSelects()">
+                    <input type="text" id="s${i}" placeholder="姓名" class="w-full text-[11px] border-b" oninput="updateAllSelects()">
                 </div>`;
         }
 
-        const menuItems = {
-            service: ["長官簽到表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱", "黃桌巾", "伴手禮*{手動}"],
-            stage: ["音響電腦", "TRUSS", "斜撐", "鐵板", "手板", "木架"]
+        // 折疊切換
+        window.toggleSection = (id, arrowId) => {
+            const el = document.getElementById(id);
+            const isCollapsed = el.classList.toggle('collapsed');
+            document.getElementById(arrowId).classList.toggle('rotate');
+            localStorage.setItem('collapsed_' + id, isCollapsed);
         };
 
-        window.onload = () => {
-            initMenu('serviceMenu', menuItems.service, 'serviceContainer');
-            initMenu('stageMenu', menuItems.stage, 'stageContainer');
-            // 恢復折疊狀態
-            ['infoSection', 'equipSection'].forEach(id => {
-                if(localStorage.getItem('collapsed_' + id) === 'true') {
-                    document.getElementById(id).classList.add('collapsed');
-                    document.getElementById(id === 'infoSection' ? 'infoArrow' : 'equipArrow').classList.add('rotate');
-                }
-            });
-        };
-
-        function initMenu(menuId, list, containerId) {
-            const menu = document.getElementById(menuId);
-            list.forEach(item => {
-                const btn = document.createElement('button');
-                btn.className = 'bg-white border text-xs px-2 py-1 rounded hover:bg-orange-100';
-                btn.innerText = `+ ${item.split('*')[0]}`;
-                btn.onclick = () => addEquipment(containerId, item);
-                menu.appendChild(btn);
-            });
-        }
-
+        // 器材新增函式
         window.addEquipment = (containerId, template, savedQty = "") => {
             const container = document.getElementById(containerId);
             const name = template.split('*')[0], isManual = template.includes('{手動}');
@@ -163,29 +135,7 @@
             container.appendChild(tag);
         };
 
-        window.addRow = (isFirst = false, saved = null) => {
-            const tbody = document.getElementById("rundownBody");
-            const tr = document.createElement("tr");
-            let jobHTML = `<div class="job-container">`;
-            for(let i=0; i<6; i++) {
-                const val = saved?.jobs?.[i] || "";
-                jobHTML += `<div><select class="job-sel no-print w-full text-xs p-1" data-temp-val="${val}" onchange="this.setAttribute('data-temp-val', this.value); refreshRowJobs(this.closest('tr'))"></select><div class="print-text hidden font-bold text-blue-900 border-b">${val}</div></div>`;
-            }
-            jobHTML += `</div>`;
-
-            tr.innerHTML = `
-                <td data-label="時間" class="text-center">
-                    ${isFirst ? `<input type="text" class="start-time w-full text-center font-bold bg-yellow-50" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start-display">--:--</span>'}
-                    <div class="row-end-display text-[10px] text-gray-400 mt-1">結束: --:--</div>
-                </td>
-                <td data-label="長度"><input type="number" class="duration w-full text-center border-b font-bold" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
-                <td data-label="單元" contenteditable="true" class="unit-cell font-bold px-1 text-blue-800 outline-none">${saved?.unit||''}</td>
-                <td data-label="說明" contenteditable="true" class="desc-cell text-xs px-1 text-slate-500 outline-none">${saved?.desc||''}</td>
-                <td data-label="人員" class="col-job">${jobHTML}</td>`;
-            tbody.appendChild(tr);
-            refreshRowJobs(tr); calculateAllTimes();
-        };
-
+        // 人員選單刷新
         window.refreshRowJobs = (row) => {
             const list = [];
             for(let i=1; i<=8; i++) {
@@ -195,27 +145,54 @@
             }
             let lastIdx = -1;
             const selects = row.querySelectorAll('.job-sel');
+            const prints = row.querySelectorAll('.print-text');
             selects.forEach((sel, i) => {
                 const saved = sel.getAttribute('data-temp-val') || "";
                 sel.innerHTML = `<option value="">- 選取 -</option>` + list.map(n => `<option value="${n}" ${n===saved?'selected':''}>${n}</option>`).join('');
-                if(saved && list.includes(saved)) { sel.value = saved; lastIdx = i; row.querySelectorAll('.print-text')[i].innerText = saved; }
+                if(saved && list.includes(saved)) { sel.value = saved; lastIdx = i; prints[i].innerText = saved; }
+                else { prints[i].innerText = ""; }
             });
             selects.forEach((sel, i) => { if(i === 0 || i <= lastIdx + 1) sel.classList.add('visible'); else sel.classList.remove('visible'); });
         };
 
         window.updateAllSelects = () => document.querySelectorAll("#rundownBody tr").forEach(row => refreshRowJobs(row));
 
+        // 新增流程行
+        window.addRow = (isFirst = false, saved = null) => {
+            const tbody = document.getElementById("rundownBody");
+            const tr = document.createElement("tr");
+            let jobHTML = `<div class="job-container">`;
+            for(let i=0; i<6; i++) {
+                const val = saved?.jobs?.[i] || "";
+                jobHTML += `<div><select class="job-sel no-print w-full text-xs p-1" data-temp-val="${val}" onchange="this.setAttribute('data-temp-val', this.value); refreshRowJobs(this.closest('tr'))"></select><div class="print-text hidden font-bold text-blue-900 border-b text-[11px]">${val}</div></div>`;
+            }
+            jobHTML += `</div>`;
+
+            tr.innerHTML = `
+                <td data-label="時間" class="text-center">
+                    ${isFirst ? `<input type="text" class="start-time w-full text-center font-bold bg-yellow-50" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start-display">--:--</span>'}
+                    <div class="row-end-display text-[10px] text-gray-400">結束: --:--</div>
+                </td>
+                <td data-label="長度"><input type="number" class="duration w-full text-center border-b font-bold" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
+                <td data-label="單元" contenteditable="true" class="unit-cell font-bold px-1 text-blue-800 outline-none">${saved?.unit||''}</td>
+                <td data-label="說明" contenteditable="true" class="desc-cell text-xs px-1 text-slate-500 outline-none">${saved?.desc||''}</td>
+                <td data-label="負責人" class="col-job">${jobHTML}</td>`;
+            tbody.appendChild(tr);
+            refreshRowJobs(tr);
+            calculateAllTimes();
+        };
+
         window.calculateAllTimes = () => {
             let time = "";
             document.querySelectorAll("#rundownBody tr").forEach((row, i) => {
                 const dur = parseInt(row.querySelector(".duration").value) || 0;
                 let start = (i === 0) ? row.querySelector(".start-time").value : time;
-                if(start.includes(":")) {
+                if(start && start.includes(":")) {
                     let [h, m] = start.split(":").map(Number);
-                    let em = m + dur, eh = (h + Math.floor(em/60)) % 24, endStr = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2,'0')}`;
+                    let em = m + dur, eh = (h + Math.floor(em/60)) % 24, es = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2,'0')}`;
                     if(i !== 0) row.querySelector(".row-start-display").innerText = start;
-                    row.querySelector(".row-end-display").innerText = "結束: " + endStr;
-                    time = endStr;
+                    row.querySelector(".row-end-display").innerText = "結束: " + es;
+                    time = es;
                 }
             });
         };
@@ -236,7 +213,7 @@
             });
             document.querySelectorAll('#serviceContainer .equipment-tag').forEach(el => data.service.push({t: el.querySelector('span').innerText+(el.querySelector('input')?"*{手動}":""), q: el.querySelector('input')?.value||""}));
             document.querySelectorAll('#stageContainer .equipment-tag').forEach(el => data.stage.push({t: el.querySelector('span').innerText+(el.querySelector('input')?"*{手動}":""), q: el.querySelector('input')?.value||""}));
-            set(dataRef, data).then(() => alert("✅ 已儲存"));
+            set(dataRef, data).then(() => alert("✅ 同步完成"));
         };
 
         onValue(dataRef, (snapshot) => {
@@ -261,7 +238,28 @@
             document.getElementById('dayOfWeek').innerText = isNaN(d) ? "" : `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
         };
 
-        onValue(ref(db, ".info/connected"), (s) => document.getElementById('syncStatus').innerText = s.val() ? "🟢 連線同步中" : "🔴 斷線中");
+        // 初始化選單
+        const initMenus = () => {
+            ['service', 'stage'].forEach(type => {
+                const menu = document.getElementById(type + 'Menu');
+                menuItems[type].forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.className = 'bg-white border text-xs px-2 py-1 rounded hover:bg-orange-100';
+                    btn.innerText = `+ ${item.split('*')[0]}`;
+                    btn.onclick = () => addEquipment(type + 'Container', item);
+                    menu.appendChild(btn);
+                });
+            });
+            ['infoSection', 'equipSection'].forEach(id => {
+                if(localStorage.getItem('collapsed_' + id) === 'true') {
+                    document.getElementById(id).classList.add('collapsed');
+                    document.getElementById(id.replace('Section', 'Arrow')).classList.add('rotate');
+                }
+            });
+        };
+        initMenus();
+
+        onValue(ref(db, ".info/connected"), (s) => document.getElementById('syncStatus').innerText = s.val() ? "🟢 連線正常" : "🔴 離線中");
     </script>
 </body>
 </html>
