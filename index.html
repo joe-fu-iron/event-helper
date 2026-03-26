@@ -3,38 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 執行流程控台</title>
+    <title>2026 執行流程控台 - 鐵仁團隊</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; color: #1e293b; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; color: #1e293b; -webkit-tap-highlight-color: transparent; }
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 10px 8px; vertical-align: middle; }
-        
-        /* 表格標題 */
         .table-head { background: #f1f5f9; color: #475569; font-size: 13px; font-weight: bold; }
-        
-        /* 時間區間樣式 */
         .time-range { font-family: monospace; font-weight: bold; color: #2563eb; font-size: 15px; text-align: center; }
         .unit-cell { font-size: 16px; font-weight: bold; color: #0f172a; }
-
-        /* 人員卡片：自動收合 */
         .staff-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; }
         .staff-card.empty { display: none; } 
         #settingSection.open .staff-card.empty { display: block !important; opacity: 0.5; border-style: dashed; }
-
-        /* 器材樣式：淺綠底黑框 */
         .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #475569; padding: 6px 12px; border-radius: 4px; margin: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .equipment-tag.loaded { background-color: #dcfce7 !important; border-color: #166534 !important; color: #166534; }
-        
         @media screen and (max-width: 768px) {
-            /* 手機隱藏序號與長度 */
             .col-dur, .col-no, th:nth-child(1), th:nth-child(3) { display: none !important; }
             .rundown-table tr { margin-bottom: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #2563eb; display: block; background: white; border-radius: 0 8px 8px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
             .rundown-table td { display: block; width: 100% !important; padding-left: 35% !important; position: relative; border: none; border-bottom: 1px solid #f1f5f9; min-height: 40px; }
             .rundown-table td::before { content: attr(data-label); position: absolute; left: 12px; color: #64748b; font-size: 11px; font-weight: bold; }
             .unit-cell { font-size: 18px; padding-top: 12px !important; color: #1e40af; }
         }
-        
         .collapsible { transition: max-height 0.3s ease; overflow: hidden; max-height: 0; }
         .collapsible.open { max-height: 1200px; border-bottom: 1px solid #e2e8f0; }
     </style>
@@ -45,22 +34,22 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-black text-slate-800 tracking-tight">2026 執行流程表</h1>
             <div class="flex items-center gap-3 no-print">
-                <div id="syncStatus" class="text-[11px] font-bold px-3 py-1 rounded-full border border-slate-200 bg-white">連線檢查中...</div>
-                <button onclick="saveToFirebase()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition active:scale-95">💾 儲存資料</button>
+                <div id="syncStatus" class="text-[11px] font-bold px-3 py-1 rounded-full border border-slate-200 bg-white shadow-sm">偵測連線中...</div>
+                <button onclick="saveToFirebase()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition active:scale-95">💾 儲存變更</button>
             </div>
         </div>
 
         <div class="no-print bg-white rounded-xl mb-6 border border-slate-200 shadow-sm overflow-hidden">
             <div onclick="toggleSettings()" class="p-4 cursor-pointer flex justify-between items-center hover:bg-slate-50 transition">
-                <span class="text-slate-500 font-bold text-sm">⚙️ 系統設定與工作人員 (點擊展開)</span>
+                <span class="text-slate-500 font-bold text-sm">⚙️ 系統設定與人員預排 (點擊展開)</span>
                 <span id="setArrow">▼</span>
             </div>
             <div id="settingSection" class="collapsible">
                 <div class="p-4 space-y-6 bg-slate-50/50">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-2">
-                            <label class="text-[11px] text-blue-600 font-bold uppercase">資料庫網址 (Firebase URL)</label>
-                            <input type="text" id="dbUrl" onchange="updateDbLink()" placeholder="請貼上 Firebase 網址..." class="w-full bg-white border border-slate-300 p-2 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="text-[11px] text-blue-600 font-bold">資料庫網址 (輸入後自動代入儲存資料)</label>
+                            <input type="text" id="dbUrl" onchange="updateDbLink(this.value)" placeholder="貼上 Firebase 網址..." class="w-full bg-white border border-slate-300 p-2 rounded text-sm outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div class="grid grid-cols-2 gap-4 text-sm font-bold">
                             <div>活動主題：<input type="text" id="eventTitle" class="w-full bg-white border border-slate-300 rounded p-1.5 outline-none"></div>
@@ -74,47 +63,25 @@
 
         <table class="rundown-table rounded-lg overflow-hidden shadow-sm mb-6">
             <thead class="table-head">
-                <tr>
-                    <th style="width:50px" class="col-no">序號</th>
-                    <th style="width:170px">時間區間</th>
-                    <th style="width:70px" class="col-dur">長度</th>
-                    <th>單元項目</th>
-                    <th>執行說明</th>
-                    <th style="width:230px">負責人員</th>
-                </tr>
+                <tr><th style="width:50px" class="col-no">序號</th><th style="width:170px">時間區間</th><th style="width:70px" class="col-dur">長度</th><th>單元項目</th><th>執行說明</th><th style="width:230px">負責人員</th></tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
 
-        <button onclick="addRow()" class="no-print bg-white text-slate-600 px-6 py-2 rounded-md font-bold border border-slate-300 hover:bg-slate-50 shadow-sm transition mb-10">+ 新增流程項目</button>
+        <button onclick="addRow()" class="no-print bg-white text-slate-600 px-6 py-2 rounded-md font-bold border border-slate-300 hover:bg-slate-50 mb-10 shadow-sm">+ 新增流程</button>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-lg font-black text-slate-800">📋 器材清點 (上車核對)</h2>
-                <div class="text-[12px] text-slate-500">
-                    <span class="bg-green-100 border border-green-600 px-2 py-0.5 rounded text-green-800">淺綠 = 已上車</span>
-                    <span class="ml-2">白底 = 未上車</span>
-                </div>
-            </div>
-            
+            <h2 class="text-lg font-black text-slate-800 mb-6">📋 器材清點 (上車按鈕)</h2>
             <div class="no-print flex gap-2 mb-6 p-4 bg-slate-50 rounded-xl">
-                <input type="text" id="manualEquipName" placeholder="輸入器材名稱..." class="bg-white border border-slate-300 flex-grow p-2 rounded text-sm outline-none">
+                <input type="text" id="manualEquipName" placeholder="器材名稱..." class="bg-white border border-slate-300 flex-grow p-2 rounded text-sm outline-none">
                 <select id="manualEquipTarget" class="bg-white border border-slate-300 text-sm rounded px-3">
-                    <option value="service">服務台</option>
-                    <option value="stage">舞台區</option>
+                    <option value="service">服務台</option><option value="stage">舞台區</option>
                 </select>
-                <button onclick="addManualEquip()" class="bg-slate-700 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-800">新增</button>
+                <button onclick="addManualEquip()" class="bg-slate-700 text-white px-6 py-2 rounded-lg font-bold text-sm">新增器材</button>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div>
-                    <h3 class="text-blue-600 text-xs font-bold mb-4 border-l-4 border-blue-600 pl-2">📍 服務台項目</h3>
-                    <div id="serviceContainer" class="flex flex-wrap"></div>
-                </div>
-                <div>
-                    <h3 class="text-red-600 text-xs font-bold mb-4 border-l-4 border-red-600 pl-2">📍 舞台區項目</h3>
-                    <div id="stageContainer" class="flex flex-wrap"></div>
-                </div>
+                <div><h3 class="text-blue-600 text-xs font-bold mb-4 border-l-4 border-blue-600 pl-2">📍 服務台</h3><div id="serviceContainer" class="flex flex-wrap"></div></div>
+                <div><h3 class="text-red-600 text-xs font-bold mb-4 border-l-4 border-red-600 pl-2">📍 舞台區</h3><div id="stageContainer" class="flex flex-wrap"></div></div>
             </div>
         </div>
     </div>
@@ -123,13 +90,12 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // 自動代入 localStorage 網址
+        const teamList = ["江哥", "瑩驊", "志明", "露比", "鐵仁", "柏緯", "細漢", "維憶", "芳瑜"];
+        let db, dataRef;
+
         const savedUrl = localStorage.getItem('iron_db_url');
         if(savedUrl) document.getElementById('dbUrl').value = savedUrl;
 
-        let db, dataRef;
-
-        // 生成人員設定區
         const staffConfig = document.getElementById('staffConfig');
         for(let i=1; i<=8; i++) {
             staffConfig.innerHTML += `
@@ -140,9 +106,18 @@
                         <option value="服務台">服務台</option><option value="自訂">自訂</option>
                     </select>
                     <input type="text" id="cj${i}" placeholder="輸入職稱" class="w-full border border-slate-300 text-[11px] hidden p-1 rounded" oninput="updateAllSelects()">
-                    <input type="text" id="s${i}" placeholder="姓名" class="w-full border border-slate-300 text-[11px] p-1 rounded" oninput="updateAllSelects()">
+                    <select id="s${i}" class="w-full border border-slate-300 text-[11px] p-1 rounded" onchange="checkManualName(this, ${i}); updateAllSelects()">
+                        <option value="">-姓名-</option>
+                        ${teamList.map(n => `<option value="${n}">${n}</option>`).join('')}
+                        <option value="manual">+ 手動輸入</option>
+                    </select>
+                    <input type="text" id="ms${i}" placeholder="輸入姓名" class="w-full border border-slate-300 text-[11px] hidden p-1 rounded" oninput="updateAllSelects()">
                 </div>`;
         }
+
+        window.checkManualName = (select, id) => {
+            document.getElementById(`ms${id}`).style.display = (select.value === "manual") ? "block" : "none";
+        };
 
         window.toggleSettings = () => {
             const sec = document.getElementById('settingSection');
@@ -150,12 +125,9 @@
             document.getElementById('setArrow').innerText = sec.classList.contains('open') ? '▲' : '▼';
         };
 
-        // 器材變色與同步
         window.toggleEquipStatus = (el, type, index) => {
             el.classList.toggle('loaded');
-            if(dataRef) {
-                update(ref(db, `rundown_v2026/${type}/${index}`), { l: el.classList.contains('loaded') });
-            }
+            if(dataRef) update(ref(db, `rundown_v2026/${type}/${index}`), { l: el.classList.contains('loaded') });
         };
 
         window.addEquipment = (containerId, template, savedQty = "", isLoaded = false, index = 0) => {
@@ -163,8 +135,7 @@
             const name = template.split('*')[0], isManual = template.includes('{手動}');
             const tag = document.createElement('div');
             tag.className = `equipment-tag ${isLoaded ? 'loaded' : ''}`;
-            tag.innerHTML = `
-                <span onclick="toggleEquipStatus(this.parentElement, '${containerId}', ${index})">${name}</span>
+            tag.innerHTML = `<span onclick="toggleEquipStatus(this.parentElement, '${containerId}', ${index})">${name}</span>
                 ${isManual ? `<input type="text" class="w-10 border-b border-slate-300 text-center ml-2 text-[11px]" value="${savedQty}" onchange="saveToFirebase()">` : ''}
                 <button class="ml-2 text-slate-300 no-print hover:text-red-500" onclick="this.parentElement.remove(); saveToFirebase()">✕</button>`;
             container.appendChild(tag);
@@ -172,9 +143,8 @@
 
         window.addManualEquip = () => {
             const name = document.getElementById('manualEquipName').value;
-            const target = document.getElementById('manualEquipTarget').value;
             if(!name) return;
-            addEquipment(target, name + "*{手動}");
+            addEquipment(document.getElementById('manualEquipTarget').value, name + "*{手動}");
             document.getElementById('manualEquipName').value = "";
             saveToFirebase();
         };
@@ -182,11 +152,13 @@
         window.refreshRowJobs = (row) => {
             const list = [];
             for(let i=1; i<=8; i++) {
-                const j = document.getElementById(`j${i}`).value, s = document.getElementById(`s${i}`).value, cj = document.getElementById(`cj${i}`).value;
-                const box = document.getElementById(`staffBox${i}`);
+                const j = document.getElementById(`j${i}`).value, s = document.getElementById(`s${i}`).value, ms = document.getElementById(`ms${i}`).value, cj = document.getElementById(`cj${i}`).value;
                 document.getElementById(`cj${i}`).style.display = (j === "自訂") ? "block" : "none";
-                if(j === "-" && !s) box.classList.add('empty'); else box.classList.remove('empty');
-                if(s) { const title = (j === "自訂") ? cj : j; if(title !== "-") list.push(`${title}: ${s}`); }
+                const box = document.getElementById(`staffBox${i}`);
+                const finalName = (s === "manual") ? ms : s;
+                const finalJob = (j === "自訂") ? cj : j;
+                if(j === "-" && !finalName) box.classList.add('empty'); 
+                else { box.classList.remove('empty'); if(finalName) list.push(`${finalJob}: ${finalName}`); }
             }
             row.querySelectorAll('.job-sel').forEach((sel, i) => {
                 const saved = sel.getAttribute('data-temp-val') || "";
@@ -207,23 +179,13 @@
                 const val = saved?.jobs?.[i] || "";
                 jobHTML += `<select class="job-sel no-print w-full bg-slate-50 text-[11px] rounded border-slate-200" data-temp-val="${val}" onchange="this.setAttribute('data-temp-val', this.value); refreshRowJobs(this.closest('tr'))"></select><div class="print-text hidden font-bold text-blue-700 text-[11px]">${val}</div>`;
             }
-            jobHTML += `</div>`;
-
-            tr.innerHTML = `
-                <td data-label="序號" class="col-no text-center text-slate-400 text-[11px]"></td>
-                <td data-label="時間" class="text-center">
-                    <div class="time-range">
-                        ${isFirst ? `<input type="text" class="start-time bg-white border border-slate-300 rounded w-20 text-center" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start">00:00</span>'}
-                        <span class="mx-1 text-slate-300">-</span><span class="row-end">00:00</span>
-                    </div>
-                </td>
+            tr.innerHTML = `<td data-label="序號" class="col-no text-center text-slate-400 text-[11px]"></td>
+                <td data-label="時間" class="text-center"><div class="time-range">${isFirst ? `<input type="text" class="start-time bg-white border border-slate-300 rounded w-20 text-center" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start">00:00</span>'}<span class="mx-1 text-slate-300">-</span><span class="row-end">00:00</span></div></td>
                 <td data-label="長度" class="col-dur"><input type="number" class="duration w-full text-center bg-transparent border-b border-slate-200" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
                 <td data-label="單元" contenteditable="true" class="unit-cell outline-none px-2">${saved?.unit||''}</td>
                 <td data-label="執行" contenteditable="true" class="desc-cell text-[12px] text-slate-500 outline-none px-2">${saved?.desc||''}</td>
                 <td data-label="工作人員">${jobHTML}</td>`;
-            tbody.appendChild(tr);
-            refreshRowJobs(tr);
-            calculateAllTimes();
+            tbody.appendChild(tr); refreshRowJobs(tr); calculateAllTimes();
         };
 
         window.calculateAllTimes = () => {
@@ -233,66 +195,4 @@
                 const dur = parseInt(row.querySelector(".duration").value) || 0;
                 let start = (i === 0) ? row.querySelector(".start-time").value : nextS;
                 if(start && start.includes(":")) {
-                    let [h, m] = start.split(":").map(Number);
-                    let em = m + dur, eh = (h + Math.floor(em/60)) % 24, es = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2,'0')}`;
-                    if(i !== 0) row.querySelector(".row-start").innerText = start;
-                    row.querySelector(".row-end").innerText = es;
-                    nextS = es;
-                }
-            });
-        };
-
-        window.updateDbLink = () => {
-            const url = document.getElementById('dbUrl').value.trim();
-            if(url) { localStorage.setItem('iron_db_url', url); location.reload(); }
-        };
-
-        window.saveToFirebase = () => {
-            if(!dataRef) { alert("請先填寫資料庫網址"); return; }
-            const data = { title: document.getElementById('eventTitle').value, date: document.getElementById('eventDate').value, staff: {}, rundown: [], service: [], stage: [] };
-            for(let i=1; i<=8; i++) data.staff[i] = {j: document.getElementById(`j${i}`).value, cj: document.getElementById(`cj${i}`).value, s: document.getElementById(`s${i}`).value};
-            document.querySelectorAll("#rundownBody tr").forEach(row => {
-                data.rundown.push({ startTime: row.querySelector(".start-time")?.value || "", duration: row.querySelector(".duration").value, unit: row.querySelector(".unit-cell").innerText, desc: row.querySelector(".desc-cell").innerText, jobs: Array.from(row.querySelectorAll('.job-sel')).map(s => s.getAttribute('data-temp-val') || "") });
-            });
-            const getEq = (id) => Array.from(document.querySelectorAll(`#${id}Container .equipment-tag`)).map(tag => ({ n: tag.querySelector('span').innerText, q: tag.querySelector('input')?.value || "", l: tag.classList.contains('loaded') }));
-            data.service = getEq('service'); data.stage = getEq('stage');
-            set(dataRef, data).then(() => { 
-                const status = document.getElementById('syncStatus');
-                status.innerText = "● 儲存成功"; status.style.color = "#16a34a";
-                setTimeout(() => { status.innerText = "● 線上同步中"; status.style.color = "#2563eb"; }, 2000);
-            });
-        };
-
-        // 初始化連線邏輯
-        const url = document.getElementById('dbUrl').value.trim();
-        if(url) {
-            try {
-                const app = initializeApp({ databaseURL: url });
-                db = getDatabase(app);
-                dataRef = ref(db, 'rundown_v2026');
-                onValue(dataRef, (snap) => {
-                    const data = snap.val(); if(!data) { if(document.querySelectorAll("#rundownBody tr").length===0) addRow(true); return; }
-                    document.getElementById('eventTitle').value = data.title || "";
-                    document.getElementById('eventDate').value = data.date || "";
-                    for(let i=1; i<=8; i++) {
-                        document.getElementById(`j${i}`).value = data.staff?.[i]?.j || "-";
-                        document.getElementById(`cj${i}`).value = data.staff?.[i]?.cj || "";
-                        document.getElementById(`s${i}`).value = data.staff?.[i]?.s || "";
-                    }
-                    document.getElementById("rundownBody").innerHTML = ""; (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
-                    document.getElementById('serviceContainer').innerHTML = ""; (data.service || []).forEach((e, i) => addEquipment('service', e.n + (e.q?'*{手動}':''), e.q, e.l, i));
-                    document.getElementById('stageContainer').innerHTML = ""; (data.stage || []).forEach((e, i) => addEquipment('stage', e.n + (e.q?'*{手動}':''), e.q, e.l, i));
-                });
-                onValue(ref(db, ".info/connected"), (s) => {
-                    const status = document.getElementById('syncStatus');
-                    status.innerText = s.val() ? "● 線上同步中" : "○ 離線狀態";
-                    status.style.color = s.val() ? "#2563eb" : "#ef4444";
-                });
-            } catch(e) { document.getElementById('syncStatus').innerText = "網址格式錯誤"; }
-        } else {
-            addRow(true);
-            document.getElementById('syncStatus').innerText = "尚未設定資料庫";
-        }
-    </script>
-</body>
-</html>
+                    let [h, m] = start.split(":").map(Number
