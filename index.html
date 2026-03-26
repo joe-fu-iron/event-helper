@@ -9,7 +9,7 @@
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; font-size: 16px; }
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1.2px solid black; padding: 6px; vertical-align: middle; }
-        .col-time { width: 100px; } .col-dur { width: 60px; } .col-unit { width: 220px; } .col-job { width: 180px; }  
+        .col-time { width: 100px; } .col-dur { width: 60px; } .col-unit { width: 220px; } .col-job { width: 240px; }  
         .input-line { border: none; border-bottom: 1px solid #94a3b8; outline: none; background: transparent; font-size: 16px; }
         .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #000; padding: 2px 6px; border-radius: 4px; margin: 2px; font-size: 14px; }
         .num-input { width: 45px; border-bottom: 1px solid black; text-align: center; background: transparent; }
@@ -22,12 +22,15 @@
             .rundown-table td { border: none; border-bottom: 1px solid #f1f5f9; position: relative; padding: 12px 12px 12px 35%; text-align: left; min-height: 48px; }
             .rundown-table td::before { content: attr(data-label); position: absolute; left: 12px; font-weight: 800; color: #ea580c; font-size: 14px; }
             .col-time .time-box { flex-direction: row !important; gap: 10px; }
+            .job-grid { grid-template-columns: 1fr 1fr !important; } /* 手機版負責人並排 */
         }
         @media print {
             .no-print { display: none !important; }
             body { background: white; padding: 0; }
             @page { size: A4 landscape; margin: 0.5cm; }
-            .rundown-table td { font-size: 11pt; }
+            .rundown-table td { font-size: 10pt; padding: 4px; }
+            .job-grid { display: block !important; }
+            .job-print-label { display: block !important; border-bottom: 1px solid #ccc; margin-bottom: 2px; height: 18px; overflow: hidden; }
         }
     </style>
 </head>
@@ -47,7 +50,7 @@
             </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 font-bold mb-4 border-b pb-4 text-sm">
-                <div>主題：<input type="text" id="eventTitle" class="input-line w-full" placeholder="請輸入活動名稱"></div>
+                <div>主題：<input type="text" id="eventTitle" class="input-line w-full" placeholder="活動名稱"></div>
                 <div>日期：<input type="date" id="eventDate" class="input-line" onchange="updateDayOfWeek()"> <span id="dayOfWeek" class="text-blue-600"></span></div>
                 <div>地點：<input type="text" id="eventLocation" class="input-line w-full" placeholder="活動地點"></div>
                 <div>主持人：<input type="text" id="headerHost" class="input-line w-full" placeholder="主持人姓名"></div>
@@ -78,7 +81,7 @@
 
         <table id="rundownTable" class="rundown-table mb-4 shadow-sm">
             <thead class="bg-gray-800 text-white text-sm text-center">
-                <tr><th class="col-time">時間</th><th class="col-dur">長度</th><th class="col-unit">單元項目</th><th class="col-desc">執行說明</th><th class="col-job">負責人</th></tr>
+                <tr><th class="col-time">時間</th><th class="col-dur">長度</th><th class="col-unit">單元項目</th><th class="col-desc">執行說明</th><th class="col-job">負責人 (最多6位)</th></tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
@@ -155,7 +158,7 @@
             document.querySelectorAll("#rundownBody tr").forEach(row => {
                 row.querySelectorAll(".job-sel").forEach(sel => {
                     const savedVal = sel.getAttribute('data-temp-val') || sel.value;
-                    let options = `<option value="">- 無 -</option>`;
+                    let options = `<option value="">-</option>`;
                     currentStaffList.forEach(name => {
                         options += `<option value="${name}" ${savedVal === name ? 'selected' : ''}>${name}</option>`;
                     });
@@ -169,11 +172,17 @@
         window.addRow = (isFirst = false, saved = null) => {
             const tbody = document.getElementById("rundownBody");
             const tr = document.createElement("tr");
-            let jobHTML = "";
-            for(let i=0; i<3; i++){
+            let jobHTML = `<div class="job-grid grid grid-cols-1 gap-1">`;
+            for(let i=0; i<6; i++){ // 擴充至 6 位負責人
                 const val = saved?.jobs?.[i] || "";
-                jobHTML += `<select class="job-sel no-print w-full mb-1 text-[13px] border rounded" data-temp-val="${val}" onchange="this.setAttribute('data-temp-val', this.value); isDirty=true;"><option value="">-</option></select>`;
+                jobHTML += `
+                    <div>
+                        <select class="job-sel no-print w-full text-[12px] border rounded p-0.5" data-temp-val="${val}" onchange="this.setAttribute('data-temp-val', this.value); isDirty=true;"><option value="">-</option></select>
+                        <div class="job-print-label hidden text-[10pt] border-b leading-tight h-5">${val}</div>
+                    </div>`;
             }
+            jobHTML += `</div>`;
+
             tr.innerHTML = `
                 <td data-label="時間" class="col-time text-center">
                     <div class="time-box flex flex-col items-center">
@@ -184,10 +193,10 @@
                 </td>
                 <td data-label="長度" class="col-dur"><input type="number" class="duration text-center w-full font-bold border-b" value="${saved?.duration||60}" oninput="calculateAllTimes()"></td>
                 <td data-label="單元" contenteditable="true" class="col-unit unit-cell font-bold text-blue-900 px-2">${saved?.unit||''}</td>
-                <td data-label="說明" contenteditable="true" class="col-desc desc-cell text-gray-700 px-2">${saved?.desc||''}</td>
+                <td data-label="說明" contenteditable="true" class="col-desc desc-cell text-gray-700 px-2 text-xs">${saved?.desc||''}</td>
                 <td data-label="人員" class="col-job">${jobHTML}</td>`;
             tbody.appendChild(tr);
-            window.updateAllSelects(); // 建立時立即同步名單與選中值
+            window.updateAllSelects();
             calculateAllTimes();
         };
 
@@ -284,9 +293,8 @@
 
         window.toggleMenuArea = () => {
             const area = document.getElementById('menuArea'), btn = document.getElementById('toggleBtn');
-            const isHidden = area.style.display === "none";
-            area.style.display = isHidden ? "block" : "none";
-            btn.innerText = isHidden ? "🔼 收合選單" : "🔽 展開選單";
+            area.style.display = (area.style.display === "none") ? "block" : "none";
+            btn.innerText = (area.style.display === "none") ? "🔽 展開選單" : "🔼 收合選單";
         };
 
         window.updateDayOfWeek = () => {
