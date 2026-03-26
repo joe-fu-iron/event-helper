@@ -3,28 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 執行流程控台-終極優化版</title>
+    <title>2026 執行流程控台-專業修正版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; color: #1e293b; transition: 0.3s; }
         body.admin-mode { background: #fffbeb; } 
         .is-now { background: #f0fdf4 !important; border-left: 8px solid #22c55e !important; }
         
-        /* 表格與字體基礎設定 */
+        /* 表格樣式：標題深灰底白字，內容白底黑字 */
         .rundown-table { width: 100%; border-collapse: collapse; background: white; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 12px 8px; vertical-align: middle; }
         .table-head { background: #334155; color: white; font-size: 14px; font-weight: bold; }
         
-        .cell-content { font-weight: bold; font-size: 15px; line-height: 1.5; }
-        .col-unit { color: #1e293b; width: auto; min-width: 160px; }
-        .col-desc { color: #475569; width: auto; min-width: 250px; }
-
-        /* --- 核心修正：編輯模式下的字體顏色與背景 --- */
-        body.admin-mode .cell-content { 
-            background-color: #475569 !important; /* 深灰色背景 */
-            color: #ffffff !important;           /* 統一白色字體 */
-            border: 1px solid #334155;
-        }
+        .cell-content { font-weight: bold; font-size: 15px; line-height: 1.5; color: #1e293b; background: white; }
+        .col-unit { width: auto; min-width: 160px; }
+        .col-desc { width: auto; min-width: 250px; }
 
         .time-range { font-family: monospace; font-weight: bold; color: #2563eb; font-size: 15px; }
         .duration-tag { font-size: 12px; color: #94a3b8; font-weight: normal; margin-left: 4px; }
@@ -32,7 +25,11 @@
         .job-tag { display: inline-block; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px; font-weight: bold; }
         body.admin-mode .job-tag { cursor: pointer; border: 1px dashed #cbd5e1; }
 
-        /* 名片模式 (手機專用) */
+        /* 器材樣式 */
+        .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1px solid #475569; padding: 6px 12px; border-radius: 4px; margin: 4px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        .equipment-tag.loaded { background-color: #dcfce7 !important; border-color: #166534 !important; color: #166534; }
+
+        /* 名片模式 */
         .card-view-item { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card-view-item.is-now { border-left: 10px solid #22c55e; background: #f0fdf4; }
         
@@ -43,7 +40,7 @@
         body.view-mode #displayHeader { display: block; border-bottom: 4px solid #334155; margin-bottom: 20px; padding-bottom: 10px; }
 
         #cardViewContainer { display: none; }
-        body.card-mode .rundown-table, body.card-mode #staffConfig, body.card-mode .admin-only { display: none !important; }
+        body.card-mode .rundown-table, body.card-mode #staffConfig, body.card-mode .admin-only, body.card-mode #eqSection { display: none !important; }
         body.card-mode #cardViewContainer { display: block; }
 
         @media print {
@@ -73,7 +70,7 @@
 
         <div class="flex justify-between items-center mb-6 no-print">
             <div class="admin-only">
-                <h2 class="text-xl font-black text-amber-600 italic">後台編輯模式 (白色字體優化)</h2>
+                <h2 class="text-xl font-black text-amber-600 italic">後台編輯模式 (手動人員輸入)</h2>
             </div>
             <div class="flex items-center gap-3">
                 <button onclick="handleModeSwitch()" id="modeBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">🛠️ 編輯模式</button>
@@ -86,11 +83,11 @@
                 <div><label class="block text-xs font-bold text-slate-500 mb-1">活動日期</label><input type="date" id="eventDate" class="w-full border p-2 font-bold" onchange="updateHeaderInfo()"></div>
                 <div><label class="block text-xs font-bold text-slate-500 mb-1">專案名稱</label><input type="text" id="eventTitle" class="w-full border p-2 font-bold" oninput="updateHeaderInfo()"></div>
             </div>
-            <p class="text-xs font-black text-slate-400 mb-3 underline">1. 設定場次人員名單：</p>
+            <p class="text-xs font-black text-slate-400 mb-3 underline">1. 手動輸入本場人員 (職稱與姓名)：</p>
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3" id="staffConfig"></div>
         </div>
 
-        <table class="rundown-table shadow-lg rounded-lg overflow-hidden" id="mainTable">
+        <table class="rundown-table shadow-lg rounded-lg overflow-hidden mb-8" id="mainTable">
             <thead class="table-head">
                 <tr>
                     <th style="width:50px">序</th>
@@ -105,26 +102,38 @@
 
         <div id="cardViewContainer" class="no-print"></div>
 
-        <button onclick="addRow()" class="admin-only no-print mt-4 bg-white text-slate-600 px-6 py-2 rounded font-bold border border-slate-300 hover:bg-slate-50">+ 新增流程項目</button>
+        <button onclick="addRow()" class="admin-only no-print mt-4 mb-10 bg-white text-slate-600 px-6 py-2 rounded font-bold border border-slate-300 hover:bg-slate-50">+ 新增流程項目</button>
+
+        <div id="eqSection" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 class="text-lg font-black text-slate-800 mb-6 italic">📋 器材清點 (服務台 / 舞台)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div>
+                    <h3 class="text-blue-600 text-xs font-bold mb-3 border-l-4 border-blue-600 pl-2">📍 服務台區</h3>
+                    <div id="serviceContainer" class="flex flex-wrap min-h-[50px]"></div>
+                </div>
+                <div>
+                    <h3 class="text-red-600 text-xs font-bold mb-3 border-l-4 border-red-600 pl-2">📍 舞台工作區</h3>
+                    <div id="stageContainer" class="flex flex-wrap min-h-[50px]"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const teamList = ["江哥", "瑩驊", "志明", "露比", "鐵仁", "柏緯", "維憶", "芳瑜"];
-        const jobList = ["控場", "音響", "服務台", "攝影", "機動", "錄影", "儀式"];
         const FIREBASE_URL = "https://rundown-worker-default-rtdb.firebaseio.com/";
         let db, dataRef, isAdmin = false, isCardMode = false;
         let currentData = { rundown: [], title: "", date: "" };
 
-        // 介面初始化
+        // 初始化 8 組手動輸入框
         const staffConfig = document.getElementById('staffConfig');
         for(let i=1; i<=8; i++) {
             staffConfig.innerHTML += `
                 <div class="staff-card border rounded p-2 bg-slate-50">
-                    <select id="j${i}" class="w-full text-[11px] mb-1 font-bold" onchange="renderTable()"><option value="-">-職稱-</option>${jobList.map(j=>`<option value="${j}">${j}</option>`).join('')}</select>
-                    <select id="s${i}" class="w-full text-[11px] border-t pt-1" onchange="renderTable()"><option value="">-姓名-</option>${teamList.map(n=>`<option value="${n}">${n}</option>`).join('')}</select>
+                    <input type="text" id="j${i}" placeholder="職稱" class="w-full text-[11px] mb-1 font-bold border-b bg-transparent" oninput="renderTable()">
+                    <input type="text" id="s${i}" placeholder="姓名" class="w-full text-[11px] font-bold bg-transparent" oninput="renderTable()">
                 </div>`;
         }
 
@@ -140,7 +149,7 @@
             for(let i=1; i<=8; i++) {
                 const job = document.getElementById(`j${i}`).value;
                 const name = document.getElementById(`s${i}`).value;
-                if(job !== "-" && name !== "") list.push(`${job}: ${name}`);
+                if(job !== "" && name !== "") list.push(`${job}: ${name}`);
             }
             return list;
         };
@@ -148,8 +157,7 @@
         window.renderTable = () => {
             const tbody = document.getElementById("rundownBody");
             const cardContainer = document.getElementById("cardViewContainer");
-            tbody.innerHTML = "";
-            cardContainer.innerHTML = "";
+            tbody.innerHTML = ""; cardContainer.innerHTML = "";
             let nextS = "";
             const activeStaffList = getAvailableStaff();
             const now = new Date();
@@ -188,14 +196,10 @@
                 const card = document.createElement("div");
                 card.className = `card-view-item ${isNowActive ? 'is-now' : ''}`;
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="bg-slate-800 text-white px-2 py-1 rounded text-xs">序號 ${i+1}</span>
-                        <span class="time-range text-lg">${start} - ${endStr} (${dur}m)</span>
-                    </div>
+                    <div class="flex justify-between items-start mb-2"><span class="bg-slate-800 text-white px-2 py-1 rounded text-xs">序號 ${i+1}</span><span class="time-range text-lg">${start} - ${endStr} (${dur}m)</span></div>
                     <h3 class="text-xl font-black text-slate-900 mb-1">${item.unit || '未設定單元'}</h3>
                     <p class="text-slate-600 font-bold mb-3 border-l-4 border-slate-300 pl-2">${item.desc || '無說明'}</p>
-                    <div class="flex flex-wrap gap-1">${(item.jobs || []).map(j => `<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-black">${j}</span>`).join('')}</div>
-                `;
+                    <div class="flex flex-wrap gap-1">${(item.jobs || []).map(j => `<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-black">${j}</span>`).join('')}</div>`;
                 cardContainer.appendChild(card);
             });
         };
@@ -211,7 +215,6 @@
             if (!isAdmin) { if (prompt("密碼：") === "364401") isAdmin = true; else return; } else isAdmin = false;
             document.body.className = isAdmin ? "admin-mode p-2 md:p-6 pb-20" : "view-mode p-2 md:p-6 pb-20";
             document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 結束編輯" : "🛠️ 編輯模式";
-            if(isAdmin && isCardMode) toggleCardMode();
             renderTable();
         };
 
@@ -224,25 +227,6 @@
         };
 
         window.saveToFirebase = () => {
-            const data = { title: document.getElementById('eventTitle').value, date: document.getElementById('eventDate').value, staff: {}, rundown: currentData.rundown };
-            for(let i=1; i<=8; i++) data.staff[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
-            set(dataRef, data).then(() => { alert("✅ 已儲存"); isAdmin = false; renderTable(); });
-        };
-
-        const app = initializeApp({ databaseURL: FIREBASE_URL });
-        db = getDatabase(app);
-        dataRef = ref(db, 'rundown_v2026_final');
-
-        onValue(dataRef, (snap) => {
-            const data = snap.val(); if(!data) return;
-            currentData = data;
-            document.getElementById('eventTitle').value = data.title || "";
-            document.getElementById('eventDate').value = data.date || "";
-            for(let i=1; i<=8; i++) if(data.staff?.[i]) { document.getElementById(`j${i}`).value = data.staff[i].j; document.getElementById(`s${i}`).value = data.staff[i].s; }
-            updateHeaderInfo(); renderTable();
-        });
-
-        setInterval(renderTable, 60000);
-    </script>
-</body>
-</html>
+            const data = { 
+                title: document.getElementById('eventTitle').value, 
+                date: document.getElementById('
