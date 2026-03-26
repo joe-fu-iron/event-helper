@@ -147,9 +147,46 @@
         const db = getDatabase(app);
         const dataRef = ref(db, 'rundown_v2026_detail_sync');
 
-        // Q2: 增加髒數據檢查機制
+        // [新增] 變動偵測機制
         let isDirty = false;
         const markDirty = () => { isDirty = true; };
 
         const menuItems = {
             service: ["長官簽到表一式", "長官勾選表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱*1式", "新聞資料*{手動}", "黃桌巾*{手動}", "紅桌巾*{手動}", "伴手禮*{手動}"],
+            stage: ["音響+電腦1式", "TRUSS*{手動}", "斜撐*{手動}", "鐵板*{手動}", "帆布+豆扣*All", "紅桌巾*{手動}", "濕紙巾*{手動}", "衛生紙*{手動}", "手板*{手動}", "木架*{手動}"]
+        };
+
+        window.onload = () => {
+            initMenu('serviceMenu', menuItems.service, 'serviceContainer');
+            initMenu('stageMenu', menuItems.stage, 'stageContainer');
+            
+            // 監聽全局輸入與變動
+            document.addEventListener('input', markDirty);
+            
+            // [新增] 每 2 分鐘 (120000ms) 自動儲存機制
+            setInterval(() => {
+                if (isDirty) {
+                    console.log("自動同步中...");
+                    saveToFirebase(true); 
+                }
+            }, 120000);
+        };
+
+        function initMenu(menuId, list, containerId) {
+            const menu = document.getElementById(menuId);
+            list.forEach(item => {
+                const btn = document.createElement('span'); 
+                btn.className = 'bg-white border px-3 py-1 rounded-full text-xs cursor-pointer hover:bg-orange-50';
+                btn.innerText = `+ ${item.split('*')[0]}`;
+                btn.onclick = () => { addEquipment(containerId, item); markDirty(); };
+                menu.appendChild(btn);
+            });
+        }
+
+        // [修復] 刪除指定行數功能
+        window.deleteRowPrompt = () => {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            const num = prompt(`目前共有 ${rows.length} 行，請輸入要刪除的行號 (1-${rows.length})：`);
+            const index = parseInt(num) - 1;
+            if (index >= 0 && index < rows.length) {
+                if (confirm(`確定要刪除第 ${num} 行嗎？`)) {
