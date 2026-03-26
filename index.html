@@ -229,4 +229,43 @@
         window.saveToFirebase = () => {
             const data = { 
                 title: document.getElementById('eventTitle').value, 
-                date: document.getElementById('
+                date: document.getElementById('eventDate').value, 
+                staff: {}, 
+                rundown: currentData.rundown,
+                service: Array.from(document.querySelectorAll('#serviceContainer .equipment-tag')).map(t=>({n:t.querySelector('span').innerText, l:t.classList.contains('loaded')})),
+                stage: Array.from(document.querySelectorAll('#stageContainer .equipment-tag')).map(t=>({n:t.querySelector('span').innerText, l:t.classList.contains('loaded')}))
+            };
+            for(let i=1; i<=8; i++) data.staff[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
+            set(dataRef, data).then(() => { alert("✅ 已儲存"); isAdmin = false; renderTable(); });
+        };
+
+        const app = initializeApp({ databaseURL: FIREBASE_URL });
+        db = getDatabase(app);
+        dataRef = ref(db, 'rundown_v2026_final');
+
+        onValue(dataRef, (snap) => {
+            const data = snap.val(); if(!data) return;
+            currentData = data;
+            document.getElementById('eventTitle').value = data.title || "";
+            document.getElementById('eventDate').value = data.date || "";
+            for(let i=1; i<=8; i++) if(data.staff?.[i]) { 
+                document.getElementById(`j${i}`).value = data.staff[i].j || ""; 
+                document.getElementById(`s${i}`).value = data.staff[i].s || ""; 
+            }
+            updateHeaderInfo(); renderTable();
+            
+            const renderEq = (id, arr) => {
+                const c = document.getElementById(id+'Container'); c.innerHTML = "";
+                (arr||[]).forEach(e => {
+                    const tag = document.createElement('div'); tag.className = `equipment-tag ${e.l?'loaded':''}`;
+                    tag.innerHTML = `<span onclick="this.parentElement.classList.toggle('loaded')">${e.n}</span>`;
+                    c.appendChild(tag);
+                });
+            };
+            renderEq('service', data.service); renderEq('stage', data.stage);
+        });
+
+        setInterval(renderTable, 60000);
+    </script>
+</body>
+</html>
