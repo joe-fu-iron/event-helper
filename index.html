@@ -70,3 +70,224 @@
                     <th class="col-time">時間區間</th>
                     <th class="col-dur">長度</th>
                     <th class="col-unit">單元項目</th>
+                    <th>執行說明</th>
+                    <th class="col-job">負責人 (動態)</th>
+                </tr>
+            </thead>
+            <tbody id="rundownBody"></tbody>
+        </table>
+
+        <button onclick="addRow()" class="no-print bg-slate-800 text-white px-6 py-2 rounded font-bold mb-8 hover:bg-slate-700 transition active:scale-95 shadow">+ 新增流程</button>
+
+        <div class="border-t-2 pt-4">
+            <div class="no-print font-black text-lg text-blue-800 mb-3 cursor-pointer select-none flex items-center gap-2" onclick="toggleSection('equipSection', 'equipArrow')">
+                <span id="equipArrow" class="arrow">▼</span> 📋 器材核對清單
+            </div>
+            <div id="equipSection" class="collapsible-content">
+                <div class="no-print mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex gap-2 items-center">
+                        <span class="text-xs font-bold text-blue-800 whitespace-nowrap">手動新增：</span>
+                        <input type="text" id="manualEquipName" placeholder="輸入名稱..." class="text-xs border rounded px-2 py-1 flex-grow outline-none focus:border-blue-500" onkeypress="if(event.key==='Enter') addManualEquip()">
+                        <select id="manualEquipTarget" class="text-xs border rounded px-1 py-1 outline-none">
+                            <option value="serviceContainer">服務台</option>
+                            <option value="stageContainer">舞台區</option>
+                        </select>
+                        <button onclick="addManualEquip()" class="bg-blue-600 text-white text-xs px-3 py-1 rounded font-bold hover:bg-blue-700">＋</button>
+                    </div>
+                    <div class="p-3 bg-slate-100 border border-slate-200 rounded-lg flex flex-wrap gap-2 items-center">
+                        <span class="text-xs font-bold text-slate-600 whitespace-nowrap">常用：</span>
+                        <div id="commonMenu" class="flex flex-wrap gap-1"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="border p-4 rounded-lg bg-white min-h-[120px] shadow-sm">
+                        <strong class="text-blue-700 border-b block mb-2 text-sm">📍 服務台：</strong>
+                        <div id="serviceContainer" class="flex flex-wrap items-start"></div>
+                    </div>
+                    <div class="border p-4 rounded-lg bg-white min-h-[120px] shadow-sm">
+                        <strong class="text-red-700 border-b block mb-2 text-sm">📍 舞台區：</strong>
+                        <div id="stageContainer" class="flex flex-wrap items-start"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = { databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const dataRef = ref(db, 'rundown_v2026_master_stable');
+
+        const menuItems = ["長官簽到表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱", "黃/紅桌巾", "TRUSS", "斜撐/鐵板", "木架/手板"];
+
+        const staffConfig = document.getElementById('staffConfig');
+        for(let i=1; i<=8; i++) {
+            staffConfig.innerHTML += `
+                <div class="bg-white p-2 border rounded shadow-sm">
+                    <select id="j${i}" class="w-full text-[10px] border mb-1 outline-none" onchange="updateAllSelects()">
+                        <option value="-">-</option><option value="控場">控場</option><option value="音響">音響</option>
+                        <option value="服務台">服務台</option><option value="攝影">攝影</option><option value="manual">(自訂)</option>
+                    </select>
+                    <input type="text" id="cj${i}" placeholder="自訂名稱" class="w-full text-[10px] border-b hidden mb-1" oninput="updateAllSelects()">
+                    <input type="text" id="s${i}" placeholder="姓名" class="w-full text-[10px] border-b" oninput="updateAllSelects()">
+                </div>`;
+        }
+
+        window.toggleSection = (id, arrowId) => {
+            const el = document.getElementById(id);
+            const isCollapsed = el.classList.toggle('collapsed');
+            document.getElementById(arrowId).classList.toggle('rotate');
+            localStorage.setItem('collapsed_' + id, isCollapsed);
+        };
+
+        window.addEquipment = (containerId, template, savedQty = "") => {
+            const container = document.getElementById(containerId);
+            const name = template.split('*')[0], isManual = template.includes('{手動}');
+            const tag = document.createElement('div'); tag.className = 'equipment-tag';
+            tag.innerHTML = `<span data-name="${name}" data-manual="${isManual}">${name}</span>${isManual ? `*<input type="text" class="num-input" value="${savedQty}">` : ''}<button class="ml-1 text-red-400 no-print hover:text-red-600" onclick="this.parentElement.remove()">✕</button>`;
+            container.appendChild(tag);
+        };
+
+        window.addManualEquip = () => {
+            const name = document.getElementById('manualEquipName').value;
+            const target = document.getElementById('manualEquipTarget').value;
+            if(!name) return;
+            addEquipment(target, name + "*{手動}");
+            document.getElementById('manualEquipName').value = "";
+        };
+
+        window.refreshRowJobs = (row) => {
+            const list = [];
+            for(let i=1; i<=8; i++) {
+                const j = document.getElementById(`j${i}`).value, s = document.getElementById(`s${i}`).value, cj = document.getElementById(`cj${i}`).value;
+                document.getElementById(`cj${i}`).style.display = (j === "manual") ? "block" : "none";
+                if(j === "manual" && cj) list.push(`${cj}(${s})`); else if(j !== "-") list.push(`${j}(${s})`);
+            }
+            let lastIdx = -1;
+            const selects = row.querySelectorAll('.job-sel');
+            const prints = row.querySelectorAll('.print-text');
+            selects.forEach((sel, i) => {
+                const saved = sel.getAttribute('data-temp-val') || "";
+                sel.innerHTML = `<option value="">- 選取 -</option>` + list.map(n => `<option value="${n}" ${n===saved?'selected':''}>${n}</option>`).join('');
+                if(saved && list.includes(saved)) { sel.value = saved; lastIdx = i; prints[i].innerText = saved; }
+                else { prints[i].innerText = ""; }
+            });
+            selects.forEach((sel, i) => { if(i === 0 || i <= lastIdx + 1) sel.classList.add('visible'); else sel.classList.remove('visible'); });
+        };
+
+        window.updateAllSelects = () => document.querySelectorAll("#rundownBody tr").forEach(row => refreshRowJobs(row));
+
+        window.addRow = (isFirst = false, saved = null) => {
+            const tbody = document.getElementById("rundownBody");
+            const tr = document.createElement("tr");
+            let jobHTML = `<div class="job-container">`;
+            for(let i=0; i<6; i++) {
+                const val = saved?.jobs?.[i] || "";
+                jobHTML += `<div><select class="job-sel no-print w-full p-1" data-temp-val="${val}" onchange="this.setAttribute('data-temp-val', this.value); refreshRowJobs(this.closest('tr'))"></select><div class="print-text hidden font-bold text-blue-900 border-b text-[11px]">${val}</div></div>`;
+            }
+            jobHTML += `</div>`;
+
+            tr.innerHTML = `
+                <td data-label="序號" class="col-no"></td>
+                <td data-label="時間" class="text-center">
+                    <div class="time-range">
+                        ${isFirst ? `<input type="text" class="start-time start-time-input" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start">00:00</span>'}
+                        <span class="mx-1 text-slate-300">-</span><span class="row-end">00:00</span>
+                    </div>
+                </td>
+                <td data-label="長度"><input type="number" class="duration w-full text-center border-b font-black text-slate-700" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
+                <td data-label="單元" contenteditable="true" class="unit-cell font-bold px-1 text-blue-800 outline-none">${saved?.unit||''}</td>
+                <td data-label="說明" contenteditable="true" class="desc-cell text-xs px-1 text-slate-500 outline-none">${saved?.desc||''}</td>
+                <td data-label="人員" class="col-job">${jobHTML}</td>`;
+            tbody.appendChild(tr);
+            refreshRowJobs(tr);
+            calculateAllTimes();
+        };
+
+        window.calculateAllTimes = () => {
+            let nextS = "";
+            document.querySelectorAll("#rundownBody tr").forEach((row, i) => {
+                row.querySelector(".col-no").innerText = i + 1;
+                const dur = parseInt(row.querySelector(".duration").value) || 0;
+                let start = (i === 0) ? row.querySelector(".start-time").value : nextS;
+                if(start && start.includes(":")) {
+                    let [h, m] = start.split(":").map(Number);
+                    let em = m + dur, eh = (h + Math.floor(em/60)) % 24, es = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2,'0')}`;
+                    if(i !== 0) row.querySelector(".row-start").innerText = start;
+                    row.querySelector(".row-end").innerText = es;
+                    nextS = es;
+                }
+            });
+        };
+
+        window.saveToFirebase = () => {
+            const data = {
+                title: document.getElementById('eventTitle').value, date: document.getElementById('eventDate').value,
+                location: document.getElementById('eventLocation').value, host: document.getElementById('headerHost').value,
+                staff: {}, rundown: [], service: [], stage: []
+            };
+            for(let i=1; i<=8; i++) data.staff[i] = {j: document.getElementById(`j${i}`).value, cj: document.getElementById(`cj${i}`).value, s: document.getElementById(`s${i}`).value};
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                data.rundown.push({
+                    startTime: row.querySelector(".start-time")?.value || "", duration: row.querySelector(".duration").value,
+                    unit: row.querySelector(".unit-cell").innerText, desc: row.querySelector(".desc-cell").innerText,
+                    jobs: Array.from(row.querySelectorAll('.job-sel')).map(s => s.getAttribute('data-temp-val') || "")
+                });
+            });
+            document.querySelectorAll('#serviceContainer .equipment-tag span').forEach(el => data.service.push({t: el.dataset.name+(el.dataset.manual==="true"?"*{手動}":""), q: el.parentElement.querySelector('input')?.value||""}));
+            document.querySelectorAll('#stageContainer .equipment-tag span').forEach(el => data.stage.push({t: el.dataset.name+(el.dataset.manual==="true"?"*{手動}":""), q: el.parentElement.querySelector('input')?.value||""}));
+            set(dataRef, data).then(() => alert("💾 雲端儲存成功！"));
+        };
+
+        onValue(dataRef, (snapshot) => {
+            const data = snapshot.val(); if(!data) { addRow(true); return; }
+            document.getElementById('eventTitle').value = data.title || "";
+            document.getElementById('eventDate').value = data.date || "";
+            document.getElementById('eventLocation').value = data.location || "";
+            document.getElementById('headerHost').value = data.host || "";
+            for(let i=1; i<=8; i++) {
+                document.getElementById(`j${i}`).value = data.staff?.[i]?.j || "-";
+                document.getElementById(`cj${i}`).value = data.staff?.[i]?.cj || "";
+                document.getElementById(`s${i}`).value = data.staff?.[i]?.s || "";
+            }
+            document.getElementById("rundownBody").innerHTML = ""; (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
+            document.getElementById('serviceContainer').innerHTML = ""; (data.service || []).forEach(e => addEquipment('serviceContainer', e.t, e.q));
+            document.getElementById('stageContainer').innerHTML = ""; (data.stage || []).forEach(e => addEquipment('stageContainer', e.t, e.q));
+            updateDayOfWeek();
+        });
+
+        window.updateDayOfWeek = () => {
+            const d = new Date(document.getElementById('eventDate').value);
+            document.getElementById('dayOfWeek').innerText = isNaN(d) ? "" : `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+        };
+
+        const init = () => {
+            const menu = document.getElementById('commonMenu');
+            menuItems.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-white border text-[10px] px-2 py-1 rounded hover:bg-orange-100 transition';
+                btn.innerText = `+ ${item.split('*')[0]}`;
+                btn.onclick = () => addEquipment('serviceContainer', item);
+                menu.appendChild(btn);
+            });
+            ['infoSection', 'equipSection'].forEach(id => {
+                if(localStorage.getItem('collapsed_' + id) === 'true') {
+                    document.getElementById(id).classList.add('collapsed');
+                    document.getElementById(id.replace('Section', 'Arrow')).classList.add('rotate');
+                }
+            });
+        };
+        init();
+        onValue(ref(db, ".info/connected"), (s) => {
+            const status = document.getElementById('syncStatus');
+            status.innerText = s.val() ? "🟢 連線同步中" : "🔴 離線中";
+            status.className = s.val() ? "text-[10px] font-bold px-2 py-1 bg-green-50 text-green-700 rounded-full border border-green-200" : "text-[10px] font-bold px-2 py-1 bg-red-50 text-red-700 rounded-full border border-red-200";
+        });
+    </script>
+</body>
+</html>
