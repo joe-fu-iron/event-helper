@@ -199,4 +199,59 @@
                 let start = (i === 0) ? row.querySelector(".start-time").value : nextS;
                 if(start && start.includes(":")) {
                     let [h, m] = start.split(":").map(Number);
-                    let em = m + dur, eh = (h + Math.floor(em/60)) % 24, es = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2
+                    let em = m + dur, eh = (h + Math.floor(em/60)) % 24, es = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2,'0')}`;
+                    if(i !== 0) row.querySelector(".row-start").innerText = start;
+                    row.querySelector(".row-end").innerText = es;
+                    nextS = es;
+                }
+            });
+        };
+
+        window.updateDbLink = (v) => {
+            if(v.trim()) { localStorage.setItem('iron_db_url', v.trim()); window.location.replace(window.location.href); }
+        };
+
+        window.saveToFirebase = () => {
+            if(!dataRef) return;
+            const data = { title: document.getElementById('eventTitle').value, date: document.getElementById('eventDate').value, staff: {}, rundown: [], service: [], stage: [] };
+            for(let i=1; i<=8; i++) {
+                data.staff[i] = { j: document.getElementById(`j${i}`).value, cj: document.getElementById(`cj${i}`).value, s: document.getElementById(`s${i}`).value, ms: document.getElementById(`ms${i}`).value };
+            }
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                data.rundown.push({ startTime: row.querySelector(".start-time")?.value || "", duration: row.querySelector(".duration").value, unit: row.querySelector(".unit-cell").innerText, desc: row.querySelector(".desc-cell").innerText, jobs: Array.from(row.querySelectorAll('.job-sel')).map(s => s.getAttribute('data-temp-val') || "") });
+            });
+            const getEq = (id) => Array.from(document.querySelectorAll(`#${id}Container .equipment-tag`)).map(tag => ({ n: tag.querySelector('span').innerText, q: tag.querySelector('input')?.value || "", l: tag.classList.contains('loaded') }));
+            data.service = getEq('service'); data.stage = getEq('stage');
+            set(dataRef, data).then(() => { 
+                const s = document.getElementById('syncStatus'); s.innerText = "● 儲存成功"; s.style.color = "#16a34a";
+                setTimeout(() => { s.innerText = "● 線上同步中"; s.style.color = "#2563eb"; }, 2000);
+            });
+        };
+
+        const url = document.getElementById('dbUrl').value.trim();
+        if(url) {
+            const app = initializeApp({ databaseURL: url });
+            db = getDatabase(app); dataRef = ref(db, 'rundown_v2026');
+            onValue(dataRef, (snap) => {
+                const data = snap.val(); if(!data) { if(document.querySelectorAll("#rundownBody tr").length===0) addRow(true); return; }
+                document.getElementById('eventTitle').value = data.title || "";
+                document.getElementById('eventDate').value = data.date || "";
+                for(let i=1; i<=8; i++) {
+                    const sd = data.staff?.[i];
+                    if(sd) {
+                        document.getElementById(`j${i}`).value = sd.j || "-";
+                        document.getElementById(`cj${i}`).value = sd.cj || "";
+                        document.getElementById(`s${i}`).value = sd.s || "";
+                        document.getElementById(`ms${i}`).value = sd.ms || "";
+                        checkManualName(document.getElementById(`s${i}`), i);
+                    }
+                }
+                document.getElementById("rundownBody").innerHTML = ""; (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
+                document.getElementById('serviceContainer').innerHTML = ""; (data.service || []).forEach((e, i) => addEquipment('service', e.n + (e.q?'*{手動}':''), e.q, e.l, i));
+                document.getElementById('stageContainer').innerHTML = ""; (data.stage || []).forEach((e, i) => addEquipment('stage', e.n + (e.q?'*{手動}':''), e.q, e.l, i));
+                document.getElementById('syncStatus').innerText = "● 線上同步中";
+            });
+        } else { addRow(true); document.getElementById('syncStatus').innerText = "尚未設定網址"; }
+    </script>
+</body>
+</html>
