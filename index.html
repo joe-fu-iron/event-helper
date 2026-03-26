@@ -3,35 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IRON 2026 CUE - FINAL</title>
+    <title>IRON 2026 CUE - REFIXED</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #000; color: #e2e8f0; -webkit-tap-highlight-color: transparent; }
-        .rundown-table { width: 100%; border-collapse: collapse; background: #0f172a; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #000; color: #e2e8f0; }
+        .rundown-table { width: 100%; border-collapse: collapse; background: #0f172a; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1px solid #1e293b; padding: 12px 8px; vertical-align: middle; }
-        
-        /* 控台風格 */
         .time-range { font-family: 'Courier New', monospace; font-weight: bold; color: #f97316; font-size: 16px; text-align: center; }
         .unit-cell { font-size: 16px; font-weight: bold; color: #fbbf24; }
-        
-        /* 工作人員收合：沒資料就不佔空間 */
-        .staff-display-item { font-size: 11px; color: #94a3b8; border-bottom: 1px solid #1e293b; padding: 2px 0; }
         .staff-card { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px; }
         .staff-card.empty { display: none; } 
-        #infoSection.open .staff-card.empty { display: block; opacity: 0.4; border-style: dashed; }
-
-        /* 器材：點擊即存 */
-        .equipment-tag { display: inline-flex; align-items: center; background: #1e293b; border: 1px solid #475569; padding: 6px 14px; border-radius: 6px; margin: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; }
+        #infoSection.open .staff-card.empty { display: block !important; opacity: 0.4; }
+        .equipment-tag { display: inline-flex; align-items: center; background: #1e293b; border: 1px solid #475569; padding: 6px 14px; border-radius: 6px; margin: 4px; font-weight: bold; cursor: pointer; border-left: 4px solid transparent; }
         .equipment-tag.loaded { background-color: #064e3b !important; border-color: #10b981 !important; color: #d1fae5; border-left: 4px solid #10b981; }
-        
         @media screen and (max-width: 768px) {
             .col-dur, .col-no, th:nth-child(1), th:nth-child(3) { display: none !important; }
-            .rundown-table tr { margin-bottom: 15px; border-left: 6px solid #f97316; display: block; background: #0f172a; border-radius: 0 8px 8px 0; }
+            .rundown-table tr { margin-bottom: 15px; border-left: 6px solid #f97316; display: block; background: #0f172a; }
             .rundown-table td { display: block; width: 100% !important; padding-left: 30% !important; position: relative; border: none; border-bottom: 1px solid #1e293b; min-height: 45px; }
-            .rundown-table td::before { content: attr(data-label); position: absolute; left: 12px; color: #64748b; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+            .rundown-table td::before { content: attr(data-label); position: absolute; left: 12px; color: #64748b; font-size: 10px; font-weight: bold; }
             .unit-cell { font-size: 18px; padding-top: 15px !important; }
         }
-        
         .collapsible { transition: max-height 0.4s ease; overflow: hidden; max-height: 0; }
         .collapsible.open { max-height: 1200px; }
     </style>
@@ -42,22 +33,22 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-black text-orange-500 tracking-tighter">IRON 2026 CUE</h1>
             <div class="flex items-center gap-3 no-print">
-                <div id="syncStatus" class="text-[10px] font-bold px-3 py-1 rounded-full border border-slate-800 bg-slate-900">WAITING...</div>
-                <button onclick="saveToFirebase()" class="bg-orange-600 hover:bg-orange-500 text-white px-6 py-2 rounded-lg font-black shadow-lg transition active:scale-95">💾 全局存檔</button>
+                <div id="syncStatus" class="text-[10px] font-bold px-3 py-1 rounded-full border border-slate-800 bg-slate-900">READY</div>
+                <button onclick="saveToFirebase()" class="bg-orange-600 hover:bg-orange-500 text-white px-6 py-2 rounded-lg font-black shadow-lg">💾 存檔</button>
             </div>
         </div>
 
         <div class="no-print bg-slate-900 rounded-xl mb-6 border border-slate-800 overflow-hidden">
-            <div onclick="toggleInfo()" class="p-4 cursor-pointer flex justify-between items-center bg-slate-800/50 hover:bg-slate-800 transition">
-                <span class="text-slate-400 font-bold text-sm">⚙️ CONFIG & STAFF (設定網址與人員)</span>
+            <div onclick="toggleInfo()" class="p-4 cursor-pointer flex justify-between items-center bg-slate-800/50 hover:bg-slate-800">
+                <span class="text-slate-400 font-bold text-sm">⚙️ CONFIG & STAFF (設定網址)</span>
                 <span id="infoIcon">▼</span>
             </div>
             <div id="infoSection" class="collapsible">
                 <div class="p-4 space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-2">
-                            <label class="text-[10px] text-orange-500 font-black tracking-widest uppercase">Firebase Database URL</label>
-                            <input type="text" id="dbUrl" placeholder="貼上 Firebase 網址..." class="w-full bg-black border border-slate-700 p-2 rounded text-blue-400 text-sm outline-none focus:border-orange-500">
+                            <label class="text-[10px] text-orange-500 font-black uppercase">Firebase URL</label>
+                            <input type="text" id="dbUrl" onchange="location.reload()" placeholder="貼上 Firebase 網址..." class="w-full bg-black border border-slate-700 p-2 rounded text-blue-400 text-sm outline-none">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>主題：<input type="text" id="eventTitle" class="w-full bg-transparent border-b border-slate-700 outline-none p-1 text-white"></div>
@@ -69,48 +60,27 @@
             </div>
         </div>
 
-        <table class="rundown-table rounded-lg overflow-hidden shadow-2xl mb-6">
-            <thead class="bg-slate-900 text-slate-500 text-[10px] uppercase tracking-widest text-center">
-                <tr>
-                    <th style="width:50px">#</th>
-                    <th style="width:165px">Time Range</th>
-                    <th style="width:60px" class="col-dur">Min</th>
-                    <th>Unit / Cue</th>
-                    <th>Instruction</th>
-                    <th style="width:220px">Staff in Charge</th>
-                </tr>
+        <table class="rundown-table rounded-lg overflow-hidden mb-6">
+            <thead class="bg-slate-900 text-slate-500 text-[10px] uppercase text-center">
+                <tr><th style="width:50px">#</th><th style="width:165px">Time</th><th style="width:60px" class="col-dur">Min</th><th>Cue</th><th>Note</th><th style="width:220px">Staff</th></tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
 
-        <button onclick="addRow()" class="no-print bg-slate-800 text-slate-400 px-6 py-2 rounded font-bold border border-slate-700 hover:bg-slate-700 transition mb-10">+ ADD CUE</button>
+        <button onclick="addRow()" class="no-print bg-slate-800 text-slate-400 px-6 py-2 rounded font-bold mb-10">+ ADD CUE</button>
 
         <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black text-orange-500 italic">LOGISTICS 核對</h2>
-                <div class="text-[10px] text-slate-500 font-bold bg-black px-3 py-1 rounded-full border border-slate-800">
-                    點擊器材標籤 = <span class="text-green-500">已上車</span> (自動同步)
-                </div>
-            </div>
-            
+            <h2 class="text-xl font-black text-orange-500 mb-4 italic">LOGISTICS 核對 (點擊變綠=已上車)</h2>
             <div class="no-print flex gap-2 mb-6 p-4 bg-black/50 rounded-xl border border-slate-800">
-                <input type="text" id="manualEquipName" placeholder="新增器材..." class="bg-transparent border-b border-slate-700 flex-grow p-1 text-sm outline-none focus:border-orange-500 text-white">
-                <select id="manualEquipTarget" class="bg-slate-800 text-xs rounded px-3 border-none text-slate-300">
-                    <option value="serviceContainer">服務台</option>
-                    <option value="stageContainer">舞台區</option>
+                <input type="text" id="manualEquipName" placeholder="新增器材..." class="bg-transparent border-b border-slate-700 flex-grow p-1 text-sm text-white">
+                <select id="manualEquipTarget" class="bg-slate-800 text-xs rounded px-3 text-slate-300">
+                    <option value="service">服務台</option><option value="stage">舞台區</option>
                 </select>
-                <button onclick="addManualEquip()" class="bg-orange-600 text-white px-5 py-1 rounded-lg font-black text-xs hover:bg-orange-500 transition">新增</button>
+                <button onclick="addManualEquip()" class="bg-orange-600 text-white px-5 py-1 rounded-lg font-black text-xs">新增</button>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/50">
-                    <h3 class="text-blue-500 text-[10px] font-black mb-4 tracking-tighter uppercase">● Front Desk / 服務台</h3>
-                    <div id="serviceContainer" class="flex flex-wrap"></div>
-                </div>
-                <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/50">
-                    <h3 class="text-red-500 text-[10px] font-black mb-4 tracking-tighter uppercase">● Stage Area / 舞台區</h3>
-                    <div id="stageContainer" class="flex flex-wrap"></div>
-                </div>
+                <div><h3 class="text-blue-500 text-[10px] font-black mb-4 uppercase">● Front Desk</h3><div id="serviceContainer" class="flex flex-wrap"></div></div>
+                <div><h3 class="text-red-500 text-[10px] font-black mb-4 uppercase">● Stage Area</h3><div id="stageContainer" class="flex flex-wrap"></div></div>
             </div>
         </div>
     </div>
@@ -119,36 +89,21 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // 自動記憶 Firebase URL
         const savedUrl = localStorage.getItem('iron_firebase_url');
         if(savedUrl) document.getElementById('dbUrl').value = savedUrl;
 
         let db, dataRef;
 
-        const connectDB = () => {
-            const url = document.getElementById('dbUrl').value.trim();
-            if(!url) return;
-            try {
-                localStorage.setItem('iron_firebase_url', url);
-                const app = initializeApp({ databaseURL: url }, 'IronApp');
-                db = getDatabase(app);
-                dataRef = ref(db, 'rundown_2026_live');
-                startSync();
-            } catch(e) { console.error("URL 格式錯誤"); }
-        };
-
-        // 人員介面生成
+        // 生成人員設定
         const staffConfig = document.getElementById('staffConfig');
         for(let i=1; i<=8; i++) {
-            staffConfig.innerHTML += `
-                <div id="staffBox${i}" class="staff-card space-y-2">
-                    <select id="j${i}" class="w-full bg-black border border-slate-700 text-[10px] rounded p-1" onchange="updateAllSelects()">
-                        <option value="-">-職位-</option><option value="控場">控場</option><option value="音響">音響</option>
-                        <option value="攝影">攝影</option><option value="服務台">服務台</option><option value="manual">自訂</option>
-                    </select>
-                    <input type="text" id="cj${i}" placeholder="自訂職稱" class="w-full bg-slate-800 border-b border-slate-600 text-[10px] hidden p-1" oninput="updateAllSelects()">
-                    <input type="text" id="s${i}" placeholder="姓名" class="w-full bg-transparent border-b border-slate-700 text-[10px] p-1" oninput="updateAllSelects()">
-                </div>`;
+            staffConfig.innerHTML += `<div id="staffBox${i}" class="staff-card space-y-1">
+                <select id="j${i}" class="w-full bg-black border border-slate-700 text-[10px] rounded" onchange="updateAllSelects()">
+                    <option value="-">-</option><option value="控場">控場</option><option value="音響">音響</option><option value="服務台">服務台</option><option value="manual">自訂</option>
+                </select>
+                <input type="text" id="cj${i}" placeholder="職稱" class="w-full bg-slate-800 text-[10px] hidden" oninput="updateAllSelects()">
+                <input type="text" id="s${i}" placeholder="姓名" class="w-full bg-transparent border-b border-slate-700 text-[10px]" oninput="updateAllSelects()">
+            </div>`;
         }
 
         window.toggleInfo = () => {
@@ -157,32 +112,29 @@
             document.getElementById('infoIcon').innerText = sec.classList.contains('open') ? '▲' : '▼';
         };
 
-        // 器材點擊變色即時存檔
         window.toggleEquipStatus = (el, type, index) => {
             el.classList.toggle('loaded');
             if(dataRef) {
-                const status = el.classList.contains('loaded');
-                update(ref(db, `rundown_2026_live/${type}/${index}`), { l: status });
+                update(ref(db, `rundown_2026_live/${type}/${index}`), { l: el.classList.contains('loaded') });
             }
         };
 
         window.addEquipment = (containerId, template, savedQty = "", isLoaded = false, index = 0) => {
-            const container = document.getElementById(containerId);
+            const container = document.getElementById(containerId + 'Container');
             const name = template.split('*')[0], isManual = template.includes('{手動}');
             const tag = document.createElement('div');
             tag.className = `equipment-tag ${isLoaded ? 'loaded' : ''}`;
-            const type = containerId.replace('Container', ''); 
-            tag.innerHTML = `
-                <span onclick="toggleEquipStatus(this.parentElement, '${type}', ${index})">${name}</span>
-                ${isManual ? `<input type="text" class="w-8 border-b border-slate-600 bg-transparent text-center ml-2 text-[10px] text-orange-400" value="${savedQty}" onchange="saveToFirebase()">` : ''}
-                <button class="ml-3 text-slate-700 no-print hover:text-red-500" onclick="this.parentElement.remove(); saveToFirebase()">✕</button>`;
+            tag.innerHTML = `<span onclick="toggleEquipStatus(this.parentElement, '${containerId}', ${index})">${name}</span>
+                ${isManual ? `<input type="text" class="w-8 border-b border-slate-600 bg-transparent text-center ml-2 text-[10px] text-orange-400" value="${savedQty}">` : ''}
+                <button class="ml-3 text-slate-700 no-print" onclick="this.parentElement.remove(); saveToFirebase()">✕</button>`;
             container.appendChild(tag);
         };
 
         window.addManualEquip = () => {
             const name = document.getElementById('manualEquipName').value;
+            const target = document.getElementById('manualEquipTarget').value;
             if(!name) return;
-            addEquipment(document.getElementById('manualEquipTarget').value, name + "*{手動}");
+            addEquipment(target, name + "*{手動}");
             document.getElementById('manualEquipName').value = "";
             saveToFirebase();
         };
@@ -191,20 +143,16 @@
             const list = [];
             for(let i=1; i<=8; i++) {
                 const j = document.getElementById(`j${i}`).value, s = document.getElementById(`s${i}`).value, cj = document.getElementById(`cj${i}`).value;
-                const box = document.getElementById(`staffBox${i}`);
                 document.getElementById(`cj${i}`).style.display = (j === "manual") ? "block" : "none";
-                if(j === "-" && !s) box.classList.add('empty'); else box.classList.remove('empty');
-                if(s) {
-                    const title = (j === "manual") ? cj : j;
-                    if(title !== "-") list.push(`${title}: ${s}`);
-                }
+                if(j === "-" && !s) document.getElementById(`staffBox${i}`).classList.add('empty'); 
+                else { document.getElementById(`staffBox${i}`).classList.remove('empty'); if(s) list.push(`${j === "manual" ? cj : j}: ${s}`); }
             }
             row.querySelectorAll('.job-sel').forEach((sel, i) => {
                 const saved = sel.getAttribute('data-temp-val') || "";
                 sel.innerHTML = `<option value="">-</option>` + list.map(n => `<option value="${n}" ${n===saved?'selected':''}>${n}</option>`).join('');
-                const print = row.querySelectorAll('.print-text')[i];
-                if(saved && list.includes(saved)) { sel.value = saved; print.innerText = saved; sel.style.display = "block"; } 
-                else { print.innerText = ""; sel.style.display = (i === 0 || row.querySelectorAll('.job-sel')[i-1]?.value) ? "block" : "none"; }
+                const p = row.querySelectorAll('.print-text')[i];
+                if(saved && list.includes(saved)) { sel.value = saved; p.innerText = saved; sel.style.display = "block"; }
+                else { p.innerText = ""; sel.style.display = (i === 0 || row.querySelectorAll('.job-sel')[i-1]?.value) ? "block" : "none"; }
             });
         };
 
@@ -215,23 +163,15 @@
             const tr = document.createElement("tr");
             let jobHTML = `<div class="space-y-1">`;
             for(let i=0; i<3; i++) {
-                const val = saved?.jobs?.[i] || "";
-                jobHTML += `<select class="job-sel no-print w-full bg-slate-800 text-[10px] rounded border-none" data-temp-val="${val}" onchange="this.setAttribute('data-temp-val', this.value); refreshRowJobs(this.closest('tr'))"></select><div class="print-text hidden font-bold text-orange-400 text-[10px]">${val}</div>`;
+                const v = saved?.jobs?.[i] || "";
+                jobHTML += `<select class="job-sel no-print w-full bg-slate-800 text-[10px] rounded border-none" data-temp-val="${v}" onchange="this.setAttribute('data-temp-val', this.value); refreshRowJobs(this.closest('tr'))"></select><div class="print-text hidden font-bold text-orange-400 text-[10px]">${v}</div>`;
             }
-            jobHTML += `</div>`;
-
-            tr.innerHTML = `
-                <td data-label="#" class="col-no text-center text-slate-700 text-[10px]"></td>
-                <td data-label="Time" class="text-center">
-                    <div class="time-range">
-                        ${isFirst ? `<input type="text" class="start-time bg-slate-800 border border-slate-700 rounded w-16 text-center text-white" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start">00:00</span>'}
-                        <span class="mx-1 text-slate-800">-</span><span class="row-end">00:00</span>
-                    </div>
-                </td>
+            tr.innerHTML = `<td data-label="#" class="col-no text-center text-slate-700 text-[10px]"></td>
+                <td data-label="Time" class="text-center"><div class="time-range">${isFirst ? `<input type="text" class="start-time bg-slate-800 border border-slate-700 rounded w-16 text-center text-white" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start">00:00</span>'}<span class="mx-1 text-slate-800">-</span><span class="row-end">00:00</span></div></td>
                 <td data-label="Min" class="col-dur"><input type="number" class="duration w-full text-center bg-transparent border-b border-slate-800 text-white" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td>
                 <td data-label="Cue" contenteditable="true" class="unit-cell outline-none px-2">${saved?.unit||''}</td>
                 <td data-label="Note" contenteditable="true" class="desc-cell text-[11px] text-slate-500 outline-none px-2">${saved?.desc||''}</td>
-                <td data-label="Staff">${jobHTML}</td>`;
+                <td data-label="Staff">${jobHTML}</div></td>`;
             tbody.appendChild(tr);
             refreshRowJobs(tr);
             calculateAllTimes();
@@ -254,4 +194,44 @@
         };
 
         window.saveToFirebase = () => {
-            if(!dataRef) { connectDB(); if(!dataRef)
+            if(!dataRef) return;
+            const data = { title: document.getElementById('eventTitle').value, date: document.getElementById('eventDate').value, staff: {}, rundown: [], service: [], stage: [] };
+            for(let i=1; i<=8; i++) data.staff[i] = {j: document.getElementById(`j${i}`).value, cj: document.getElementById(`cj${i}`).value, s: document.getElementById(`s${i}`).value};
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                data.rundown.push({ startTime: row.querySelector(".start-time")?.value || "", duration: row.querySelector(".duration").value, unit: row.querySelector(".unit-cell").innerText, desc: row.querySelector(".desc-cell").innerText, jobs: Array.from(row.querySelectorAll('.job-sel')).map(s => s.getAttribute('data-temp-val') || "") });
+            });
+            const getEq = (id) => Array.from(document.querySelectorAll(`#${id}Container .equipment-tag`)).map(tag => ({ n: tag.querySelector('span').innerText, q: tag.querySelector('input')?.value || "", l: tag.classList.contains('loaded') }));
+            data.service = getEq('service'); data.stage = getEq('stage');
+            set(dataRef, data).then(() => { document.getElementById('syncStatus').innerText = "SAVE SUCCESS"; setTimeout(() => document.getElementById('syncStatus').innerText = "ONLINE", 2000); });
+        };
+
+        // 初始化連線
+        const url = document.getElementById('dbUrl').value.trim();
+        if(url) {
+            localStorage.setItem('iron_firebase_url', url);
+            const app = initializeApp({ databaseURL: url });
+            db = getDatabase(app);
+            dataRef = ref(db, 'rundown_2026_live');
+            onValue(dataRef, (snap) => {
+                const data = snap.val(); if(!data) { if(document.querySelectorAll("#rundownBody tr").length===0) addRow(true); return; }
+                document.getElementById('eventTitle').value = data.title || "";
+                document.getElementById('eventDate').value = data.date || "";
+                for(let i=1; i<=8; i++) {
+                    document.getElementById(`j${i}`).value = data.staff?.[i]?.j || "-";
+                    document.getElementById(`cj${i}`).value = data.staff?.[i]?.cj || "";
+                    document.getElementById(`s${i}`).value = data.staff?.[i]?.s || "";
+                }
+                document.getElementById("rundownBody").innerHTML = ""; (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
+                document.getElementById('serviceContainer').innerHTML = ""; (data.service || []).forEach((e, i) => addEquipment('service', e.n + (e.q?'*{手動}':''), e.q, e.l, i));
+                document.getElementById('stageContainer').innerHTML = ""; (data.stage || []).forEach((e, i) => addEquipment('stage', e.n + (e.q?'*{手動}':''), e.q, e.l, i));
+            });
+            onValue(ref(db, ".info/connected"), (s) => {
+                document.getElementById('syncStatus').innerText = s.val() ? "ONLINE" : "OFFLINE";
+                document.getElementById('syncStatus').style.color = s.val() ? "#22c55e" : "#ef4444";
+            });
+        } else {
+            addRow(true);
+        }
+    </script>
+</body>
+</html>
