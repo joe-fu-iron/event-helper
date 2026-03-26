@@ -75,7 +75,7 @@
             </div>
 
             <div class="p-2 bg-orange-50 rounded border border-orange-200">
-                <span class="font-bold text-orange-800 text-sm block mb-2">👥 工作人員名單 (手機版請橫向滑動或向下捲動)：</span>
+                <span class="font-bold text-orange-800 text-sm block mb-2">👥 工作人員名單：</span>
                 <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
                     <script>
                         const fixedJobs = ["-", "控場", "音響", "服務台", "攝影", "機動"];
@@ -147,10 +147,10 @@
         const db = getDatabase(app);
         const dataRef = ref(db, 'rundown_v2026_detail_sync');
 
-        // [新增] 變動偵測機制
         let isDirty = false;
         const markDirty = () => { isDirty = true; };
 
+        // --- 核心選單資料區 (確保存在) ---
         const menuItems = {
             service: ["長官簽到表一式", "長官勾選表", "瓶水*{手動}", "餐盒*{手動}", "簽到箱*1式", "新聞資料*{手動}", "黃桌巾*{手動}", "紅桌巾*{手動}", "伴手禮*{手動}"],
             stage: ["音響+電腦1式", "TRUSS*{手動}", "斜撐*{手動}", "鐵板*{手動}", "帆布+豆扣*All", "紅桌巾*{手動}", "濕紙巾*{手動}", "衛生紙*{手動}", "手板*{手動}", "木架*{手動}"]
@@ -159,17 +159,9 @@
         window.onload = () => {
             initMenu('serviceMenu', menuItems.service, 'serviceContainer');
             initMenu('stageMenu', menuItems.stage, 'stageContainer');
-            
-            // 監聽全局輸入與變動
             document.addEventListener('input', markDirty);
-            
-            // [新增] 每 2 分鐘 (120000ms) 自動儲存機制
-            setInterval(() => {
-                if (isDirty) {
-                    console.log("自動同步中...");
-                    saveToFirebase(true); 
-                }
-            }, 120000);
+            // Q2: 2 分鐘自動儲存
+            setInterval(() => { if (isDirty) { saveToFirebase(true); } }, 120000);
         };
 
         function initMenu(menuId, list, containerId) {
@@ -183,10 +175,166 @@
             });
         }
 
-        // [修復] 刪除指定行數功能
+        // Q1 修復: 刪除行數
         window.deleteRowPrompt = () => {
             const rows = document.querySelectorAll("#rundownBody tr");
             const num = prompt(`目前共有 ${rows.length} 行，請輸入要刪除的行號 (1-${rows.length})：`);
             const index = parseInt(num) - 1;
             if (index >= 0 && index < rows.length) {
                 if (confirm(`確定要刪除第 ${num} 行嗎？`)) {
+                    rows[index].remove();
+                    window.calculateAllTimes();
+                    markDirty();
+                }
+            }
+        };
+
+        // Q1 修復: 自訂器材
+        window.addCustomEquip = (containerId) => {
+            const name = prompt("請輸入器材名稱：");
+            if (name) { addEquipment(containerId, name + "*{手動}"); markDirty(); }
+        };
+
+        window.toggleMenuArea = () => {
+            const area = document.getElementById('menuArea'), btn = document.getElementById('toggleBtn');
+            const isHidden = area.style.display === "none";
+            area.style.display = isHidden ? "block" : "none";
+            btn.innerText = isHidden ? "🔼 收合選單" : "🔽 展開選單";
+        };
+
+        window.updateAllSelects = () => {
+            const list = [];
+            for(let i=1; i<=8; i++) {
+                const sel = document.getElementById(`j${i}`);
+                const cInput = document.getElementById(`cj${i}`);
+                if(sel.value === "manual") { cInput.classList.remove('hidden'); } else { cInput.classList.add('hidden'); }
+                let jobName = sel.value === "manual" ? cInput.value || "自定義" : sel.value;
+                const staffName = document.getElementById(`s${i}`).value;
+                if(jobName !== "-") list.push(staffName ? `${jobName}(${staffName})` : jobName);
+            }
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                row.querySelectorAll(".job-sel").forEach(sel => {
+                    const val = sel.value;
+                    let options = `<option value="">- 無 -</option>`;
+                    list.forEach(k => options += `<option value="${k}" ${val===k?'selected':''}>${k}</option>`);
+                    sel.innerHTML = options;
+                });
+            });
+            markDirty();
+        };
+
+        window.addEquipment = (containerId, template, savedQty = "") => {
+            const container = document.getElementById(containerId);
+            const tag = document.createElement('div'); tag.className = 'equipment-tag shadow-sm';
+            const name = template.split('*')[0], isManual = template.includes('{手動}');
+            tag.innerHTML = `
+                <input type="checkbox" class="no-print mr-1">
+                <span class="font-bold">${name}</span>
+                ${isManual ? `*<input type="text" class="num-input" value="${savedQty}" oninput="isDirty=true">` : ''}
+                <span class="no-print text-red-400 cursor-pointer ml-1 font-bold" onclick="this.parentElement.remove(); isDirty=true;">✕</span>`;
+            container.appendChild(tag);
+        };
+
+        window.addRow = (isFirst = false, saved = null) => {
+            const tbody = document.getElementById("rundownBody");
+            const tr = document.createElement("tr");
+            let jobHTML = "";
+            for(let i=0; i<3; i++){
+                jobHTML += `
+                    <select class="job-sel no-print w-full mb-1 text-[13px] border rounded" onchange="updateAllSelects()"><option value="">-</option></select>
+                    <div class="print:block hidden text-[11pt] border-b leading-tight h-5">${saved?.jobs?.[i] || ''}</div>`;
+            }
+            tr.innerHTML = `
+                <td data-label="時間" class="col-time text-center">
+                    <div class="time-box flex flex-col items-center">
+                        ${isFirst ? `<input type="text" class="start-time start-time-input p-1 rounded" value="${saved?.startTime||''}" oninput="calculateAllTimes()">` : 
+                                    `<span class="row-start-display font-bold text-orange-600">--:--</span>`}
+                        <span class="row-end-display border-t w-full mt-1 font-bold text-gray-500">--:--</span>
+                    </div>
+                </td>
+                <td data-label="長度" class="col-dur"><input type="number" class="duration text-center w-full font-bold border-b" value="${saved?.duration||60}" oninput="calculateAllTimes()"></td>
+                <td data-label="單元" contenteditable="true" class="col-unit unit-cell font-bold text-blue-900 px-2" onblur="isDirty=true">${saved?.unit||''}</td>
+                <td data-label="說明" contenteditable="true" class="col-desc desc-cell text-gray-700 px-2" onblur="isDirty=true">${saved?.desc||''}</td>
+                <td data-label="人員" class="col-job">${jobHTML}</td>`;
+            tbody.appendChild(tr);
+            updateAllSelects(); calculateAllTimes(); markDirty();
+        };
+
+        window.calculateAllTimes = () => {
+            const rows = document.querySelectorAll("#rundownBody tr");
+            let currentStartTime = "";
+            rows.forEach((row, i) => {
+                const dur = parseInt(row.querySelector(".duration").value) || 0;
+                let start = (i === 0) ? (row.querySelector(".start-time")?.value || "") : currentStartTime;
+                if (start && start.includes(":")) {
+                    let [h, m] = start.split(":").map(Number);
+                    let em = m + dur;
+                    let eh = (h + Math.floor(em/60)) % 24; em %= 60;
+                    let end = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+                    if (i !== 0) row.querySelector(".row-start-display").innerText = start;
+                    row.querySelector(".row-end-display").innerText = end;
+                    currentStartTime = end;
+                }
+            });
+        };
+
+        window.saveToFirebase = (isAuto = false) => {
+            const data = {
+                title: document.getElementById('eventTitle').value,
+                date: document.getElementById('eventDate').value,
+                location: document.getElementById('eventLocation').value,
+                host: document.getElementById('headerHost').value,
+                maps: {}, rundown: [], serviceEquip: [], stageEquip: []
+            };
+            for(let i=1; i<=8; i++) {
+                data.maps[i] = { j: document.getElementById(`j${i}`).value, cj: document.getElementById(`cj${i}`).value, s: document.getElementById(`s${i}`).value };
+            }
+            document.querySelectorAll("#rundownBody tr").forEach(row => {
+                data.rundown.push({
+                    startTime: row.querySelector(".start-time")?.value || "",
+                    duration: row.querySelector(".duration").value,
+                    unit: row.querySelector(".unit-cell").innerText,
+                    desc: row.querySelector(".desc-cell").innerText,
+                    jobs: Array.from(row.querySelectorAll(".job-sel")).map(s => s.value)
+                });
+            });
+            document.querySelectorAll('#serviceContainer .equipment-tag').forEach(el => data.serviceEquip.push({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }));
+            document.querySelectorAll('#stageContainer .equipment-tag').forEach(el => data.stageEquip.push({ t: el.querySelector('span').innerText + (el.querySelector('.num-input') ? "*{手動}" : ""), q: el.querySelector('.num-input')?.value || "" }));
+            
+            set(dataRef, data).then(() => { isDirty = false; if (!isAuto) alert("✅ 資料已同步儲存"); });
+        };
+
+        onValue(dataRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                document.getElementById('eventTitle').value = data.title || "";
+                document.getElementById('eventDate').value = data.date || "";
+                document.getElementById('eventLocation').value = data.location || "";
+                document.getElementById('headerHost').value = data.host || "";
+                for(let i=1; i<=8; i++){
+                    document.getElementById(`j${i}`).value = data.maps?.[i]?.j || "-";
+                    document.getElementById(`cj${i}`).value = data.maps?.[i]?.cj || "";
+                    document.getElementById(`s${i}`).value = data.maps?.[i]?.s || "";
+                }
+                const tbody = document.getElementById("rundownBody"); tbody.innerHTML = "";
+                (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
+                document.getElementById('serviceContainer').innerHTML = "";
+                (data.serviceEquip || []).forEach(e => addEquipment('serviceContainer', e.t, e.q));
+                document.getElementById('stageContainer').innerHTML = "";
+                (data.stageEquip || []).forEach(e => addEquipment('stageContainer', e.t, e.q));
+                calculateAllTimes(); updateDayOfWeek(); updateAllSelects(); isDirty = false;
+            } else { initDefault(); }
+        });
+
+        window.updateDayOfWeek = () => {
+            const d = new Date(document.getElementById('eventDate').value);
+            if(!isNaN(d.getTime())) document.getElementById('dayOfWeek').innerText = `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+        };
+
+        function initDefault() {
+            document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
+            addRow(true); for (let i = 0; i < 4; i++) addRow(false); updateDayOfWeek();
+        }
+    </script>
+</body>
+</html>
