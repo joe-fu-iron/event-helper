@@ -3,113 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 執行流程控台-終極版</title>
+    <title>2026 執行控台 (流程+器材)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // 【第一步】請在此處填入您的 Firebase 網址
+        // 【第一步】請將下方的引號內容更換為您的 Firebase 網址
         const FIREBASE_URL = "https://您的專案名稱-default-rtdb.firebaseio.com/";
     </script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; color: #1e293b; -webkit-text-size-adjust: 100%; }
         body.admin-mode { background: #fffbeb; }
         
-        /* 手機看板 */
+        /* 手機看板固定在頂端 */
         .mobile-header { display: none; }
         @media (max-width: 768px) {
-            .mobile-header { display: block; background: #1e293b; color: white; padding: 20px 15px; border-radius: 0 0 20px 20px; margin-bottom: 15px; position: sticky; top: 0; z-index: 50; }
-            #mobileTitle { font-size: 1.5rem; } /* 手機標題放大 */
+            .mobile-header { display: block; background: #1e293b; color: white; padding: 20px 15px; border-radius: 0 0 20px 20px; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         }
 
-        .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; border-radius: 12px; overflow: hidden; }
-        .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 12px 8px; }
+        /* 權限控管：瀏覽模式下鎖定所有輸入 */
+        body.view-mode .edit-box, body.view-mode input, body.view-mode select, body.view-mode textarea { 
+            pointer-events: none; border: none !important; background: transparent !important; appearance: none; 
+        }
+        body.view-mode .job-sel, body.view-mode .btn-del { display: none !important; }
+
+        /* 表格基礎樣式 */
+        .main-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+        .main-table th, .main-table td { border: 1px solid #cbd5e1; padding: 12px 8px; }
         
-        /* 字體自動放大邏輯 */
-        .unit-cell { font-size: 1.3rem; font-weight: 900; text-align: center; color: #1e3a8a; line-height: 1.2; }
-        .desc-cell { font-size: 1rem; line-height: 1.5; }
-
-        /* 唯讀模式下的鎖定 (重要：防止誤觸) */
-        body.view-mode .edit-box, 
-        body.view-mode input, 
-        body.view-mode select { pointer-events: none; border: none !important; background: transparent !important; appearance: none; }
-        body.view-mode .job-sel { display: none !important; }
-
-        /* 手機版直式卡片字體全面放大 */
+        /* 手機版字體放大與佈局 */
         @media (max-width: 768px) {
             .desktop-header { display: none; }
-            .rundown-table thead { display: none; }
-            .rundown-table tr { display: block; margin-bottom: 25px; border-radius: 15px; background: white; box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
-            .rundown-table td { display: flex; justify-content: space-between; align-items: center; border: none; border-bottom: 1px solid #f1f5f9; padding: 15px 20px; width: 100% !important; }
+            .main-table thead { display: none; }
+            .main-table tr { display: block; margin-bottom: 25px; border-radius: 15px; background: white; box-shadow: 0 8px 15px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+            .main-table td { display: flex; justify-content: space-between; align-items: center; border: none; border-bottom: 1px solid #f1f5f9; padding: 15px 20px; width: 100% !important; }
+            .main-table td::before { content: attr(data-label); font-weight: 800; color: #94a3b8; font-size: 14px; min-width: 80px; }
             
-            .td-duration { display: none !important; }
-            .rundown-table td::before { content: attr(data-label); font-weight: 800; color: #94a3b8; font-size: 14px; min-width: 80px; }
-            
+            /* 流程文字放大 */
+            .unit-cell { font-size: 1.8rem !important; font-weight: 900; background: #f8fafc; text-align: right; width: 100%; padding: 20px; }
+            .desc-cell { font-size: 1.2rem !important; text-align: right; }
             .time-range { font-size: 24px !important; font-weight: 900; }
-            .mob-dur { font-size: 16px; padding: 4px 12px; }
-            .unit-cell { font-size: 1.8rem !important; padding: 20px; background: #f8fafc; text-align: right; width: 100%; }
-            .desc-cell { font-size: 1.2rem !important; color: #475569; text-align: right; }
-            .job-tag { font-size: 14px !important; padding: 5px 12px; }
+            
+            /* 器材表手機版放大 */
+            .hardware-item { font-size: 1.5rem !important; font-weight: 800; }
+            .hardware-num { font-size: 1.5rem !important; color: #ef4444; font-weight: 900; }
         }
 
         .is-now { background: #f0fdf4 !important; border-left: 15px solid #22c55e !important; transform: scale(1.02); z-index: 10; position: relative; }
-        
         .admin-only { display: none !important; }
         body.admin-mode .admin-only { display: block !important; }
         
-        @media print { .no-print, button { display: none !important; } }
+        .section-title { border-left: 8px solid #1e293b; padding-left: 15px; margin: 40px 0 20px 0; font-size: 1.5rem; font-weight: 900; color: #1e293b; }
     </style>
 </head>
 <body class="view-mode">
 
     <div class="mobile-header no-print">
-        <div class="flex justify-between items-center mb-2">
-            <span id="mobileDate" class="text-base font-bold text-amber-400">--月--日 (--)</span>
-            <span id="syncStatusMob" class="text-[11px] bg-green-500/20 text-green-400 px-3 py-1 rounded-full border border-green-500/30">連線中</span>
+        <div class="flex justify-between items-center mb-1">
+            <span id="mobileDate" class="text-amber-400 font-bold">--月--日 (--)</span>
+            <span id="syncStatusMob" class="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/30">同步中</span>
         </div>
-        <h2 id="mobileTitle" class="font-black tracking-tight truncate">未載入專案</h2>
+        <h2 id="mobileTitle" class="text-2xl font-black truncate">載入中...</h2>
     </div>
 
-    <div class="max-w-[1400px] mx-auto p-2 md:p-6 pb-24">
-        <div class="desktop-header flex justify-between items-center mb-8 no-print">
+    <div class="max-w-[1400px] mx-auto p-4 md:p-8 pb-32">
+        <div class="desktop-header flex justify-between items-center mb-10 no-print">
             <div>
-                <h1 class="text-3xl font-black text-slate-800 tracking-tighter">2026 執行流程控台</h1>
-                <p id="modeStatus" class="text-sm font-bold text-blue-600 mt-1">● 模式: 瀏覽中 <span id="weekdayDisplay" class="text-red-500 ml-2"></span></p>
+                <h1 class="text-3xl font-black text-slate-800 tracking-tighter">2026 執行流程與器材控台</h1>
+                <p class="text-sm font-bold text-blue-600 mt-1">● 狀態: <span id="modeStatus">瀏覽中</span> <span id="weekdayDisplay" class="ml-4 text-red-500"></span></p>
             </div>
             <div class="flex gap-3">
-                <button onclick="handleModeSwitch()" id="modeBtn" class="bg-amber-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg active:scale-95 transition-all">🛠️ 編輯模式</button>
-                <button onclick="window.print()" class="bg-slate-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg active:scale-95 transition-all">🖨️ 列印</button>
-                <button onclick="saveToFirebase()" class="admin-only bg-blue-600 text-white px-10 py-2.5 rounded-xl font-black shadow-xl active:scale-95 transition-all">💾 儲存變更</button>
+                <button onclick="handleModeSwitch()" id="modeBtn" class="bg-amber-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:bg-amber-600 transition-all">🛠️ 編輯模式</button>
+                <button onclick="saveToFirebase()" class="admin-only bg-blue-600 text-white px-10 py-2.5 rounded-xl font-black shadow-xl hover:bg-blue-700 transition-all">💾 儲存並發布變更</button>
             </div>
         </div>
 
-        <div class="admin-only no-print bg-white rounded-2xl mb-8 border-4 border-amber-400 p-6 shadow-2xl">
+        <div class="admin-only no-print bg-white rounded-2xl mb-10 border-4 border-amber-400 p-6 shadow-2xl">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 mb-1">活動日期</label>
-                    <input type="date" id="eventDate" class="w-full border-2 border-slate-200 p-3 rounded-xl font-black text-xl" onchange="updateWeekday()">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 mb-1">專案名稱</label>
-                    <input type="text" id="eventTitle" placeholder="輸入名稱..." class="w-full border-2 border-slate-200 p-3 rounded-xl font-black text-xl">
-                </div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">活動日期</label><input type="date" id="eventDate" class="w-full border-2 border-slate-100 p-3 rounded-xl font-black text-xl" onchange="updateWeekday()"></div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">專案名稱</label><input type="text" id="eventTitle" placeholder="請輸入專案名稱" class="w-full border-2 border-slate-100 p-3 rounded-xl font-black text-xl"></div>
             </div>
             <div id="staffConfig" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3"></div>
         </div>
 
-        <table class="rundown-table shadow-2xl overflow-hidden">
+        <div class="section-title">PART 1. 執行流程 Rundown</div>
+        <table class="main-table shadow-xl mb-10">
             <thead class="bg-slate-800 text-white">
-                <tr>
-                    <th style="width:60px">序</th>
-                    <th style="width:180px">時間區段</th>
-                    <th style="width:90px">長度</th>
-                    <th>單元項目 (自動放大)</th>
-                    <th>執行說明</th>
-                    <th style="width:240px">負責人員</th>
-                </tr>
+                <tr><th style="width:60px">序</th><th style="width:180px">時間區段</th><th style="width:90px">長度</th><th>單元項目</th><th>執行說明</th><th style="width:240px">負責人員</th></tr>
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
+        <button onclick="addRow()" class="admin-only no-print bg-white border-2 border-dashed border-slate-300 w-full py-4 rounded-xl text-slate-400 font-bold mb-10 text-lg hover:border-amber-400 hover:text-amber-500">+ 新增流程</button>
 
-        <button onclick="addRow()" class="admin-only no-print mt-8 bg-white border-4 border-dashed border-amber-200 w-full py-8 rounded-2xl text-amber-400 font-black text-2xl hover:bg-amber-50 transition-all">+ 新增流程項目</button>
+        <div class="section-title">PART 2. 器材與硬體需求 Requisition</div>
+        <table class="main-table shadow-xl">
+            <thead class="bg-slate-700 text-white">
+                <tr><th style="width:60px">序</th><th>項目名稱</th><th style="width:150px">規格/備註</th><th style="width:100px">數量</th><th class="admin-only" style="width:80px">操作</th></tr>
+            </thead>
+            <tbody id="hardwareBody"></tbody>
+        </table>
+        <button onclick="addHardwareRow()" class="admin-only no-print bg-white border-2 border-dashed border-slate-300 w-full py-4 rounded-xl text-slate-400 font-bold mt-4 text-lg hover:border-blue-400 hover:text-blue-500">+ 新增器材項目</button>
+
     </div>
 
     <script type="module">
@@ -120,7 +112,6 @@
         const jobList = ["控場", "音響", "服務台", "攝影", "機動", "錄影", "儀式", "燈光", "場務"];
         let db, dataRef, isAdmin = false;
 
-        // 核心：模式切換
         window.handleModeSwitch = () => {
             if (!isAdmin) {
                 if (prompt("管理密碼：") === "364401") toggleMode(true);
@@ -131,19 +122,20 @@
         window.toggleMode = (state) => {
             isAdmin = state;
             document.body.className = isAdmin ? "admin-mode" : "view-mode";
+            document.getElementById('modeStatus').innerText = isAdmin ? "編輯模式" : "瀏覽中";
             document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 退出編輯" : "🛠️ 編輯模式";
             document.querySelectorAll(".edit-box").forEach(el => el.contentEditable = isAdmin);
             updateAllSelects();
         };
 
-        // 生成人員配置欄位
+        // 人員配置生成
         const staffConfig = document.getElementById('staffConfig');
         for(let i=1; i<=8; i++) {
             staffConfig.innerHTML += `<div class="border-2 p-2 bg-white rounded-xl shadow-sm"><select id="j${i}" class="w-full text-xs font-bold mb-1" onchange="checkManual(this, 'cj${i}'); updateAllSelects()"><option value="-">-職稱-</option>${jobList.map(j=>`<option value="${j}">${j}</option>`).join('')}<option value="manual">自訂</option></select><input type="text" id="cj${i}" class="hidden w-full border text-xs" placeholder="職稱"><select id="s${i}" class="w-full text-xs font-bold" onchange="checkManual(this, 'ms${i}'); updateAllSelects()"><option value="">-姓名-</option>${teamList.map(n=>`<option value="${n}">${n}</option>`).join('')}<option value="manual">+手動</option></select><input type="text" id="ms${i}" class="hidden w-full border text-xs" placeholder="姓名"></div>`;
         }
         window.checkManual = (sel, id) => document.getElementById(id).classList.toggle('hidden', sel.value !== 'manual');
 
-        // 表格列生成
+        // 流程表格生成
         window.addRow = (isFirst = false, saved = null) => {
             const tr = document.createElement("tr");
             let jobSelects = `<div class="job-container">`;
@@ -153,22 +145,41 @@
             }
             jobSelects += `</div><div class="job-display-mobile md:hidden"></div>`;
 
-            tr.innerHTML = `<td data-label="序號" class="text-center text-slate-300 font-bold"></td><td data-label="時間" class="text-center"><div class="time-range font-black text-blue-600 tracking-tighter">${isFirst ? `<input type="text" class="start-time w-24 text-center border-2 rounded-lg bg-blue-50" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start"></span>'}<span class="mx-1 opacity-20">-</span><span class="row-end"></span><span class="mob-dur md:hidden font-bold text-slate-400 bg-slate-100 rounded-full px-2 ml-2"></span></div></td><td data-label="長度" class="td-duration text-center"><input type="number" class="dur-input w-16 text-center border-b-2 font-bold text-xl" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td><td data-label="單元項目" class="unit-cell edit-box outline-none px-4" contenteditable="${isAdmin}">${saved?.unit||''}</td><td data-label="執行說明" class="desc-cell edit-box outline-none px-4 text-slate-500" contenteditable="${isAdmin}">${saved?.desc||''}</td><td data-label="負責人員" class="p-2">${jobSelects}</td>`;
+            tr.innerHTML = `<td data-label="序號" class="text-center text-slate-300 font-bold"></td><td data-label="時間" class="text-center"><div class="time-range font-black text-blue-600 tracking-tighter">${isFirst ? `<input type="text" class="start-time w-24 text-center border-2 rounded-lg bg-blue-50" value="${saved?.startTime||'09:00'}" oninput="calculateAllTimes()">` : '<span class="row-start"></span>'}<span class="mx-1 opacity-20">-</span><span class="row-end"></span><span class="mob-dur md:hidden font-bold text-slate-400 bg-slate-100 rounded-full px-2 ml-2"></span></div></td><td data-label="長度" class="td-duration text-center"><input type="number" class="dur-input w-16 text-center border-b-2 font-bold text-xl" value="${saved?.duration||10}" oninput="calculateAllTimes()"></td><td data-label="單元項目" class="unit-cell edit-box outline-none px-4" contenteditable="${isAdmin}">${saved?.unit||''}</td><td data-label="說明" class="desc-cell edit-box outline-none px-4 text-slate-500" contenteditable="${isAdmin}">${saved?.desc||''}</td><td data-label="負責人" class="p-2">${jobSelects}</td>`;
             document.getElementById("rundownBody").appendChild(tr);
             updateJobDisplay(tr); calculateAllTimes();
         };
 
+        // 器材表格生成
+        window.addHardwareRow = (saved = null) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td data-label="序號" class="text-center font-bold text-slate-400 hw-idx"></td>
+                <td data-label="項目名稱" class="hardware-item edit-box font-bold text-lg outline-none" contenteditable="${isAdmin}">${saved?.name || ''}</td>
+                <td data-label="規格備註" class="edit-box text-sm text-slate-500 outline-none" contenteditable="${isAdmin}">${saved?.note || ''}</td>
+                <td data-label="數量" class="text-center">
+                    <input type="number" class="hw-qty w-16 text-center border-b-2 font-black text-xl text-red-600 hardware-num" value="${saved?.qty || 1}">
+                </td>
+                <td class="admin-only text-center"><button onclick="this.closest('tr').remove(); updateHwIndex();" class="text-red-400 font-bold btn-del">✕ 刪除</button></td>
+            `;
+            document.getElementById("hardwareBody").appendChild(tr);
+            updateHwIndex();
+        };
+
+        window.updateHwIndex = () => {
+            document.querySelectorAll("#hardwareBody tr").forEach((tr, i) => tr.querySelector(".hw-idx").innerText = i + 1);
+        };
+
         window.updateJobDisplay = (row) => {
             const selects = row.querySelectorAll('.job-sel');
-            const mobileDisplay = row.querySelector('.job-display-mobile');
             let mobileHTML = "";
             selects.forEach((sel, i) => {
                 const val = sel.getAttribute('data-temp-val');
-                const tag = val ? `<div class="job-tag">${val}</div>` : "";
+                const tag = val ? `<div class="job-tag bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[11px] font-bold border border-blue-100 inline-block m-0.5">${val}</div>` : "";
                 row.querySelectorAll('.job-display')[i].innerHTML = tag;
                 mobileHTML += tag;
             });
-            if(mobileDisplay) mobileDisplay.innerHTML = mobileHTML;
+            if(row.querySelector('.job-display-mobile')) row.querySelector('.job-display-mobile').innerHTML = mobileHTML;
         };
 
         window.calculateAllTimes = () => {
@@ -176,8 +187,7 @@
             document.querySelectorAll("#rundownBody tr").forEach((row, i) => {
                 row.querySelector("td:first-child").innerText = i + 1;
                 const dur = parseInt(row.querySelector(".dur-input").value) || 0;
-                row.querySelector(".mob-dur") && (row.querySelector(".mob-dur").innerText = dur + "m");
-
+                if(row.querySelector(".mob-dur")) row.querySelector(".mob-dur").innerText = dur + "m";
                 let start = (i === 0) ? row.querySelector(".start-time").value : nextS;
                 if(start && start.includes(":")) {
                     let [h, m] = start.split(":").map(Number);
@@ -188,30 +198,21 @@
             });
         };
 
-        // 儲存功能修正 (確保抓取最新數據)
         window.saveToFirebase = () => {
             if(!isAdmin) return;
             const data = { 
                 title: document.getElementById('eventTitle').value, 
                 date: document.getElementById('eventDate').value, 
-                staff: {}, 
-                rundown: [] 
+                staff: {}, rundown: [], hardware: [] 
             };
             for(let i=1; i<=8; i++) data.staff[i] = { j: document.getElementById(`j${i}`).value, cj: document.getElementById(`cj${i}`).value, s: document.getElementById(`s${i}`).value, ms: document.getElementById(`ms${i}`).value };
-            
             document.querySelectorAll("#rundownBody tr").forEach(row => {
-                data.rundown.push({ 
-                    startTime: row.querySelector(".start-time")?.value || "", 
-                    duration: row.querySelector(".dur-input").value, 
-                    unit: row.querySelector(".unit-cell").innerText, 
-                    desc: row.querySelector(".desc-cell").innerText, 
-                    jobs: Array.from(row.querySelectorAll('.job-sel')).map(s => s.getAttribute('data-temp-val') || "") 
-                });
+                data.rundown.push({ startTime: row.querySelector(".start-time")?.value || "", duration: row.querySelector(".dur-input").value, unit: row.querySelector(".unit-cell").innerText, desc: row.querySelector(".desc-cell").innerText, jobs: Array.from(row.querySelectorAll('.job-sel')).map(s => s.getAttribute('data-temp-val') || "") });
             });
-            
-            set(dataRef, data)
-                .then(() => alert("✅ 儲存變更成功！已同步至所有設備。"))
-                .catch(e => alert("❌ 儲存失敗，請檢查網路或網址。"));
+            document.querySelectorAll("#hardwareBody tr").forEach(row => {
+                data.hardware.push({ name: row.querySelector(".hardware-item").innerText, note: row.querySelector("td:nth-child(3)").innerText, qty: row.querySelector(".hw-qty").value });
+            });
+            set(dataRef, data).then(() => alert("✅ 儲存成功！器材與流程已同步更新。")).catch(e => alert("❌ 儲存失敗：" + e));
         };
 
         window.updateAllSelects = () => {
@@ -237,13 +238,16 @@
             document.getElementById('mobileDate').innerText = `${dateObj.getMonth()+1}月${dateObj.getDate()}日 (${dayStr})`;
         };
 
-        // 自動連線
+        // 自動載入資料
         const app = initializeApp({ databaseURL: FIREBASE_URL });
         db = getDatabase(app); dataRef = ref(db, 'rundown_v2026');
         onValue(dataRef, (snap) => {
             const data = snap.val();
-            document.getElementById('syncStatusMob').innerText = "● 雲端已同步";
-            if(!data) { if(document.querySelectorAll("#rundownBody tr").length===0) addRow(true); return; }
+            document.getElementById('syncStatusMob').innerText = "● 已同步";
+            if(!data) { 
+                if(document.querySelectorAll("#rundownBody tr").length===0) addRow(true); 
+                return; 
+            }
             document.getElementById('eventTitle').value = document.getElementById('mobileTitle').innerText = data.title || "未載入名稱";
             document.getElementById('eventDate').value = data.date || "";
             updateWeekday();
@@ -254,10 +258,12 @@
             }
             document.getElementById("rundownBody").innerHTML = "";
             (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
+            document.getElementById("hardwareBody").innerHTML = "";
+            (data.hardware || []).forEach(item => addHardwareRow(item));
+            if(data.hardware?.length === 0) addHardwareRow(); // 預設留一行空位
             updateAllSelects();
         });
 
-        // 每15秒檢查當前進度
         setInterval(() => {
             const now = new Date(); const cur = now.getHours() * 60 + now.getMinutes();
             document.querySelectorAll("#rundownBody tr").forEach(tr => {
