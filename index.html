@@ -371,4 +371,27 @@
                 const startTotal = sh * 60 + sm;
                 const endTotal = eh * 60 + em;
                 
-                if
+                if (curTime >= startTotal && curTime < endTotal) {
+                    card.classList.add('active');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+        }
+
+        window.updateDayOfWeek = () => {
+            const d = new Date(document.getElementById('eventDate').value);
+            document.getElementById('dayOfWeek').innerText = isNaN(d) ? "" : `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+        };
+
+        window.deleteLastRow = () => { 
+            const rows = document.querySelectorAll("#rundownBody tr");
+            if(rows.length > 1 && confirm("確定刪除最後一行？")) { 
+                document.querySelector("#rundownBody").lastElementChild.remove(); 
+                calculateAllTimes(); isDirty = true; 
+            }
+        };
+    </script>
+</body>
+</html>
