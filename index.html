@@ -8,85 +8,84 @@
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f1f5f9; transition: 0.3s; }
         .admin-mode { background: #fffbeb !important; }
-        .is-now { background: #f0fdf4 !important; border-left: 10px solid #22c55e !important; }
+        /* 執行中項目：深綠高對比 */
+        .is-now { background: #f0fdf4 !important; border-left: 10px solid #22c55e !important; box-shadow: inset 0 0 10px rgba(34,197,94,0.1); }
+        .is-now td { color: #166534; font-weight: 900; }
+        
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 12px 8px; vertical-align: middle; }
         .cell-input { font-weight: bold; width: 100%; outline: none; background: transparent; border: none; font-size: 14px; }
         .admin-mode .cell-input { background: #fff; box-shadow: inset 0 0 0 1px #e2e8f0; border-radius: 4px; padding: 4px; }
+        
         .admin-only { display: none !important; }
         .admin-mode .admin-only { display: block !important; }
         
-        /* 名片模式 (Card View) */
+        /* 名片模式 (手機執行專用) */
         #cardContainer { display: none; grid-template-columns: 1fr; gap: 1rem; }
         body.card-view .table-wrapper, body.card-view .admin-only:not(#viewBtn) { display: none !important; }
         body.card-view #cardContainer { display: grid; }
-        .item-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .active-card { ring: 4px solid #22c55e; background: #f0fdf4; }
+        .item-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: 0.3s; }
+        .active-card { ring: 4px solid #22c55e; background: #f0fdf4; border-color: #22c55e; transform: scale(1.02); }
         
         /* 器材標籤 */
-        .eq-tag { cursor: pointer; border: 1.5px solid #cbd5e1; padding: 6px 12px; border-radius: 10px; margin: 4px; font-weight: bold; font-size: 13px; display: inline-block; background: white; }
-        .eq-tag.loaded { background-color: #22c55e; color: white; border-color: #166534; }
+        .eq-tag { cursor: pointer; border: 1.5px solid #cbd5e1; padding: 6px 12px; border-radius: 10px; margin: 4px; font-weight: bold; font-size: 13px; display: inline-block; background: white; transition: 0.2s; }
+        .eq-tag.loaded { background-color: #22c55e; color: white; border-color: #166534; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        
+        @media print { .no-print { display: none; } }
     </style>
 </head>
 <body class="p-2 md:p-6 pb-20">
 
     <div class="max-w-[1400px] mx-auto">
-        <div class="flex justify-between items-center mb-6 border-b-4 border-slate-800 pb-4">
+        <div class="flex justify-between items-center mb-6 border-b-4 border-slate-800 pb-4 no-print">
             <div>
-                <h1 class="text-2xl font-black italic">2026頭份四月八 靚燈好客節</h1>
-                <p class="text-sm font-bold text-rose-600">3/27(五) 發布會 | 執行製作控台 (v50.Ultimate)</p>
+                <h1 class="text-2xl md:text-3xl font-black italic text-slate-800 tracking-tighter">2026頭份四月八 靚燈好客節</h1>
+                <p class="text-sm font-bold text-rose-600">3/27(五) 發布會 | 執行製作最終控台</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="toggleCardView()" id="viewBtn" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-bold shadow-md">🗂️ 名片模式</button>
+                <button onclick="toggleCardView()" id="viewBtn" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700">🗂️ 名片模式</button>
                 <button onclick="handleAdminSwitch()" id="modeBtn" class="bg-amber-500 text-white px-3 py-2 rounded-lg font-bold shadow-md">🛠️ 編輯模式</button>
                 <button onclick="saveToCloud()" class="admin-only bg-blue-600 text-white px-3 py-2 rounded-lg font-bold shadow-md">💾 儲存發布</button>
             </div>
         </div>
 
-        <div class="admin-only bg-white rounded-xl mb-6 border-2 border-amber-300 p-4 shadow-xl">
-            <h3 class="text-xs font-black mb-3 text-amber-600 flex items-center gap-2">
-                <span class="bg-amber-100 px-2 py-0.5 rounded text-amber-800 font-bold">👥 現場執行 10 人名單設定</span>
-            </h3>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="staffGrid"></div>
-        </div>
-
-        <div class="table-wrapper overflow-x-auto rounded-xl shadow-xl bg-white border border-slate-300">
-            <table class="rundown-table">
-                <thead class="bg-slate-800 text-white text-sm">
+        <div class="table-wrapper overflow-x-auto rounded-xl shadow-2xl bg-white border border-slate-300">
+            <table class="rundown-table text-sm">
+                <thead class="bg-slate-800 text-white">
                     <tr>
-                        <th width="45">序</th><th width="130">時間</th><th width="70">長度</th><th width="180">單元</th><th>執行說明</th><th width="150">負責人員</th><th width="50" class="admin-only">×</th>
+                        <th width="40">序</th><th width="120">時間</th><th width="60">長度</th><th width="180">單元名稱</th><th>執行內容說明</th><th width="150">負責人員</th><th width="40" class="admin-only">✕</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
             </table>
-            <button onclick="addNewRow()" class="admin-only w-full p-4 border-2 border-dashed border-slate-200 font-black text-slate-400 hover:bg-slate-50 transition">+ 插入流程項目 (資料自動同步)</button>
+            <button onclick="addNewRow()" class="admin-only w-full p-4 border-2 border-dashed border-slate-200 font-black text-slate-400 hover:bg-slate-50">+ 插入新流程 (即時同步不掉字)</button>
         </div>
 
-        <div id="cardContainer" class="mt-4"></div>
+        <div id="cardContainer" class="mt-4 no-print"></div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
-            <div class="bg-white p-5 rounded-2xl border-t-8 border-blue-500 shadow-sm">
-                <h2 class="font-black text-blue-600 text-sm mb-2">📍 服務台物料區</h2>
+            <div class="bg-white p-5 rounded-2xl border-t-8 border-blue-500 shadow-lg">
+                <h2 class="font-black text-blue-600 text-sm mb-3">📍 服務台區域器材</h2>
                 <div id="serviceBox"></div>
                 <div class="admin-only mt-3 flex gap-2">
-                    <select class="flex-1 border p-2 rounded text-xs bg-white" onchange="if(this.value){addEq('service', this.value); this.value=''}">
-                        <option value="">快速指派常用器材...</option>
-                        <option value="簽到表/原子筆">簽到表/原子筆</option><option value="瓶裝水/杯墊">瓶裝水/杯墊</option>
-                        <option value="貴賓名牌/座卡">貴賓名牌/座卡</option><option value="新聞資料袋">新聞資料袋</option>
+                    <select class="flex-1 border-2 border-slate-100 p-2 rounded-lg text-xs font-bold bg-white" onchange="if(this.value){addEq('service', this.value); this.value=''}">
+                        <option value="">快速選取常用器材...</option>
+                        <option value="簽到表/筆">簽到表/筆</option><option value="貴賓名牌/座卡">貴賓名牌/座卡</option>
+                        <option value="新聞資料袋">新聞資料袋</option><option value="摸彩箱/摸彩券">摸彩箱/摸彩券</option>
+                        <option value="瓶裝水/杯墊">瓶裝水/杯墊</option>
                     </select>
-                    <input type="text" class="flex-1 border p-2 rounded text-xs" placeholder="或手打按 Enter" onkeydown="if(event.key==='Enter'){addEq('service', this.value); this.value=''}">
                 </div>
             </div>
-            <div class="bg-white p-5 rounded-2xl border-t-8 border-rose-500 shadow-sm">
-                <h2 class="font-black text-rose-600 text-sm mb-2">📍 舞台/媒體工作區</h2>
+            <div class="bg-white p-5 rounded-2xl border-t-8 border-rose-500 shadow-lg">
+                <h2 class="font-black text-rose-600 text-sm mb-3">📍 舞台/媒體工作區器材</h2>
                 <div id="stageBox"></div>
                 <div class="admin-only mt-3 flex gap-2">
-                    <select class="flex-1 border p-2 rounded text-xs bg-white" onchange="if(this.value){addEq('stage', this.value); this.value=''}">
-                        <option value="">快速指派常用器材...</option>
+                    <select class="flex-1 border-2 border-slate-100 p-2 rounded-lg text-xs font-bold bg-white" onchange="if(this.value){addEq('stage', this.value); this.value=''}">
+                        <option value="">快速選取常用器材...</option>
                         <option value="無線麥克風*2">無線麥克風*2</option><option value="市長上手板">市長上手板</option>
                         <option value="炒米粉展示道具">炒米粉展示道具</option><option value="攝影補燈組">攝影補燈組</option>
+                        <option value="活動背板組">活動背板組</option>
                     </select>
-                    <input type="text" class="flex-1 border p-2 rounded text-xs" placeholder="或手打按 Enter" onkeydown="if(event.key==='Enter'){addEq('stage', this.value); this.value=''}">
                 </div>
             </div>
         </div>
@@ -96,53 +95,36 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // 資料庫路徑已鎖定為 v50_Final
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'toufen_48_v50_Final');
+        const dataRef = ref(db, 'toufen_48_v100_Ultimate');
+
+        // 鎖定 10 人公司名單與職位
+        const staffList = [
+            { j: "執行製作", n: "鐵仁" }, { j: "服務台", n: "柏緯" },
+            { j: "平面攝影", n: "江哥" }, { j: "活動執行", n: "中瑜" },
+            { j: "餐飲物料", n: "貝克里" }, { j: "機動助理", n: "阿強" },
+            { j: "媒體聯絡", n: "美玲" }, { j: "現場總控", n: "阿杰" },
+            { j: "音控組", n: "小明" }, { j: "主持助理", n: "小芬" }
+        ];
 
         let isAdmin = false, isCardView = false;
         let localData = {
-            staff: Array(10).fill().map(() => ({ j: "", n: "" })),
             rundown: [
-                { t: "08:30", d: "30M", u: "公司出發/小車", s: "全體人員出發、物料上車", person: "" },
-                { t: "08:30-10:00", d: "90M", u: "場地佈置", s: "簽到處、媒體席、料理展示區設置", person: "" },
-                { t: "10:00-10:10", d: "10m", u: "媒體訪問", s: "市長接受聯訪、上手版準備", person: "" },
-                { t: "10:10-10:20", d: "10m", u: "市長炒米粉示範", s: "現場示範與媒體拍攝", person: "" },
-                { t: "10:30", d: "-", u: "活動結束", s: "撤場、發放餐盒", person: "" }
+                { t: "08:30", d: "30M", u: "公司出發/小車", s: "全員集合出發、器材上車", person: "執行製作-鐵仁" },
+                { t: "09:00", d: "60M", u: "場地佈置", s: "舞台區、簽到區定位", person: "現場總控-阿杰" },
+                { t: "10:00-10:10", d: "10M", u: "媒體訪問", s: "市長接受聯訪、上手版準備", person: "平面攝影-江哥" },
+                { t: "10:10-10:20", d: "10M", u: "市長炒米粉示範", s: "米粉示範與拍攝、中瑜協助", person: "活動執行-中瑜" }
             ],
             eq: { service: [], stage: [] }
-        };
-
-        const init = () => {
-            const grid = document.getElementById('staffGrid');
-            grid.innerHTML = localData.staff.map((_, i) => `
-                <div class="p-1 border rounded bg-slate-50">
-                    <input type="text" oninput="localData.staff[${i}].j=this.value; updateDropdowns()" class="sj w-full text-[10px] border-b outline-none mb-1 text-slate-500" placeholder="職稱">
-                    <input type="text" oninput="localData.staff[${i}].n=this.value; updateDropdowns()" class="sn w-full text-[11px] outline-none font-bold text-slate-800" placeholder="姓名">
-                </div>
-            `).join('');
-            renderAll();
-        };
-
-        // 重要：人員下拉選單連動邏輯
-        window.updateDropdowns = () => {
-            const selects = document.querySelectorAll('.person-select');
-            const staffOptions = localData.staff.filter(s => s.n).map(s => `<option value="${s.j}-${s.n}">${s.j}:${s.n}</option>`).join('');
-            selects.forEach((sel, i) => {
-                const currentVal = localData.rundown[i].person;
-                sel.innerHTML = `<option value="">未指派</option>${staffOptions}`;
-                sel.value = currentVal;
-            });
         };
 
         window.renderAll = () => {
             const tbody = document.getElementById('tableBody');
             const cardContainer = document.getElementById('cardContainer');
             const curMin = new Date().getHours() * 60 + new Date().getMinutes();
-            
             tbody.innerHTML = ""; cardContainer.innerHTML = "";
-            const staffOptions = localData.staff.filter(s => s.n).map(s => `<option value="${s.j}-${s.n}">${s.j}:${s.n}</option>`).join('');
+            const staffOptions = staffList.map(s => `<option value="${s.j}-${s.n}">${s.j}:${s.n}</option>`).join('');
 
             localData.rundown.forEach((item, i) => {
                 let isActive = false;
@@ -151,53 +133,46 @@
                     if(curMin >= (h*60+m) && curMin < (h*60+m+(parseInt(item.d)||10))) isActive = true;
                 }
 
-                // 表格列生成
                 const tr = document.createElement('tr');
                 if(isActive) tr.className = "is-now";
                 tr.innerHTML = `
-                    <td class="text-center text-slate-300 font-bold text-xs">${i+1}</td>
+                    <td class="text-center text-slate-300 font-bold">${i+1}</td>
                     <td><input class="cell-input" value="${item.t}" oninput="localData.rundown[${i}].t=this.value" ${!isAdmin?'readonly':''}></td>
                     <td><input class="cell-input" value="${item.d}" oninput="localData.rundown[${i}].d=this.value" ${!isAdmin?'readonly':''}></td>
                     <td><input class="cell-input" value="${item.u}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td><input class="cell-input font-normal text-slate-500 text-sm" value="${item.s}" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}></td>
+                    <td><input class="cell-input font-normal text-slate-500 text-xs" value="${item.s}" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}></td>
                     <td>
-                        ${isAdmin ? `<select class="person-select w-full text-xs border bg-white p-1" onchange="localData.rundown[${i}].person=this.value; renderAll()">
+                        ${isAdmin ? `<select class="w-full text-[11px] border bg-white p-1 font-bold" onchange="localData.rundown[${i}].person=this.value; renderAll()">
                             <option value="">未指派</option>${staffOptions.replace('value="'+item.person+'"', 'selected value="'+item.person+'"')}
-                        </select>` : `<div class="bg-indigo-50 px-2 py-1 rounded text-indigo-700 text-[10px] font-bold text-center">${item.person || '-'}</div>`}
+                        </select>` : `<div class="bg-indigo-50 px-2 py-1 rounded text-indigo-700 text-[10px] font-black text-center border border-indigo-100">${item.person || '-'}</div>`}
                     </td>
                     <td class="admin-only text-center"><button onclick="removeRow(${i})" class="text-rose-400 font-bold">✕</button></td>
                 `;
                 tbody.appendChild(tr);
 
-                // 名片生成
                 const card = document.createElement('div');
                 card.className = `item-card ${isActive ? 'active-card' : ''}`;
-                card.innerHTML = `<div class="flex justify-between mb-2"><span class="text-[10px] font-black text-slate-400">#${i+1} 流程</span><span class="text-2xl font-black text-indigo-600">${item.t}</span></div>
-                    <div class="text-xl font-black mb-1 text-slate-800">${item.u}</div>
-                    <div class="text-sm text-slate-500 mb-3 bg-slate-50 p-2 rounded border-l-2 border-slate-200">${item.s}</div>
-                    <div class="flex justify-between items-center border-t pt-3">
-                        <div class="text-xs font-bold text-slate-400">長度: ${item.d}</div>
-                        <div class="bg-indigo-600 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-md">${item.person || '現場全體執行'}</div>
+                card.innerHTML = `<div class="flex justify-between mb-2"><span class="text-[10px] font-black text-slate-400">#${i+1} UNIT</span><span class="text-2xl font-black text-indigo-600">${item.t}</span></div>
+                    <div class="text-2xl font-black mb-1 text-slate-800">${item.u}</div><div class="text-sm text-slate-600 mb-4 bg-slate-50 p-3 rounded-lg border-l-4 border-slate-200">${item.s}</div>
+                    <div class="flex justify-between items-center border-t border-dashed pt-4">
+                        <div class="text-xs font-bold text-slate-400">⏱️時長: ${item.d}</div>
+                        <div class="bg-indigo-600 text-white px-4 py-1 rounded-full text-xs font-black shadow-md">${item.person || '現場執行'}</div>
                     </div>`;
                 cardContainer.appendChild(card);
             });
-
-            // 人員欄位內容同步
-            const sj = document.querySelectorAll('.sj'), sn = document.querySelectorAll('.sn');
-            localData.staff.forEach((s, i) => { if(sj[i]) sj[i].value = s.j; if(sn[i]) sn[i].value = s.n; });
             renderEq();
         };
 
         window.toggleCardView = () => { isCardView = !isCardView; document.body.classList.toggle('card-view', isCardView); document.getElementById('viewBtn').innerText = isCardView ? "📊 表格模式" : "🗂️ 名片模式"; renderAll(); };
-        window.handleAdminSwitch = () => { if(!isAdmin && prompt("請輸入執行密碼") !== "364401") return; isAdmin = !isAdmin; document.body.classList.toggle('admin-mode', isAdmin); document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 結束編輯" : "🛠️ 編輯模式"; renderAll(); };
-        window.addNewRow = () => { localData.rundown.push({ t: "", d: "10m", u: "新項目", s: "", person: "" }); renderAll(); };
+        window.handleAdminSwitch = () => { if(!isAdmin && prompt("請輸入執行密碼") !== "364401") return; isAdmin = !isAdmin; document.body.classList.toggle('admin-mode', isAdmin); document.getElementById('modeBtn').innerText = isAdmin ? "👁️ 結束預覽" : "🛠️ 編輯模式"; renderAll(); };
+        window.addNewRow = () => { localData.rundown.push({ t: "", d: "10m", u: "新單元", s: "", person: "" }); renderAll(); };
         window.removeRow = (i) => { if(confirm("確定刪除？")) { localData.rundown.splice(i, 1); renderAll(); } };
         window.addEq = (z, n) => { localData.eq[z].push({n, l:false}); renderEq(); };
-        window.renderEq = () => { ['service', 'stage'].forEach(z => { document.getElementById(z+'Box').innerHTML = (localData.eq[z]||[]).map((e,idx)=>`<div class="eq-tag ${e.l?'loaded':''}" onclick="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq()">${e.n} ${isAdmin?'<span class="ml-1 opacity-20" onclick="event.stopPropagation(); localData.eq[\''+z+'\'].splice('+idx+',1); renderEq()">×</span>':''}</div>`).join(''); }); };
-        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ 雲端同步發布成功！")); };
+        window.renderEq = () => { ['service', 'stage'].forEach(z => { document.getElementById(z+'Box').innerHTML = (localData.eq[z]||[]).map((e,idx)=>`<div class="eq-tag ${e.l?'loaded':''}" onclick="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq()">${e.n} ${isAdmin?'<span class="ml-1 opacity-20" onclick="event.stopPropagation(); localData.eq[\''+z+'\'].splice('+idx+',1); renderEq()">✕</span>':''}</div>`).join(''); }); };
+        window.saveToCloud = () => { set(dataRef, localData).then(() => { alert("✅ 雲端同步發布成功！所有夥伴手機已同步。"); isAdmin = false; document.body.classList.remove('admin-mode'); renderAll(); }); };
         onValue(dataRef, (snap) => { if(!isAdmin) { const d = snap.val(); if(d) { localData = d; renderAll(); } } });
-        init();
-        setInterval(renderAll, 60000); // 每一分鐘重新整理「執行中」狀態
+        setInterval(renderAll, 60000); // 每一分鐘重新檢查「執行中」狀態
+        renderAll();
     </script>
 </body>
 </html>
