@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 執行流程控台-時間連鎖修正版</title>
+    <title>2026 執行流程控台-全功能最終版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background: #f8fafc; color: #1e293b; transition: 0.3s; }
@@ -12,7 +12,7 @@
         .rundown-table { width: 100%; border-collapse: collapse; background: white; table-layout: fixed; }
         .rundown-table th, .rundown-table td { border: 1px solid #cbd5e1; padding: 10px 8px; vertical-align: middle; }
         .table-head { background: #334155; color: white; font-size: 14px; font-weight: bold; }
-        .cell-content { font-weight: bold; font-size: 15px; outline: none; min-height: 1.2em; }
+        .cell-content { font-weight: bold; font-size: 15px; outline: none; min-height: 1.2em; background: transparent; }
         .time-range { font-family: monospace; font-weight: bold; color: #2563eb; font-size: 15px; }
         .job-tag { display: inline-block; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px; font-weight: bold; cursor: pointer; }
         .equipment-tag { display: inline-flex; align-items: center; background: white; border: 1.5px solid #cbd5e1; padding: 4px 10px; border-radius: 8px; margin: 4px; font-weight: bold; font-size: 13px; transition: 0.2s; }
@@ -26,9 +26,9 @@
         body.card-mode .rundown-table, body.card-mode .admin-only { display: none !important; }
         body.card-mode #cardViewContainer { display: block; }
         .card-view-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
-        #checkInBtn { display: none; background: #059669; color: white; padding: 8px 16px; border-radius: 20px; font-weight: 900; animation: pulse 2s infinite; text-decoration: none; }
+        #checkInBtn { display: none; background: #059669; color: white; padding: 8px 16px; border-radius: 20px; font-weight: 900; animation: pulse 2s infinite; text-decoration: none; align-items: center; gap: 4px; }
         body.card-mode #checkInBtn { display: inline-flex; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
     </style>
 </head>
 <body class="view-mode p-2 md:p-6 pb-20">
@@ -41,13 +41,13 @@
             </div>
             <div class="flex gap-2 items-center">
                 <a id="checkInBtn" href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" target="_blank">📊 簽到看板</a>
-                <button onclick="toggleCardMode()" id="toggleViewBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-xs font-black">🗂️ 名片模式</button>
+                <button onclick="toggleCardMode()" id="toggleViewBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-full text-xs font-black shadow-lg">🗂️ 名片模式</button>
                 <button onclick="handleModeSwitch()" id="modeBtn" class="bg-amber-500 text-white px-4 py-2 rounded-lg font-bold shadow-md">🛠️ 編輯模式</button>
-                <button onclick="saveToFirebase()" class="admin-only bg-blue-600 text-white px-4 py-2 rounded-lg font-bold">💾 儲存發布</button>
+                <button onclick="saveToFirebase()" class="admin-only bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-md">💾 儲存發布</button>
             </div>
         </div>
 
-        <div class="admin-only bg-white rounded-xl mb-6 border-2 border-amber-300 p-4">
+        <div class="admin-only bg-white rounded-xl mb-6 border-2 border-amber-300 p-4 shadow-xl">
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <input type="date" id="eventDate" class="border p-2 rounded font-bold" onchange="updateHeaderInfo()">
                 <input type="text" id="eventTitle" placeholder="專案名稱" class="border p-2 rounded font-bold" oninput="updateHeaderInfo()">
@@ -63,19 +63,19 @@
         </table>
 
         <div id="cardViewContainer" class="no-print"></div>
-        <button onclick="addRow()" class="admin-only mb-10 bg-slate-100 border-2 border-dashed border-slate-300 p-3 rounded-xl font-bold w-full">+ 新增流程</button>
+        <button onclick="addRow()" class="admin-only mb-10 bg-white border-2 border-dashed border-slate-300 p-3 rounded-xl font-bold w-full hover:bg-slate-50 transition">+ 新增流程</button>
 
         <div class="bg-white p-6 rounded-2xl border shadow-sm">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="font-black italic">📦 器材清點 (點擊名稱標註已到位)</h2>
-                <button onclick="openWarehouse()" class="admin-only bg-slate-800 text-white px-3 py-1 rounded text-xs">＋新增器材</button>
+                <h2 class="font-black italic text-slate-700">📋 器材清點 (點擊名稱標註已到位)</h2>
+                <button onclick="openWarehouse()" class="admin-only bg-slate-800 text-white px-3 py-1 rounded text-xs">＋新增器材清單</button>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="p-3 bg-blue-50 rounded-lg">
+                <div class="p-3 bg-blue-50 rounded-lg border border-blue-100">
                     <p class="text-blue-600 text-xs font-bold mb-2">📍 服務台</p>
                     <div id="serviceContainer" class="flex flex-wrap"></div>
                 </div>
-                <div class="p-3 bg-rose-50 rounded-lg">
+                <div class="p-3 bg-rose-50 rounded-lg border border-rose-100">
                     <p class="text-rose-600 text-xs font-bold mb-2">📍 舞台區</p>
                     <div id="stageContainer" class="flex flex-wrap"></div>
                 </div>
@@ -84,16 +84,16 @@
     </div>
 
     <div id="warehouseModal">
-        <div class="warehouse-content">
-            <h3 class="font-bold mb-4">新增器材到清單</h3>
-            <input type="text" id="customEqName" placeholder="器材名稱" class="w-full border p-2 mb-3 rounded">
-            <select id="customEqZone" class="w-full border p-2 mb-4 rounded">
+        <div class="warehouse-content shadow-2xl">
+            <h3 class="font-bold mb-4 border-b pb-2">📦 新增器材</h3>
+            <input type="text" id="customEqName" placeholder="請輸入器材名稱" class="w-full border p-3 mb-3 rounded-lg font-bold">
+            <select id="customEqZone" class="w-full border p-3 mb-4 rounded-lg font-bold">
                 <option value="service">服務台</option>
                 <option value="stage">舞台區</option>
             </select>
             <div class="flex gap-2">
-                <button onclick="addEqToData()" class="flex-1 bg-blue-600 text-white p-2 rounded font-bold">確認新增</button>
-                <button onclick="closeWarehouse()" class="flex-1 bg-slate-200 p-2 rounded">取消</button>
+                <button onclick="addEqToData()" class="flex-1 bg-blue-600 text-white p-3 rounded-lg font-bold">確認新增</button>
+                <button onclick="closeWarehouse()" class="flex-1 bg-slate-200 p-3 rounded-lg font-bold">取消</button>
             </div>
         </div>
     </div>
@@ -108,12 +108,12 @@
         const FIREBASE_URL = "https://rundown-worker-default-rtdb.firebaseio.com/";
         let db, dataRef, jobDbRef, isAdmin = false, isCardMode = false;
         let currentData = { rundown: [], title: "", date: "", service: [], stage: [], staff: {} };
-        let jobLibrary = ["控場", "製作人", "音控", "主持人"];
+        let jobLibrary = ["控場", "製作人", "音控", "攝影", "主持人", "接待"];
 
         // 初始化人員欄位
         const staffConfig = document.getElementById('staffConfig');
         for(let i=1; i<=10; i++) {
-            staffConfig.innerHTML += `<div class="staff-card border rounded p-1"><input type="text" id="j${i}" list="teamJobs" placeholder="職稱" class="w-full text-[10px] font-bold border-b outline-none" onchange="saveJob(this.value)"><input type="text" id="s${i}" list="teamNames" placeholder="姓名" class="w-full text-[10px] outline-none"></div>`;
+            staffConfig.innerHTML += `<div class="staff-card border rounded p-1 bg-slate-50"><input type="text" id="j${i}" list="teamJobs" placeholder="職稱" class="w-full text-[10px] font-bold border-b outline-none bg-transparent" onchange="saveJob(this.value)"><input type="text" id="s${i}" list="teamNames" placeholder="姓名" class="w-full text-[10px] outline-none bg-transparent"></div>`;
         }
 
         window.saveJob = (v) => { if(v && !jobLibrary.includes(v)) { jobLibrary.push(v); set(jobDbRef, jobLibrary); updateJobDatalist(); } };
@@ -132,7 +132,6 @@
             document.getElementById('customEqName').value = "";
             closeWarehouse(); renderEquipments();
         };
-
         window.renderEquipments = () => {
             ['service', 'stage'].forEach(zone => {
                 const container = document.getElementById(zone + 'Container');
@@ -147,7 +146,7 @@
         window.toggleEqStatus = (z, i) => { currentData[z][i].l = !currentData[z][i].l; renderEquipments(); };
         window.removeEq = (z, i) => { currentData[z].splice(i, 1); renderEquipments(); };
 
-        // 核心：時間自動排序與表格渲染
+        // 渲染表格與時間重算
         window.renderTable = () => {
             const tbody = document.getElementById("rundownBody");
             const cardContainer = document.getElementById("cardViewContainer");
@@ -156,16 +155,19 @@
             const activeStaff = Array.from({length:10}, (_,i)=>({j: document.getElementById(`j${i+1}`).value, s: document.getElementById(`s${i+1}`).value})).filter(x => x.j && x.s);
             const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
 
+            // 強制預設 6 行
+            if(!currentData.rundown || currentData.rundown.length === 0) {
+                for(let k=0; k<6; k++) currentData.rundown.push({ duration: 10, unit: `項目 ${k+1}`, desc: "", jobs: [] });
+            }
+
             currentData.rundown.forEach((item, i) => {
                 const dur = parseInt(item.duration) || 0;
                 let start = (i === 0) ? (item.startTime || "09:00") : nextStartTime;
-                
-                // 計算結束時間
                 let [h, m] = start.split(":").map(Number);
                 let totalMin = h * 60 + m + dur;
                 let eh = Math.floor(totalMin / 60) % 24, em = totalMin % 60;
                 let endStr = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
-                nextStartTime = endStr; // 交棒給下一行
+                nextStartTime = endStr; 
 
                 const isActive = (curMin >= (h*60+m) && curMin < (eh*60+em));
 
@@ -189,10 +191,9 @@
                     </td>`;
                 tbody.appendChild(tr);
 
-                // 名片模式
                 const card = document.createElement("div");
-                card.className = `card-view-item ${isActive ? 'bg-green-50 border-l-8 border-green-500' : ''}`;
-                card.innerHTML = `<div class="flex justify-between text-xs mb-1"><span class="font-bold">#${i+1}</span><span class="text-blue-600 font-bold">${start} - ${endStr}</span></div><div class="font-black text-lg">${item.unit || ''}</div><div class="text-sm text-slate-600 mb-2">${item.desc || ''}</div><div class="flex flex-wrap gap-1">${(item.jobs || []).map(j => `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">${j}</span>`).join('')}</div>`;
+                card.className = `card-view-item ${isActive ? 'bg-green-50 border-l-8 border-green-500 shadow-lg' : ''}`;
+                card.innerHTML = `<div class="flex justify-between text-xs mb-1"><span class="font-bold text-slate-400"># ${i+1}</span><span class="text-blue-600 font-bold text-lg">${start} - ${endStr}</span></div><div class="font-black text-xl mb-1">${item.unit || ''}</div><div class="text-sm text-slate-600 mb-3 border-l-2 pl-2">${item.desc || ''}</div><div class="flex flex-wrap gap-1">${(item.jobs || []).map(j => `<span class="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-sm">${j}</span>`).join('')}</div>`;
                 cardContainer.appendChild(card);
             });
         };
@@ -218,13 +219,13 @@
             currentData.date = document.getElementById('eventDate').value;
             currentData.staff = {};
             for(let i=1; i<=10; i++) currentData.staff[i] = { j: document.getElementById(`j${i}`).value, s: document.getElementById(`s${i}`).value };
-            set(dataRef, currentData).then(() => alert("✅ 已成功同步發布"));
+            set(dataRef, currentData).then(() => alert("✅ 全體同步發布成功！"));
         };
 
         const app = initializeApp({ databaseURL: FIREBASE_URL });
         db = getDatabase(app); 
-        dataRef = ref(db, 'rundown_v2026_final_v7'); 
-        jobDbRef = ref(db, 'job_library_v7');
+        dataRef = ref(db, 'rundown_v2026_final_v8'); 
+        jobDbRef = ref(db, 'job_library_v8');
 
         onValue(jobDbRef, (snap) => { if(snap.val()) { jobLibrary = snap.val(); updateJobDatalist(); } });
         onValue(dataRef, (snap) => {
