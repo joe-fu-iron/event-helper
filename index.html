@@ -212,4 +212,57 @@
             document.querySelectorAll("#rundownBody tr").forEach(row => {
                 data.rundown.push({
                     startTime: row.querySelector(".start-time")?.value || "",
-                    duration: row.querySelector(".duration").
+                    duration: row.querySelector(".duration").value,
+                    unit: row.querySelector(".unit-cell").innerText,
+                    desc: row.querySelector(".desc-cell").innerText,
+                    jobs: Array.from(row.querySelectorAll(".job-sel")).map(s => s.getAttribute('data-temp-val') || "")
+                });
+            });
+            set(dataRef, data).then(() => alert("✅ 資料同步成功"));
+        };
+
+        onValue(dataRef, (snapshot) => {
+            const data = snapshot.val();
+            if(!data) { addRow(true); return; }
+            document.getElementById('eventTitle').value = data.title || "";
+            document.getElementById('eventDate').value = data.date || "";
+            document.getElementById('eventLocation').value = data.location || "";
+            document.getElementById('headerHost').value = data.host || "";
+            for(let i=1; i<=8; i++) {
+                document.getElementById(`j${i}`).value = data.staff?.[i]?.j || "-";
+                document.getElementById(`cj${i}`).value = data.staff?.[i]?.cj || "";
+                document.getElementById(`s${i}`).value = data.staff?.[i]?.s || "";
+            }
+            const tbody = document.getElementById("rundownBody"); tbody.innerHTML = "";
+            (data.rundown || []).forEach((item, idx) => addRow(idx === 0, item));
+            updateDayOfWeek();
+        });
+
+        window.calculateAllTimes = () => {
+            let time = "";
+            document.querySelectorAll("#rundownBody tr").forEach((row, i) => {
+                const dur = parseInt(row.querySelector(".duration").value) || 0;
+                let start = (i === 0) ? row.querySelector(".start-time").value : time;
+                if(start.includes(":")) {
+                    let [h, m] = start.split(":").map(Number);
+                    let em = m + dur; let eh = (h + Math.floor(em/60)) % 24; em %= 60;
+                    let endStr = `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+                    if(i !== 0) row.querySelector(".row-start-display").innerText = start;
+                    row.querySelector(".row-end-display").innerText = "結束: " + endStr;
+                    time = endStr;
+                }
+            });
+        };
+
+        window.updateDayOfWeek = () => {
+            const d = new Date(document.getElementById('eventDate').value);
+            document.getElementById('dayOfWeek').innerText = isNaN(d) ? "" : `(週${['日','一','二','三','四','五','六'][d.getDay()]})`;
+        };
+
+        onValue(ref(db, ".info/connected"), (s) => {
+            const el = document.getElementById('syncStatus');
+            el.innerHTML = s.val() ? '<span class="status-dot bg-green-500"></span>🟢 連線中' : '<span class="status-dot bg-red-500"></span>🔴 斷線';
+        });
+    </script>
+</body>
+</html>
