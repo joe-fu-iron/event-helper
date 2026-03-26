@@ -34,7 +34,7 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-black text-slate-800 tracking-tight">2026 執行流程表</h1>
             <div class="flex items-center gap-3 no-print">
-                <div id="syncStatus" class="text-[11px] font-bold px-3 py-1 rounded-full border border-slate-200 bg-white shadow-sm">偵測連線中...</div>
+                <div id="syncStatus" class="text-[11px] font-bold px-3 py-1 rounded-full border border-slate-200 bg-white">載入中...</div>
                 <button onclick="saveToFirebase()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition active:scale-95">💾 儲存變更</button>
             </div>
         </div>
@@ -68,7 +68,7 @@
             <tbody id="rundownBody"></tbody>
         </table>
 
-        <button onclick="addRow()" class="no-print bg-white text-slate-600 px-6 py-2 rounded-md font-bold border border-slate-300 hover:bg-slate-50 mb-10 shadow-sm">+ 新增流程</button>
+        <button onclick="addRow()" class="no-print bg-white text-slate-600 px-6 py-2 rounded-md font-bold border border-slate-300 hover:bg-slate-50 mb-10 shadow-sm">+ 新增流程項目</button>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h2 class="text-lg font-black text-slate-800 mb-6">📋 器材清點 (上車按鈕)</h2>
@@ -90,7 +90,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // 設定名單
         const teamList = ["江哥", "瑩驊", "志明", "露比", "鐵仁", "柏緯", "細漢", "維憶", "芳瑜"];
+        const jobList = ["控場", "音響", "服務台", "攝影", "機動", "錄影", "儀式"];
+
         let db, dataRef;
 
         const savedUrl = localStorage.getItem('iron_db_url');
@@ -102,8 +105,8 @@
                 <div id="staffBox${i}" class="staff-card space-y-1">
                     <select id="j${i}" class="w-full bg-white border border-slate-300 text-[11px] rounded p-1" onchange="updateAllSelects()">
                         <option value="-">-職稱-</option>
-                        <option value="控場">控場</option><option value="音響">音響</option>
-                        <option value="服務台">服務台</option><option value="自訂">自訂</option>
+                        ${jobList.map(j => `<option value="${j}">${j}</option>`).join('')}
+                        <option value="自訂">自訂</option>
                     </select>
                     <input type="text" id="cj${i}" placeholder="輸入職稱" class="w-full border border-slate-300 text-[11px] hidden p-1 rounded" oninput="updateAllSelects()">
                     <select id="s${i}" class="w-full border border-slate-300 text-[11px] p-1 rounded" onchange="checkManualName(this, ${i}); updateAllSelects()">
@@ -195,4 +198,5 @@
                 const dur = parseInt(row.querySelector(".duration").value) || 0;
                 let start = (i === 0) ? row.querySelector(".start-time").value : nextS;
                 if(start && start.includes(":")) {
-                    let [h, m] = start.split(":").map(Number
+                    let [h, m] = start.split(":").map(Number);
+                    let em = m + dur, eh = (h + Math.floor(em/60)) % 24, es = `${String(eh).padStart(2,'0')}:${String(em%60).padStart(2
