@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v18</title>
+    <title>執行製作平台 v19</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -14,7 +14,7 @@
         .edit-only { display: none !important; }
         .admin-mode .edit-only { display: block !important; }
         
-        /* 表格專屬硬派樣式 */
+        /* 表格樣式 */
         .pro-table { border-collapse: collapse; width: 100%; border: 2px solid #334155; }
         .pro-table th { background: #334155; color: white; padding: 10px; font-size: 12px; border: 1px solid #475569; }
         .pro-table td { border: 1px solid #cbd5e1; padding: 12px; background: white; }
@@ -23,6 +23,12 @@
         .view-section { display: none; }
         .active-view { display: block !important; }
         #cardView.active-view { display: grid !important; }
+
+        /* 日曆輸入框美化 */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -33,13 +39,11 @@
             <div class="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
                 <div class="bg-blue-600 px-3 py-1 rounded text-sm font-black tracking-tighter shadow-inner">執行中</div>
                 <div class="flex flex-col">
-                    <input type="text" class="bg-transparent font-black text-lg outline-none border-b border-transparent focus:border-blue-400 w-full md:w-64" value="頭份四月八 靚燈好客節" placeholder="活動名稱...">
-                    <div class="flex items-center gap-1 mt-1 text-[11px] font-bold text-slate-400">
-                        <input type="text" class="bg-slate-800 rounded px-1 w-10 text-center text-white outline-none" placeholder="2026" id="dateYear" onblur="autoSave()"> 年
-                        <input type="text" class="bg-slate-800 rounded px-1 w-6 text-center text-white outline-none" placeholder="03" id="dateMonth" onblur="autoSave()"> 月
-                        <input type="text" class="bg-slate-800 rounded px-1 w-6 text-center text-white outline-none" placeholder="27" id="dateDay" onblur="autoSave()"> 日
-                        <span class="ml-1">星期</span>
-                        <input type="text" class="bg-slate-800 rounded px-1 w-8 text-center text-white outline-none" placeholder="五" id="dateWeek" onblur="autoSave()">
+                    <input type="text" class="bg-transparent font-black text-lg outline-none border-b border-transparent focus:border-blue-400 w-full md:w-64" value="頭份四月八 靚燈好客節" id="eventName" onblur="autoSave()">
+                    
+                    <div class="flex items-center gap-2 mt-1 text-[11px] font-bold">
+                        <input type="date" class="bg-slate-800 rounded px-2 py-0.5 text-white outline-none cursor-pointer" id="eventDate" onchange="updateWeekDay()">
+                        <span class="bg-slate-700 px-2 py-0.5 rounded text-blue-300" id="displayWeek">星期五</span>
                     </div>
                 </div>
             </div>
@@ -56,10 +60,10 @@
                     名片模式
                 </button>
                 <button onclick="switchView('table')" id="btn-table" class="hidden btn-action bg-blue-600 px-4 py-2 rounded-lg text-xs">
-                    返回表格
+                    返回表格模式
                 </button>
 
-                <button onclick="handleAdminSwitch()" id="adminBtn" class="p-2 rounded-full bg-slate-800 hover:bg-blue-600 transition shadow-inner">
+                <button onclick="handleAdminSwitch()" class="p-2 rounded-full bg-slate-800 hover:bg-blue-600 transition shadow-inner">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" id="lockIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                 </button>
             </div>
@@ -69,8 +73,8 @@
     <main class="max-w-7xl mx-auto p-4 space-y-6">
         <section class="glass-card p-4">
             <div class="flex justify-between items-center mb-3">
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Personnel / 人員調度</span>
-                <button onclick="addStaffMember()" class="edit-only text-[10px] bg-blue-600 text-white px-3 py-1 rounded font-bold">+ 新增</button>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest underline decoration-blue-500">Personnel / 人員調度</span>
+                <button onclick="addStaffMember()" class="edit-only text-[10px] bg-blue-600 text-white px-3 py-1 rounded font-bold">+ 新增人員</button>
             </div>
             <div id="staffGrid" class="flex flex-wrap gap-2"></div>
         </section>
@@ -80,9 +84,9 @@
                 <table class="pro-table">
                     <thead>
                         <tr>
-                            <th class="w-40 text-center">時段 (長度)</th>
-                            <th>單元項目與說明</th>
-                            <th class="w-48 text-right">負責人</th>
+                            <th class="w-40 text-center">時段區間 (長度)</th>
+                            <th>執行單元與內容說明</th>
+                            <th class="w-48 text-right">負責人員</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -99,35 +103,44 @@
 
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_platform_v18');
+        const dataRef = ref(db, 'execution_platform_v19');
 
         let isAdmin = false;
         let localData = {
-            date: { y: "2026", m: "03", d: "27", w: "五" },
+            eventName: "頭份四月八 靚燈好客節",
+            eventDate: "2026-03-27",
             staffRoles: [{n: "鐵仁", j: "控場", active: true}],
-            rundown: [{ t: "08:00", te: "08:30", d: "30", u: "場地檢查", s: "確認電力與背板穩固", persons: [], lock: true }]
+            rundown: [{ t: "08:00", te: "08:30", d: "30", u: "場地檢查", s: "背板電力確認", persons: [], lock: true }]
         };
 
-        // 自動存檔
+        // 自動計算星期並儲存
+        window.updateWeekDay = () => {
+            const dateVal = document.getElementById('eventDate').value;
+            if (dateVal) {
+                const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                const d = new Date(dateVal);
+                document.getElementById('displayWeek').innerText = days[d.getDay()];
+                localData.eventDate = dateVal;
+                autoSave();
+            }
+        };
+
         window.autoSave = () => {
-            localData.date = {
-                y: document.getElementById('dateYear').value,
-                m: document.getElementById('dateMonth').value,
-                d: document.getElementById('dateDay').value,
-                w: document.getElementById('dateWeek').value
-            };
+            localData.eventName = document.getElementById('eventName').value;
             set(dataRef, localData);
             renderAll();
         };
 
         window.renderAll = () => {
-            // 更新日期欄位
-            document.getElementById('dateYear').value = localData.date?.y || "";
-            document.getElementById('dateMonth').value = localData.date?.m || "";
-            document.getElementById('dateDay').value = localData.date?.d || "";
-            document.getElementById('dateWeek').value = localData.date?.w || "";
+            document.getElementById('eventName').value = localData.eventName || "";
+            document.getElementById('eventDate').value = localData.eventDate || "";
+            
+            // 初始渲染星期
+            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const d = new Date(localData.eventDate);
+            document.getElementById('displayWeek').innerText = isNaN(d.getTime()) ? "---" : days[d.getDay()];
 
-            // 計算時間
+            // 時間計算邏輯
             let nextStartTime = localData.rundown[0].t || "08:00";
             localData.rundown.forEach((item, i) => {
                 if (i !== 0 && !item.lock) item.t = nextStartTime;
@@ -137,17 +150,18 @@
                 nextStartTime = item.te;
             });
 
-            // 渲染人員與表格 (邏輯同 V17)
+            // 渲染人員
             const staffGrid = document.getElementById('staffGrid'); staffGrid.innerHTML = "";
             localData.staffRoles.forEach((role, i) => {
                 if (!isAdmin && !role.active) return;
                 const div = document.createElement('div');
-                div.className = `p-2 rounded border ${role.active ? 'border-blue-500 bg-blue-50' : 'border-slate-200 opacity-40'} ${isAdmin?'cursor-pointer':''}`;
+                div.className = `p-2 rounded border-2 transition ${role.active ? 'border-blue-500 bg-blue-50' : 'border-slate-100 opacity-40'} ${isAdmin?'cursor-pointer':''}`;
                 div.onclick = () => { if(isAdmin) { role.active = !role.active; autoSave(); } };
-                div.innerHTML = `<span class="text-[10px] font-bold text-blue-800">${role.n}</span> <span class="text-[9px] text-slate-400">(${role.j})</span>`;
+                div.innerHTML = `<span class="text-[10px] font-black text-blue-900">${role.n}</span> <span class="text-[9px] text-slate-400">(${role.j})</span>`;
                 staffGrid.appendChild(div);
             });
 
+            // 渲染表格
             const tbody = document.getElementById('tableBody'); tbody.innerHTML = "";
             const cardView = document.getElementById('cardView'); cardView.innerHTML = "";
             const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
@@ -157,26 +171,24 @@
                 const [eh, em] = item.te.split(':').map(Number);
                 const isActive = (curMin >= (h*60+m) && curMin < (eh*60+em));
 
-                // 表格內容渲染...
                 const tr = document.createElement('tr');
                 if(isActive) tr.className = "is-now";
                 tr.innerHTML = `
-                    <td class="text-center font-black text-xs">
-                        <div class="text-blue-800">${item.t}-${item.te}</div>
-                        <div class="text-[10px] text-slate-400">(${item.d}m)</div>
+                    <td class="text-center bg-slate-50/30">
+                        <div class="text-blue-900 font-black text-xs">${item.t}-${item.te}</div>
+                        <div class="text-[10px] text-slate-400 font-bold">(${item.d}m)</div>
                     </td>
                     <td>
                         <input class="w-full font-black text-sm outline-none bg-transparent" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" onblur="autoSave()" ${!isAdmin?'readonly':''}>
-                        <div class="text-[10px] text-slate-400">${item.s||''}</div>
+                        <div class="text-[10px] text-slate-400 font-medium">${item.s||''}</div>
                     </td>
-                    <td class="text-right text-[10px] font-bold text-blue-600">${item.persons?.join(', ') || ''}</td>
+                    <td class="text-right text-[10px] font-black text-blue-600">${item.persons?.join(', ') || ''}</td>
                 `;
                 tbody.appendChild(tr);
-                
-                // 卡片渲染...
+
                 const card = document.createElement('div');
-                card.className = `glass-card p-4 ${isActive?'border-2 border-green-500':''}`;
-                card.innerHTML = `<div class="text-[10px] font-bold text-blue-600">${item.t}-${item.te}</div><div class="font-black">${item.u}</div>`;
+                card.className = `glass-card p-4 ${isActive?'border-2 border-green-500 ring-2 ring-green-100':''}`;
+                card.innerHTML = `<div class="text-[10px] font-black text-blue-700">${item.t}-${item.te}</div><div class="font-black mt-1">${item.u}</div>`;
                 cardView.appendChild(card);
             });
         };
@@ -189,7 +201,7 @@
         };
 
         window.handleAdminSwitch = () => {
-            if(!isAdmin && prompt("請輸入管理密碼") === "364401") {
+            if(!isAdmin && prompt("管理密碼") === "364401") {
                 isAdmin = true;
                 document.body.classList.add('admin-mode');
                 document.getElementById('lockIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />';
@@ -199,6 +211,20 @@
                 document.getElementById('lockIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />';
             }
             renderAll();
+        };
+
+        window.addStaffMember = () => {
+            const i = prompt("人員+職稱 (例: 阿明+燈控)");
+            if(i && i.includes('+')) {
+                const [n, j] = i.split('+');
+                localData.staffRoles.push({n, j, active: true});
+                autoSave();
+            }
+        };
+
+        window.addNewRow = () => {
+            localData.rundown.push({t:"", te:"", d:"10", u:"", s:"", persons:[], lock:false});
+            autoSave();
         };
 
         onValue(dataRef, (snap) => { if(!isAdmin && snap.val()) { localData = snap.val(); renderAll(); } });
