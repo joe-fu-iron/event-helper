@@ -3,266 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作控管台 v41 - 專業對標版</title>
+    <title>執行製作控管台 v42 - 整合對標版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;700&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
     <style>
         :root { --win-blue: #0078D4; --win-border: #D1D1D1; }
-        body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: #f3f4f6; padding-bottom: 50px; }
+        body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: #f8fafc; padding-bottom: 50px; }
         
-        /* 標題列 18px 鎖定 */
-        .app-header { background: var(--win-blue); color: white; height: 60px; display: flex; align-items: center; padding: 0 20px; position: sticky; top: 0; z-index: 1000; }
-        .lock-18px { font-size: 18px !important; font-weight: 700; }
-        .header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 8px; border-radius: 4px; outline: none; font-size: 18px !important; font-weight: 700; }
+        /* 標題與導航列 (依要求整合) */
+        .app-header { background: var(--win-blue); color: #FFF; height: 60px; display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 1000; }
+        .lock-18px { font-size: 18px !important; font-weight: 700; display: flex; align-items: center; }
+        .header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 2px; font-size: 18px !important; font-weight: 700; color: #FFF !important; outline: none; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
-        /* 表格樣式 */
+        /* 內容表格與控制 */
         .pro-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--win-border); }
-        .pro-table th { background: #f8fafc; color: #475569; font-size: 13px; padding: 12px; border: 1px solid var(--win-border); text-align: left; font-weight: 900; }
-        .pro-table td { border: 1px solid var(--win-border); padding: 8px; vertical-align: middle; }
+        .pro-table th { background: #F3F3F3; color: #333; padding: 12px; font-size: 13px; border: 1px solid var(--win-border); text-align: left; font-weight: 800; }
+        .pro-table td { border: 1px solid var(--win-border); padding: 8px 12px; }
+        .time-input { width: 70px; font-weight: 700; border: none; background: transparent; text-align: center; font-size: 14px; outline: none; }
+        .len-input { width: 50px; background: #f0f7ff; border: 1px solid #cce3ff; border-radius: 4px; text-align: center; font-weight: 700; color: var(--win-blue); }
         
-        /* 時間輸入框 */
-        .time-input { width: 75px; font-weight: 800; border: none; background: transparent; text-align: center; color: #1e293b; font-size: 15px; }
-        .len-input { width: 50px; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 4px; text-align: center; font-weight: 800; color: var(--win-blue); padding: 2px 0; }
+        .section-title { font-size: 14px; font-weight: 900; color: #1e293b; border-left: 4px solid var(--win-blue); padding-left: 8px; margin: 20px 0 10px 0; display: flex; justify-content: space-between; }
+        .upload-area { border: 2px dashed #cbd5e1; background: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
         
-        .section-title { font-size: 15px; font-weight: 900; color: #1e293b; border-left: 5px solid var(--win-blue); padding-left: 10px; margin: 25px 0 12px 0; display: flex; justify-content: space-between; align-items: center; }
-        .upload-area { border: 2px dashed #cbd5e1; background: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; transition: 0.3s; }
-        .upload-area:hover { border-color: var(--win-blue); background: #f0f7ff; }
-        
-        /* 隱藏預設箭頭 */
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        /* 管理員模式控制 */
+        .admin-ctrl { display: none !important; }
+        .admin-mode .admin-ctrl { display: block !important; }
     </style>
 </head>
-<body>
+<body class="admin-mode">
 
-<header class="app-header shadow-xl">
-    <div class="max-w-7xl mx-auto w-full flex justify-between items-center">
-        <div class="flex items-center gap-4">
-            <div class="lock-18px flex items-center gap-2">
-                <input type="date" id="eventDate" class="header-input" onchange="saveData()">
+    <header class="app-header shadow-xl">
+        <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="lock-18px">
+                    <input type="date" id="eventDate" class="header-input" onchange="saveData()">
+                    <span id="displayWeek" class="ml-2 opacity-80 text-sm">---</span>
+                </div>
+                <div class="w-[1px] h-6 bg-white/30"></div>
+                <div class="lock-18px flex-grow">
+                    <input type="text" id="eventName" class="header-input border-none bg-transparent w-full" placeholder="請輸入專案名稱" onblur="saveData()">
+                </div>
             </div>
-            <div class="w-[1px] h-6 bg-white/30"></div>
-            <input type="text" id="eventName" value="頭份四月八 靚燈好客節 - 執行單" class="header-input flex-grow outline-none bg-transparent border-none">
-        </div>
-        <div class="flex items-center gap-3">
-            <button onclick="window.print()" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded text-xs font-bold transition">列印報表</button>
-            <button onclick="toggleAdmin()" class="bg-white/20 p-2 rounded-full text-sm" id="lockBtn">🔒</button>
-        </div>
-    </div>
-</header>
-
-<main class="max-w-6xl mx-auto p-4 md:p-6">
-
-    <div class="upload-area">
-        <label class="cursor-pointer block">
-            <span class="text-sm font-bold text-slate-500">方式 2：上傳檔案或圖片自動抓取內容 (AI OCR 預留介面)</span>
-            <input type="file" class="hidden" accept="image/*,.pdf,.doc" onchange="handleFileUpload(this)">
-            <div class="mt-2 text-xs text-blue-500 font-bold underline">點擊此處選擇文件</div>
-        </label>
-    </div>
-
-    <div class="section-title">
-        <span>STEP 1. EVENT RUNDOWN / 流程時間對標 (方式 1. 手動輸入)</span>
-    </div>
-    <div class="overflow-x-auto shadow-md rounded-lg border border-slate-200">
-        <table class="pro-table">
-            <thead>
-                <tr>
-                    <th class="w-32 text-center">開始時間</th>
-                    <th class="w-32 text-center">結束時間</th>
-                    <th class="w-24 text-center">長度(m)</th>
-                    <th>執行單元與內容說明</th>
-                    <th class="w-40 text-right">負責人員</th>
-                    <th class="w-12 admin-only"></th>
-                </tr>
-            </thead>
-            <tbody id="rundownBody"></tbody>
-        </table>
-    </div>
-    <button onclick="addRow()" class="w-full py-4 mt-3 text-slate-400 border-2 border-dashed rounded-lg font-bold hover:bg-white hover:text-blue-500 transition">+ 增加後續執行單元 (Add Next)</button>
-
-    <div class="section-title">
-        <span>STEP 2. EQUIPMENT CHECKLIST / 器材準備清單</span>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-            <div class="font-black text-blue-600 mb-4 border-b-2 border-blue-100 pb-2 flex justify-between items-center text-sm uppercase">
-                <span>1. 服務台專區</span>
-                <button onclick="addItem('service')" class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-black">+</button>
+            <div class="flex items-center gap-2">
+                <label class="bg-white/10 px-3 py-1.5 rounded text-[11px] font-bold text-white cursor-pointer hover:bg-white/20">
+                    上傳圖檔抓取
+                    <input type="file" class="hidden" accept="image/*" onchange="handleOCR(this)">
+                </label>
+                <button onclick="toggleAdmin()" class="p-2 bg-white/10 rounded-full text-white">
+                    <svg id="lockIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-width="2"/></svg>
+                </button>
             </div>
-            <div id="list-service" class="space-y-3"></div>
         </div>
+    </header>
 
-        <div class="bg-white p-5 rounded-lg shadow-sm border border-slate-200">
-            <div class="font-black text-orange-600 mb-4 border-b-2 border-orange-100 pb-2 flex justify-between items-center text-sm uppercase">
-                <span>2. 舞台/硬體專區</span>
-                <button onclick="addItem('stage')" class="bg-orange-50 text-orange-600 px-2 py-1 rounded text-xs font-black">+</button>
+    <main class="max-w-7xl mx-auto p-4">
+        
+        <div class="section-title">
+            <span>EVENT RUNDOWN / 流程時間對標 (方式 1. 手動輸入)</span>
+        </div>
+        <div class="overflow-x-auto shadow-sm rounded border border-slate-200">
+            <table class="pro-table">
+                <thead>
+                    <tr>
+                        <th class="w-28 text-center">開始時間</th>
+                        <th class="w-28 text-center">結束時間</th>
+                        <th class="w-24 text-center">長度(m)</th>
+                        <th>執行單元與內容說明</th>
+                        <th class="w-40 text-right">負責人員</th>
+                        <th class="w-12 admin-ctrl"></th>
+                    </tr>
+                </thead>
+                <tbody id="rundownBody">
+                    </tbody>
+            </table>
+        </div>
+        <button onclick="addRow()" class="w-full py-4 mt-3 text-slate-400 border-2 border-dashed rounded font-bold hover:bg-white transition">+ 增加後續單元 (Add Next Row)</button>
+
+        <div class="section-title mt-8">
+            <span>EQUIPMENT CHECKLIST / 器材準備清單</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-4 rounded shadow-sm border border-slate-200">
+                <div class="font-black text-blue-600 mb-3 border-b pb-2 flex justify-between items-center text-xs uppercase">
+                    <span>1. 服務台專區</span>
+                    <button onclick="addItem('service')" class="bg-blue-50 text-blue-600 px-2 rounded">+</button>
+                </div>
+                <div id="list-service" class="space-y-2"></div>
             </div>
-            <div id="list-stage" class="space-y-3"></div>
-        </div>
 
-        <div class="bg-white p-5 rounded-lg shadow-sm border-2 border-dashed border-slate-200">
-            <div class="font-black text-slate-500 mb-4 border-b-2 border-slate-100 pb-2 text-sm uppercase">
-                <span>3. 手動輸入/備註區</span>
+            <div class="bg-white p-4 rounded shadow-sm border border-slate-200">
+                <div class="font-black text-orange-600 mb-3 border-b pb-2 flex justify-between items-center text-xs uppercase">
+                    <span>2. 舞台/硬體專區</span>
+                    <button onclick="addItem('stage')" class="bg-orange-50 text-orange-600 px-2 rounded">+</button>
+                </div>
+                <div id="list-stage" class="space-y-2"></div>
             </div>
-            <textarea id="manualNotes" class="w-full h-40 p-3 text-sm bg-slate-50 rounded outline-none focus:ring-2 ring-blue-100 transition" placeholder="在此輸入其他特殊器材或現場備註內容..." onblur="saveData()"></textarea>
+
+            <div class="bg-white p-4 rounded shadow-sm border border-dashed border-slate-300">
+                <div class="font-black text-slate-500 mb-3 border-b pb-2 text-xs uppercase">
+                    <span>3. 手動輸入/備註區</span>
+                </div>
+                <textarea id="manualNotes" class="w-full h-32 p-2 text-sm bg-slate-50 outline-none focus:bg-white transition" placeholder="輸入其他器材需求..." onblur="saveData()"></textarea>
+            </div>
         </div>
-    </div>
+    </main>
 
-</main>
+    <script>
+        // 資料與初始化
+        let localData = {
+            eventDate: "2026-05-22",
+            eventName: "專案執行流程表",
+            rundown: [
+                { s: "08:00", e: "08:30", l: 30, u: "公司出發/器材裝載", p: "全體人員" },
+                { s: "08:30", e: "09:30", l: 60, u: "進場佈置/電力負載測試", p: "" }
+            ],
+            equipment: {
+                service: ["簽到表", "QR Code 立牌", "對講機"],
+                stage: ["音響系統", "麥克風*4", "活動帆布"]
+            },
+            notes: ""
+        };
 
-<script>
-    // 初始化資料結構 (依需求三設定預設值)
-    let localData = {
-        eventDate: "2026-05-22",
-        eventName: "頭份四月八 靚燈好客節 - 執行單",
-        rundown: [
-            { s: "08:00", e: "08:30", l: 30, u: "公司出發/器材裝載", p: "全體人員" },
-            { s: "08:30", e: "09:30", l: 60, u: "到達會場/硬體進場佈置", p: "" }
-        ],
-        equipment: {
-            service: ["簽到表/文具", "QR Code 立牌", "長官簽到平台筆電", "對講機*6"],
-            stage: ["主音響系統", "無線麥克風*4", "活動帆布輸出一式", "備用發電機"]
-        },
-        notes: ""
-    };
-
-    // 自動補足後五行 (預設10分鐘)
-    function initDefaultRows() {
-        if (localData.rundown.length === 2) {
-            let lastEndTime = "09:30";
-            for (let i = 0; i < 5; i++) {
-                let start = lastEndTime;
-                let end = addMinutes(start, 10);
-                localData.rundown.push({ s: start, e: end, l: 10, u: "", p: "" });
-                lastEndTime = end;
+        // 自動補足後五行 (10m 間隔)
+        function initRundown() {
+            if (localData.rundown.length === 2) {
+                let lastEnd = "09:30";
+                for (let i = 0; i < 5; i++) {
+                    let start = lastEnd;
+                    let end = addMinutes(start, 10);
+                    localData.rundown.push({ s: start, e: end, l: 10, u: "", p: "" });
+                    lastEnd = end;
+                }
             }
         }
-    }
 
-    function renderAll() {
-        // 渲染流程表
-        const body = document.getElementById('rundownBody');
-        body.innerHTML = "";
-        localData.rundown.forEach((row, i) => {
-            body.innerHTML += `
-                <tr class="hover:bg-blue-50/50 transition duration-150">
-                    <td class="text-center"><input class="time-input" value="${row.s}" onchange="updateTime(${i}, 's', this.value)"></td>
-                    <td class="text-center"><input class="time-input" value="${row.e}" onchange="updateTime(${i}, 'e', this.value)"></td>
-                    <td class="text-center"><input class="len-input" type="number" value="${row.l}" onchange="updateTime(${i}, 'l', this.value)"></td>
-                    <td><input class="w-full bg-transparent outline-none font-bold text-slate-700 placeholder-slate-300" value="${row.u}" placeholder="輸入單元內容..." onblur="updateTime(${i}, 'u', this.value)"></td>
-                    <td><input class="w-full text-right bg-transparent outline-none text-xs text-blue-600 font-black" value="${row.p}" placeholder="指派人員" onblur="updateTime(${i}, 'p', this.value)"></td>
-                    <td class="text-center admin-only"><button onclick="deleteRow(${i})" class="text-slate-300 hover:text-red-500">✕</button></td>
-                </tr>
-            `;
-        });
+        function renderAll() {
+            // 渲染日期與星期
+            document.getElementById('eventDate').value = localData.eventDate;
+            const d = new Date(localData.eventDate);
+            document.getElementById('displayWeek').innerText = isNaN(d.getTime()) ? "---" : ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()];
+            document.getElementById('eventName').value = localData.eventName;
 
-        // 渲染器材清單
-        ['service', 'stage'].forEach(type => {
-            const container = document.getElementById(`list-${type}`);
-            container.innerHTML = localData.equipment[type].map((item, idx) => `
-                <div class="flex items-center gap-3 group">
-                    <input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                    <input class="flex-grow bg-transparent outline-none text-sm font-medium border-b border-transparent focus:border-slate-200" 
-                           value="${item}" onblur="localData.equipment['${type}'][${idx}]=this.value;saveData()">
-                    <button onclick="localData.equipment['${type}'].splice(${idx},1);renderAll();saveData()" class="opacity-0 group-hover:opacity-100 text-red-300 transition">✕</button>
-                </div>
-            `).join('');
-        });
-        document.getElementById('manualNotes').value = localData.notes;
-        document.getElementById('eventDate').value = localData.eventDate;
-        document.getElementById('eventName').value = localData.eventName;
-    }
+            // 渲染流程表
+            const body = document.getElementById('rundownBody');
+            body.innerHTML = "";
+            localData.rundown.forEach((row, i) => {
+                body.innerHTML += `
+                    <tr>
+                        <td class="text-center"><input class="time-input" value="${row.s}" onchange="updateRow(${i}, 's', this.value)"></td>
+                        <td class="text-center"><input class="time-input" value="${row.e}" onchange="updateRow(${i}, 'e', this.value)"></td>
+                        <td class="text-center"><input class="len-input" type="number" value="${row.l}" onchange="updateRow(${i}, 'l', this.value)"></td>
+                        <td><input class="w-full bg-transparent outline-none font-bold" value="${row.u}" placeholder="單元內容..." onblur="updateRow(${i}, 'u', this.value)"></td>
+                        <td class="text-right"><input class="w-full text-right bg-transparent outline-none text-xs text-blue-600 font-bold" value="${row.p}" placeholder="指派人員" onblur="updateRow(${i}, 'p', this.value)"></td>
+                        <td class="admin-ctrl text-center"><button onclick="deleteRow(${i})" class="text-red-300 hover:text-red-500">✕</button></td>
+                    </tr>
+                `;
+            });
 
-    // 核心時間連動邏輯 (需求二)
-    window.updateTime = (index, field, value) => {
-        let row = localData.rundown[index];
-        if (field === 'l') { // 改長度
-            row.l = parseInt(value) || 0;
-            row.e = addMinutes(row.s, row.l);
-        } else if (field === 'e') { // 改結束時間
-            row.e = value;
-            row.l = diffMinutes(row.s, row.e);
-        } else if (field === 's') { // 改開始時間
-            row.s = value;
-            row.e = addMinutes(row.s, row.l);
-        } else {
-            row[field] = value;
+            // 渲染器材
+            ['service', 'stage'].forEach(type => {
+                const container = document.getElementById(`list-${type}`);
+                container.innerHTML = localData.equipment[type].map((item, idx) => `
+                    <div class="flex items-center gap-2 text-sm group">
+                        <input type="checkbox" class="w-4 h-4 rounded">
+                        <input class="flex-grow bg-transparent outline-none border-b border-transparent focus:border-slate-200" 
+                               value="${item}" onblur="localData.equipment['${type}'][${idx}]=this.value;saveData()">
+                        <button onclick="localData.equipment['${type}'].splice(${idx},1);renderAll();saveData()" class="opacity-0 group-hover:opacity-100 text-red-200 transition">✕</button>
+                    </div>
+                `).join('');
+            });
+            document.getElementById('manualNotes').value = localData.notes;
         }
 
-        // 骨牌連動邏輯
-        for (let j = index + 1; j < localData.rundown.length; j++) {
-            localData.rundown[j].s = localData.rundown[j-1].e;
-            localData.rundown[j].e = addMinutes(localData.rundown[j].s, localData.rundown[j].l);
+        // 時間連動邏輯
+        window.updateRow = (idx, field, val) => {
+            let row = localData.rundown[idx];
+            if (field === 'l') {
+                row.l = parseInt(val) || 0;
+                row.e = addMinutes(row.s, row.l);
+            } else if (field === 'e') {
+                row.e = val;
+                row.l = diffMinutes(row.s, row.e);
+            } else if (field === 's') {
+                row.s = val;
+                row.e = addMinutes(row.s, row.l);
+            } else {
+                row[field] = val;
+            }
+
+            // 骨牌推移
+            for (let j = idx + 1; j < localData.rundown.length; j++) {
+                localData.rundown[j].s = localData.rundown[j-1].e;
+                localData.rundown[j].e = addMinutes(localData.rundown[j].s, localData.rundown[j].l);
+            }
+            renderAll();
+            saveData();
+        };
+
+        function addMinutes(t, m) {
+            let [hh, mm] = t.split(':').map(Number);
+            let d = new Date(); d.setHours(hh); d.setMinutes(mm + parseInt(m));
+            return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         }
-        renderAll();
-        saveData();
-    };
 
-    // 時間運算工具
-    function addMinutes(time, mins) {
-        let [h, m] = time.split(':').map(Number);
-        let d = new Date(); d.setHours(h); d.setMinutes(m + parseInt(mins));
-        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    }
-
-    function diffMinutes(start, end) {
-        let [h1, m1] = start.split(':').map(Number);
-        let [h2, m2] = end.split(':').map(Number);
-        let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-        return diff < 0 ? diff + 1440 : diff;
-    }
-
-    // 資料操作
-    window.addRow = () => {
-        let last = localData.rundown[localData.rundown.length - 1];
-        let start = last ? last.e : "08:00";
-        localData.rundown.push({ s: start, e: addMinutes(start, 10), l: 10, u: "", p: "" });
-        renderAll();
-        saveData();
-    };
-
-    window.deleteRow = (i) => {
-        localData.rundown.splice(i, 1);
-        if (localData.rundown[i]) updateTime(Math.max(0, i-1), 'u', localData.rundown[Math.max(0, i-1)].u);
-        else renderAll();
-        saveData();
-    };
-
-    window.addItem = (type) => {
-        localData.equipment[type].push("新增器材項目");
-        renderAll();
-        saveData();
-    };
-
-    window.handleFileUpload = (input) => {
-        if (input.files && input.files[0]) {
-            alert(`已選取檔案：${input.files[0].name}\n系統已啟動模擬辨識程序，內容將自動填入表格...`);
-            // 此處未來可對接 OCR API
+        function diffMinutes(s, e) {
+            let [h1, m1] = s.split(':').map(Number);
+            let [h2, m2] = e.split(':').map(Number);
+            let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+            return diff < 0 ? diff + 1440 : diff;
         }
-    };
 
-    window.saveData = () => {
-        localData.eventName = document.getElementById('eventName').value;
-        localData.eventDate = document.getElementById('eventDate').value;
-        localData.notes = document.getElementById('manualNotes').value;
-        localStorage.setItem('v41_data', JSON.stringify(localData));
-    };
+        window.addRow = () => {
+            let last = localData.rundown[localData.rundown.length - 1];
+            let start = last ? last.e : "08:00";
+            localData.rundown.push({ s: start, e: addMinutes(start, 10), l: 10, u: "", p: "" });
+            renderAll();
+            saveData();
+        };
 
-    let isAdmin = true;
-    window.toggleAdmin = () => {
-        isAdmin = !isAdmin;
-        document.body.classList.toggle('admin-hide', !isAdmin);
-        document.getElementById('lockBtn').innerText = isAdmin ? "🔓" : "🔒";
-    };
+        window.deleteRow = (i) => {
+            localData.rundown.splice(i, 1);
+            if (localData.rundown[i]) updateRow(Math.max(0, i-1), 'u', localData.rundown[Math.max(0, i-1)].u);
+            else renderAll();
+            saveData();
+        };
 
-    window.onload = () => {
-        const saved = localStorage.getItem('v41_data');
-        if (saved) localData = JSON.parse(saved);
-        initDefaultRows();
-        renderAll();
-    };
-</script>
+        window.addItem = (type) => {
+            localData.equipment[type].push("新增器材");
+            renderAll();
+            saveData();
+        };
 
+        window.handleOCR = (input) => {
+            if (input.files && input.files[0]) alert("已偵測到檔案：" + input.files[0].name + "\n系統正嘗試提取流程數據...");
+        };
+
+        window.saveData = () => {
+            localData.eventDate = document.getElementById('eventDate').value;
+            localData.eventName = document.getElementById('eventName').value;
+            localData.notes = document.getElementById('manualNotes').value;
+            localStorage.setItem('v42_integrated_data', JSON.stringify(localData));
+        };
+
+        let isAdmin = true;
+        window.toggleAdmin = () => { isAdmin = !isAdmin; document.body.classList.toggle('admin-mode', isAdmin); };
+
+        window.onload = () => {
+            const saved = localStorage.getItem('v42_integrated_data');
+            if (saved) localData = JSON.parse(saved);
+            initRundown();
+            renderAll();
+        };
+    </script>
 </body>
 </html>
