@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v25 - Optimized</title>
+    <title>執行製作平台 v25 - Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
     <style>
@@ -27,8 +27,11 @@
         .view-section { display: none; }
         .active-view { display: block !important; }
         .person-pill { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; margin: 1px; display: inline-block; font-size: 11px; }
-        /* 人員彈窗簡易樣式 */
-        #personPickerModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border:2px solid var(--win-blue); z-index:100; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
+        #personPickerModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border:2px solid var(--win-blue); z-index:100; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.2); width: 300px; }
+        .row-tool { display: flex; gap: 4px; justify-content: center; align-items: center; }
+        .btn-tool { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; border: 1px solid #ddd; }
+        .btn-add { color: green; border-color: green; }
+        .btn-del { color: red; border-color: red; }
     </style>
 </head>
 <body>
@@ -51,9 +54,8 @@
                 <button onclick="window.open('https://your-checkin-link.com', '_blank')" class="btn-orange">長官即時簽到平台</button>
                 <button onclick="switchView('card')" id="btn-card" class="btn-header-outline">名片模式</button>
                 <button onclick="switchView('table')" id="btn-table" class="hidden btn-header-outline">表格模式</button>
-                <button onclick="handleAdminSwitch()" class="p-2 border border-white/40 hover:bg-white/20 transition rounded-full text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" id="lockIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                </button>
+                <button onclick="handleAdminSwitch()" class="p-2 border border-white/40 hover:bg-white/20 transition rounded-full text-white" id="adminBtn">
+                    </button>
             </div>
         </div>
     </header>
@@ -77,22 +79,22 @@
                             <th class="w-48">執行單元</th>
                             <th>內容說明</th>
                             <th class="w-40 text-right">負責人員</th>
+                            <th class="w-16 edit-only">編輯</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
             <div id="cardView" class="view-section grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"></div>
-            <button onclick="addNewRow()" class="edit-only w-full py-6 text-sm font-bold border border-win-border border-t-0 hover:bg-slate-50 transition">+ 增加流程節點</button>
         </section>
     </main>
 
     <div id="personPickerModal">
         <h3 class="font-bold mb-4 border-b pb-2">選擇負責人員</h3>
-        <div id="pickerList" class="grid grid-cols-2 gap-2 mb-4 max-h-60 overflow-y-auto"></div>
+        <div id="pickerList" class="flex flex-col gap-2 mb-4 max-h-60 overflow-y-auto"></div>
         <div class="flex justify-end gap-2">
             <button onclick="closePicker()" class="px-4 py-2 bg-gray-200 text-sm">取消</button>
-            <button id="savePickerBtn" class="px-4 py-2 bg-blue-600 text-white text-sm">確認選擇</button>
+            <button id="savePickerBtn" class="px-4 py-2 bg-blue-600 text-white text-sm">確認</button>
         </div>
     </div>
 
@@ -114,7 +116,11 @@
             eventName: "頭份四月八 靚燈好客節",
             eventDate: "2026-03-27",
             staffRoles: [],
-            rundown: [{ t: "08:00", te: "08:30", d: "30", u: "場地檢查", s: "全區電力負載測試", persons: [] }]
+            rundown: [
+                { t: "08:00", te: "08:30", d: "30", u: "場地檢查", s: "全區電力負載測試", persons: [] },
+                { t: "08:30", te: "09:30", d: "60", u: "設備調試", s: "音響與視訊同步測試", persons: [] },
+                { t: "09:30", te: "10:00", d: "30", u: "工作人員集合", s: "今日流程最後確認", persons: [] }
+            ]
         };
 
         window.initSelectors = () => {
@@ -122,6 +128,14 @@
             jBox.innerHTML = JOBS.map(j => `<button class="select-btn ${selectedJob===j?'selected-job':''}" onclick="selectJob('${j}')">${j}</button>`).join('') + `<button class="select-btn" onclick="customJob()">+手動</button>`;
             const nBox = document.getElementById('nameOptions');
             nBox.innerHTML = NAMES.map(n => `<button class="select-btn" onclick="assignStaff('${n}')">${n}</button>`).join('') + `<button class="select-btn" onclick="customName()">+手動</button>`;
+            updateAdminIcon();
+        };
+
+        const updateAdminIcon = () => {
+            const adminBtn = document.getElementById('adminBtn');
+            adminBtn.innerHTML = isAdmin 
+                ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>` // 開鎖
+                : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>`; // 鎖住
         };
 
         window.selectJob = (j) => { selectedJob = j; initSelectors(); };
@@ -145,25 +159,21 @@
             renderAll();
         };
 
-        // 開啟人員選擇器
         window.openPicker = (idx) => {
             if(!isAdmin) return;
             activeEditRow = idx;
             const modal = document.getElementById('personPickerModal');
             const pickerList = document.getElementById('pickerList');
             const currentPersons = localData.rundown[idx].persons || [];
-            
             pickerList.innerHTML = localData.staffRoles.map(role => `
                 <label class="flex items-center gap-2 p-2 border hover:bg-gray-50 cursor-pointer">
                     <input type="checkbox" value="${role.n}" ${currentPersons.includes(role.n)?'checked':''}>
                     <span class="text-sm">${role.n} (${role.j})</span>
                 </label>
             `).join('');
-
             modal.style.display = 'block';
             document.getElementById('savePickerBtn').onclick = () => {
-                const selected = Array.from(pickerList.querySelectorAll('input:checked')).map(i => i.value);
-                localData.rundown[activeEditRow].persons = selected;
+                localData.rundown[activeEditRow].persons = Array.from(pickerList.querySelectorAll('input:checked')).map(i => i.value);
                 modal.style.display = 'none';
                 autoSave();
             };
@@ -171,24 +181,44 @@
 
         window.closePicker = () => document.getElementById('personPickerModal').style.display = 'none';
 
+        // 核心邏輯：自動推算下一行時間
+        window.addNewRow = (afterIndex = -1) => {
+            let lastTime = "08:00";
+            let nextDuration = "10";
+            
+            if (localData.rundown.length > 0) {
+                const target = afterIndex >= 0 ? localData.rundown[afterIndex] : localData.rundown[localData.rundown.length-1];
+                lastTime = target.te;
+            }
+
+            // 預排規則：第1行30, 第2行60, 第3行30, 其餘10
+            const nextIdx = afterIndex >= 0 ? afterIndex + 1 : localData.rundown.length;
+            if(nextIdx === 0) nextDuration = "30";
+            else if(nextIdx === 1) nextDuration = "60";
+            else if(nextIdx === 2) nextDuration = "30";
+            else nextDuration = "10";
+
+            const [h, m] = lastTime.split(':').map(Number);
+            let date = new Date(); date.setHours(h, m + parseInt(nextDuration));
+            const newTe = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+
+            const newItem = {t: lastTime, te: newTe, d: nextDuration, u: "", s: "", persons: []};
+            
+            if(afterIndex >= 0) localData.rundown.splice(afterIndex + 1, 0, newItem);
+            else localData.rundown.push(newItem);
+            
+            autoSave();
+        };
+
+        window.removeRow = (idx) => {
+            if(confirm("確定刪除此行？")) {
+                localData.rundown.splice(idx, 1);
+                autoSave();
+            }
+        };
+
         window.renderAll = () => {
             initSelectors();
-            document.getElementById('eventName').value = localData.eventName || "";
-            document.getElementById('eventDate').value = localData.eventDate || "";
-            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-            const d = new Date(localData.eventDate);
-            document.getElementById('displayWeek').innerText = isNaN(d.getTime()) ? "---" : days[d.getDay()];
-
-            const staffGrid = document.getElementById('staffGrid'); staffGrid.innerHTML = "";
-            localData.staffRoles.forEach((role, i) => {
-                const el = document.createElement('div');
-                el.className = `staff-tag ${role.active ? '' : 'opacity-40'} ${isAdmin?'cursor-pointer hover:border-red-400':''}`;
-                el.onclick = () => { if(isAdmin) { role.active = !role.active; autoSave(); } };
-                el.innerHTML = `<span>${role.n}</span><span>(${role.j})</span>
-                    ${isAdmin ? `<span class="ml-2 text-slate-400 hover:text-red-500" onclick="event.stopPropagation(); localData.staffRoles.splice(${i},1); autoSave();">✕</span>` : ''}`;
-                staffGrid.appendChild(el);
-            });
-
             const tbody = document.getElementById('tableBody'); tbody.innerHTML = "";
             const cardView = document.getElementById('cardView'); cardView.innerHTML = "";
             const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
@@ -202,34 +232,43 @@
                 if(isActive) tr.className = "is-now";
                 
                 tr.innerHTML = `
-                    <td class="text-left font-bold space-y-1">
+                    <td class="text-left font-bold">
                         <div class="flex items-center gap-1">
-                            <input class="w-14 text-center border-b border-transparent focus:border-blue-400 focus:bg-white" value="${item.t}" onblur="localData.rundown[${i}].t=this.value; autoSave()" ${!isAdmin?'readonly':''}>
+                            <input class="w-14 text-center bg-transparent" value="${item.t}" onblur="localData.rundown[${i}].t=this.value; autoSave()" ${!isAdmin?'readonly':''}>
                             <span>-</span>
-                            <input class="w-14 text-center border-b border-transparent focus:border-blue-400 focus:bg-white" value="${item.te}" onblur="localData.rundown[${i}].te=this.value; autoSave()" ${!isAdmin?'readonly':''}>
+                            <input class="w-14 text-center bg-transparent" value="${item.te}" onblur="localData.rundown[${i}].te=this.value; autoSave()" ${!isAdmin?'readonly':''}>
                         </div>
-                        <div class="text-[10px] text-slate-400 flex items-center gap-1">
-                            長度: <input class="w-8 text-center bg-transparent border-b border-slate-200" value="${item.d}" onblur="localData.rundown[${i}].d=this.value; autoSave()" ${!isAdmin?'readonly':''}> m
-                        </div>
+                        <div class="text-[10px] text-slate-400">長度: ${item.d} m</div>
                     </td>
-                    <td><input class="w-full font-bold text-sm bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white" value="${item.u||''}" placeholder="單元" onblur="localData.rundown[${i}].u=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
-                    <td><textarea class="w-full text-xs bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white resize-none" placeholder="詳細內容說明..." onblur="localData.rundown[${i}].s=this.value; autoSave()" ${!isAdmin?'readonly':''}>${item.s||''}</textarea></td>
+                    <td><input class="w-full font-bold text-sm bg-transparent" value="${item.u||''}" placeholder="單元" onblur="localData.rundown[${i}].u=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
+                    <td><input class="w-full text-xs bg-transparent" value="${item.s||''}" placeholder="內容..." onblur="localData.rundown[${i}].s=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
                     <td class="text-right align-top cursor-pointer" onclick="openPicker(${i})">
                         <div class="flex flex-wrap justify-end gap-1">
-                            ${(item.persons && item.persons.length > 0) 
-                                ? item.persons.map(p => `<span class="person-pill">${p}</span>`).join('') 
-                                : '<span class="text-slate-300 text-xs italic">點擊指派</span>'}
+                            ${(item.persons && item.persons.length > 0) ? item.persons.map(p => `<span class="person-pill">${p}</span>`).join('') : '<span class="text-slate-300 text-[10px]">未指派</span>'}
                         </div>
-                        ${isAdmin ? `<button class="text-[10px] text-red-400 mt-2 block ml-auto" onclick="event.stopPropagation(); localData.rundown.splice(${i},1); autoSave();">刪除單元</button>` : ''}
+                    </td>
+                    <td class="edit-only">
+                        <div class="row-tool">
+                            <button class="btn-tool btn-add" onclick="addNewRow(${i})">+</button>
+                            <button class="btn-tool btn-del" onclick="removeRow(${i})">-</button>
+                        </div>
                     </td>`;
                 tbody.appendChild(tr);
 
-                // 名片模式同步更新
+                // 名片模式：依照您的圖片修正，去掉底部多餘資料
                 const card = document.createElement('div');
-                card.className = `glass-card p-4 ${isActive?'border-2 border-blue-500 shadow-lg':''}`;
-                card.innerHTML = `<div class="text-xs font-bold text-blue-500">${item.t}-${item.te}</div><div class="text-lg font-bold mt-1 text-slate-800">${item.u}</div><div class="text-sm text-slate-500 mt-2 line-clamp-2">${item.s||''}</div>`;
+                card.className = `glass-card p-4 border border-win-border rounded ${isActive?'border-blue-500 bg-blue-50/30':''}`;
+                card.innerHTML = `
+                    <div class="text-[13px] font-bold text-blue-500 mb-1">${item.t}-${item.te}</div>
+                    <div class="text-xl font-black text-slate-800 mb-2">${item.u || '未命名單元'}</div>
+                    <div class="text-sm text-slate-600 font-bold">${item.s || ''}</div>
+                `;
                 cardView.appendChild(card);
             });
+            // 初始如果沒資料顯示一個加號按鈕
+            if(localData.rundown.length === 0 && isAdmin) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center"><button onclick="addNewRow()" class="text-blue-500 font-bold">+ 開始建立第一筆流程</button></td></tr>`;
+            }
         };
 
         window.handleAdminSwitch = () => {
@@ -244,11 +283,6 @@
             document.getElementById(m + 'View').classList.add('active-view');
             document.getElementById('btn-card').classList.toggle('hidden', m === 'card');
             document.getElementById('btn-table').classList.toggle('hidden', m === 'table');
-        };
-
-        window.addNewRow = () => { 
-            localData.rundown.push({t:"00:00", te:"00:00", d:"10", u:"", s:"", persons:[]}); 
-            autoSave(); 
         };
 
         onValue(dataRef, (snap) => { if(!isAdmin && snap.val()) { localData = snap.val(); renderAll(); } });
