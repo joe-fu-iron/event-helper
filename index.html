@@ -3,244 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v37 - 最終整合版</title>
+    <title>執行製作平台 v24</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;700&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
     <style>
-        :root { --win-blue: #0078D4; --win-border: #D1D1D1; --now-green: #f0fdf4; }
-        body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: #f8fafc; margin: 0; padding-bottom: 100px; }
-        
-        /* 1. 標題列：18px 強制鎖定 */
-        .app-header { background: var(--win-blue); color: #FFF; height: 60px; display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 1000; }
-        .lock-18px { font-size: 18px !important; font-weight: 700; display: flex; align-items: center; white-space: nowrap; }
-        .header-input { 
-            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); 
-            padding: 2px 6px; border-radius: 2px; font-size: 18px !important; 
-            font-weight: 700; color: #FFF !important; outline: none;
+        /* Windows 系統配色風格 */
+        :root {
+            --win-blue: #0078D4;
+            --win-bg: #FFFFFF;
+            --win-border: #D1D1D1;
+            --win-text: #000000;
+            --win-hover: #E5E5E5;
         }
+
+        body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: var(--win-bg); color: var(--win-text); padding-bottom: 100px; }
+        
+        /* 1. 標題列：Windows 經典藍 */
+        .app-header { background: var(--win-blue); color: #ffffff; border-bottom: 1px solid #005A9E; }
+        .app-header input, .app-header span { color: #ffffff !important; }
+        .app-header input[type="date"] { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 2px; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
-        /* 2. 當前項目高亮 (綠色偵測) */
-        .is-now { background: var(--now-green) !important; outline: 3px solid #22c55e; outline-offset: -3px; z-index: 10; position: relative; }
+        /* 2. 內容區域：純白底 */
+        .glass-card { background: #ffffff; border: 1px solid var(--win-border); border-radius: 2px; }
+        
+        /* 表格樣式：乾淨系統化 */
+        .pro-table { border-collapse: collapse; width: 100%; border: 1px solid var(--win-border); }
+        .pro-table th { background: #F3F3F3; color: #333333; padding: 12px; font-size: 13px; border: 1px solid var(--win-border); text-align: left; }
+        .pro-table td { border: 1px solid var(--win-border); padding: 12px; background: #ffffff; color: var(--win-text); }
+        
+        /* 當前執行項目高亮 (系統藍邊) */
+        .is-now { background: #F0F7FF !important; outline: 3px solid var(--win-blue); outline-offset: -3px; z-index: 10; position: relative; }
 
-        /* 3. 模式切換邏輯 */
+        /* 人員及分工標籤：字級一致 */
+        .staff-tag { 
+            border: 1px solid var(--win-border); 
+            padding: 5px 12px; 
+            font-size: 14px; 
+            font-weight: 600;
+            display: inline-flex;
+            gap: 4px;
+            background: #F9F9F9;
+            color: #333333;
+            border-radius: 2px;
+        }
+        .staff-tag.inactive { opacity: 0.2; }
+        
+        /* 選單按鈕 */
+        .select-btn { border: 1px solid var(--win-border); padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; background: #FFFFFF; color: #000000; transition: background 0.1s; }
+        .select-btn:hover { background: var(--win-hover); }
+        .selected-job { background: var(--win-blue) !important; color: #ffffff !important; border-color: var(--win-blue); }
+        
+        .edit-only { display: none !important; }
+        .admin-mode .edit-only { display: block !important; }
+        
+        /* 按鈕視覺 */
+        .btn-orange { background: #E95420; color: #ffffff; padding: 8px 18px; font-weight: 600; font-size: 13px; border-radius: 2px; }
+        .btn-header-outline { border: 1px solid rgba(255,255,255,0.7); color: #ffffff; padding: 8px 18px; font-weight: 600; font-size: 13px; border-radius: 2px; background: transparent; }
+        .btn-header-outline:hover { background: rgba(255,255,255,0.1); }
+        
         .view-section { display: none; }
         .active-view { display: block !important; }
-        #cardView.active-view { display: grid !important; }
-
-        /* 4. 專業表格樣式 */
-        .pro-table { border-collapse: collapse; width: 100%; border: 1px solid var(--win-border); background: white; }
-        .pro-table td, .pro-table th { border: 1px solid var(--win-border); padding: 10px; }
-        .time-box { width: 55px; text-align: center; font-weight: 700; border: none; background: transparent; font-size: 14px; outline: none; }
-        
-        /* 5. 管理員控制顯隱 */
-        .admin-ctrl { display: none !important; }
-        .admin-mode .admin-ctrl { display: block !important; }
-
-        /* 選單按鈕 */
-        .select-btn { border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; background: white; }
-        .selected-job { background: var(--win-blue) !important; color: white; border-color: #005a9e; }
     </style>
 </head>
-<body class="admin-mode">
+<body>
 
-    <header class="app-header shadow-xl">
-        <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="lock-18px">
-                    <input type="date" id="eventDate" class="header-input" onchange="syncDateAndWeek()">
-                    <span id="displayWeek" class="ml-2 opacity-80">---</span>
-                </div>
-                <div class="w-[1px] h-6 bg-white/30 shrink-0"></div>
-                <div class="lock-18px flex-grow">
-                    <input type="text" id="eventName" class="header-input border-none bg-transparent w-full" value="頭份四月八 靚燈好客節" onblur="autoSave()">
+    <header class="app-header sticky top-0 z-50 px-4 py-4 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
+            <div class="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
+                <div class="bg-white/20 px-3 py-1 text-xs font-bold text-white border border-white/30">RUNNING</div>
+                <div class="flex flex-col">
+                    <input type="text" class="font-bold text-xl w-full md:w-96 bg-transparent outline-none text-white placeholder-white/50" value="頭份四月八 靚燈好客節" id="eventName" onblur="autoSave()">
+                    <div class="flex items-center gap-2 mt-1 text-xs font-semibold text-white/90">
+                        <input type="date" id="eventDate" onchange="updateWeekDay()">
+                        <span id="displayWeek" class="border-l border-white/30 pl-2 ml-1">---</span>
+                    </div>
                 </div>
             </div>
-            
-            <div class="flex items-center gap-2">
-                <button onclick="window.open('https://your-checkin-link.com')" class="bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded text-[11px] font-bold shadow-lg text-white transition-all">長官簽到平台</button>
-                <button onclick="switchView('card')" id="btn-card" class="bg-white/10 px-3 py-1.5 rounded text-[11px] font-bold hover:bg-white/20">名片模式</button>
-                <button onclick="switchView('table')" id="btn-table" class="hidden bg-white/20 px-3 py-1.5 rounded text-[11px] font-bold">表格模式</button>
-                <div class="cursor-pointer p-2 bg-white/10 rounded-full hover:bg-blue-600 transition" onclick="toggleAdmin()">
-                    <svg id="lockIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path id="lockPath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                </div>
+            <div class="flex flex-wrap items-center justify-center gap-2">
+                <button onclick="window.open('https://your-checkin-link.com', '_blank')" class="btn-orange">長官即時簽到平台</button>
+                <div class="h-8 w-[1px] bg-white/20 mx-1 hidden md:block"></div>
+                <button onclick="switchView('card')" id="btn-card" class="btn-header-outline">名片模式</button>
+                <button onclick="switchView('table')" id="btn-table" class="hidden btn-header-outline">表格模式</button>
+                <button onclick="handleAdminSwitch()" class="p-2 border border-white/40 hover:bg-white/20 transition rounded-full text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" id="lockIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-4 space-y-6">
+    <main class="max-w-7xl mx-auto p-4 space-y-8 mt-4">
         
-        <section class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-            <div class="admin-ctrl mb-4 p-3 bg-slate-50 rounded border border-slate-200 flex flex-col gap-3">
+        <section class="space-y-4">
+            <div class="border-b border-win-border pb-2">
+                <span class="text-xs font-bold tracking-wider uppercase text-slate-500">Personnel & Roles / 人員及分工</span>
+            </div>
+            
+            <div class="edit-only space-y-4 p-4 border border-win-border bg-slate-50/50">
                 <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-[10px] font-bold text-slate-500">1.先選分工：</span>
+                    <span class="text-xs font-bold text-slate-600">步驟 1. 分工：</span>
                     <div id="jobOptions" class="flex flex-wrap gap-1"></div>
                 </div>
                 <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-[10px] font-bold text-slate-500">2.再選人員：</span>
+                    <span class="text-xs font-bold text-slate-600">步驟 2. 人員：</span>
                     <div id="nameOptions" class="flex flex-wrap gap-1"></div>
                 </div>
             </div>
-            <div class="text-[10px] font-black text-slate-400 mb-2 tracking-widest uppercase">Personnel / 目前派遣人員</div>
-            <div id="staffList" class="flex flex-wrap gap-2"></div>
+
+            <div id="staffGrid" class="flex flex-wrap gap-2"></div>
         </section>
 
-        <div id="tableView" class="view-section active-view overflow-x-auto">
-            <table class="pro-table">
-                <thead>
-                    <tr class="bg-slate-100 text-[10px] text-slate-500 uppercase font-black">
-                        <th class="w-40 text-center">時段區間 (連動)</th>
-                        <th>執行項目與內容說明</th>
-                        <th class="w-32 admin-ctrl text-center">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="rundownBody"></tbody>
-            </table>
-        </div>
-
-        <div id="cardView" class="view-section grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <section class="overflow-hidden">
+            <div id="tableView" class="view-section active-view overflow-x-auto">
+                <table class="pro-table">
+                    <thead>
+                        <tr>
+                            <th class="w-40">時段區間 (長度)</th>
+                            <th>執行單元與內容說明</th>
+                            <th class="w-48 text-right">負責人員</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
             </div>
-
-        <button onclick="addNewRow()" class="admin-ctrl w-full py-6 text-slate-300 border-2 border-dashed border-slate-200 rounded-lg font-bold hover:bg-gray-50 hover:text-blue-400 transition-all">+ 增加流程節點 (Rundown Row)</button>
+            <div id="cardView" class="view-section grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"></div>
+            <button onclick="addNewRow()" class="edit-only w-full py-6 text-sm font-bold border border-win-border border-t-0 hover:bg-slate-50 transition">+ 增加流程節點</button>
+        </section>
     </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase 初始化
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_v37_stable');
+        const dataRef = ref(db, 'execution_platform_v24');
 
-        // 核心資料與狀態
-        let isAdmin = true;
-        let selectedJob = "";
+        let isAdmin = false;
+        let selectedJob = ""; 
         const JOBS = ["控場", "音響", "服務台", "儀式", "攝影", "機動", "錄影", "燈光", "特效", "視訊", "料理"];
         const NAMES = ["江哥", "瑩驊", "維憶", "芳瑜", "智明", "露比", "鐵仁", "柏緯", "崧瑋", "燕妮", "工讀1", "工讀2"];
 
         let localData = {
             eventName: "頭份四月八 靚燈好客節",
             eventDate: "2026-03-27",
-            staff: [{n:"江哥", j:"控場"}],
-            rundown: [
-                { s: "08:00", e: "08:30", u: "公司出發/現場器材檢查" },
-                { s: "08:30", e: "09:30", u: "會場佈置與系統測試" }
-            ]
+            staffRoles: [],
+            rundown: [{ t: "08:00", te: "08:30", d: "30", u: "場地檢查", s: "全區電力負載測試", persons: [], lock: true }]
         };
 
-        // 管理員模式切換
-        window.toggleAdmin = () => {
-            if(!isAdmin) {
-                if(prompt("請輸入管理者密碼:") === "364401") {
-                    isAdmin = true;
-                }
-            } else {
-                isAdmin = false;
-            }
-            document.body.classList.toggle('admin-mode', isAdmin);
-            const path = document.getElementById('lockPath');
-            path.setAttribute('d', isAdmin ? 'M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z' : 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z');
-            renderAll();
-        };
-
-        // 日期星期同步
-        window.syncDateAndWeek = () => {
-            localData.eventDate = document.getElementById('eventDate').value;
-            autoSave();
-        };
-
-        // 視圖渲染核心
-        window.renderAll = () => {
-            // 標題與日期
-            document.getElementById('eventDate').value = localData.eventDate;
-            const d = new Date(localData.eventDate);
-            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-            document.getElementById('displayWeek').innerText = isNaN(d.getTime()) ? "---" : days[d.getDay()];
-            document.getElementById('eventName').value = localData.eventName;
-
-            // 人員選單渲染
+        window.initSelectors = () => {
             const jBox = document.getElementById('jobOptions');
-            jBox.innerHTML = JOBS.map(j => `<button class="select-btn ${selectedJob===j?'selected-job':''}" onclick="setJob('${j}')">${j}</button>`).join('');
-            
+            jBox.innerHTML = JOBS.map(j => `<button class="select-btn ${selectedJob===j?'selected-job':''}" onclick="selectJob('${j}')">${j}</button>`).join('') + `<button class="select-btn" onclick="customJob()">+手動</button>`;
             const nBox = document.getElementById('nameOptions');
-            nBox.innerHTML = NAMES.map(n => `<button class="select-btn" onclick="addStaff('${n}')">${n}</button>`).join('');
-
-            // 人員標籤 (14px)
-            const sList = document.getElementById('staffList'); sList.innerHTML = "";
-            localData.staff.forEach((r, i) => {
-                sList.innerHTML += `<div class="px-2 py-1 border-2 border-blue-500 bg-blue-50 text-[14px] font-bold rounded flex items-center gap-1">${r.n}(${r.j}) ${isAdmin?`<span class="text-red-400 cursor-pointer ml-1 font-black" onclick="removeStaff(${i})">✕</span>`:''}</div>`;
-            });
-
-            // 流程渲染與時間偵測
-            const rBody = document.getElementById('rundownBody'); rBody.innerHTML = "";
-            const cView = document.getElementById('cardView'); cView.innerHTML = "";
-            const now = new Date();
-            const nowMin = now.getHours() * 60 + now.getMinutes();
-
-            localData.rundown.forEach((row, i) => {
-                const [sh, sm] = row.s.split(':').map(Number);
-                const [eh, em] = row.e.split(':').map(Number);
-                const isNow = (nowMin >= (sh*60+sm) && nowMin < (eh*60+em));
-
-                // 表格列
-                const tr = document.createElement('tr');
-                if(isNow) tr.className = "is-now";
-                tr.innerHTML = `
-                    <td class="text-center">
-                        <input class="time-box" value="${row.s}" onblur="updateTime(${i},'s',this.value)"> - 
-                        <input class="time-box" value="${row.e}" onblur="updateTime(${i},'e',this.value)">
-                    </td>
-                    <td><input class="w-full outline-none font-bold text-sm bg-transparent" value="${row.u}" onblur="localData.rundown[${i}].u=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
-                    <td class="admin-ctrl text-center"><button onclick="localData.rundown.splice(${i},1); autoSave()" class="text-red-400 font-bold">✕ 刪除</button></td>
-                `;
-                rBody.appendChild(tr);
-
-                // 名片模式
-                cView.innerHTML += `
-                    <div class="p-5 rounded-xl border-2 ${isNow?'border-green-500 bg-green-50 shadow-lg':'border-slate-100 bg-white'} transition-all">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-black ${isNow?'text-green-600':''}">${row.s} - ${row.e}</span>
-                            ${isNow?'<span class="text-green-600 font-black text-[10px] animate-pulse">● 進行中</span>':''}
-                        </div>
-                        <div class="text-lg font-black text-slate-800 leading-tight">${row.u}</div>
-                    </div>
-                `;
-            });
+            nBox.innerHTML = NAMES.map(n => `<button class="select-btn" onclick="assignStaff('${n}')">${n}</button>`).join('') + `<button class="select-btn" onclick="customName()">+手動</button>`;
         };
 
-        // 輔助功能
-        window.setJob = (j) => { selectedJob = j; renderAll(); };
-        window.addStaff = (n) => {
-            if(!selectedJob) { alert("請先選擇一個分工職稱！"); return; }
-            localData.staff.push({n, j:selectedJob});
-            autoSave();
-        };
-        window.removeStaff = (i) => { localData.staff.splice(i,1); autoSave(); };
-        
-        window.updateTime = (i, f, v) => {
-            localData.rundown[i][f] = v;
-            // 連動邏輯：這一行的結束就是下一行的開始
-            if(f === 'e' && localData.rundown[i+1]) {
-                localData.rundown[i+1].s = v;
+        window.selectJob = (j) => { selectedJob = j; initSelectors(); };
+        window.customJob = () => { const j = prompt("分工名稱："); if(j) selectJob(j); };
+        window.assignStaff = (n) => { if(!selectedJob) { alert("請先選分工！"); return; } localData.staffRoles.push({ n, j: selectedJob, active: true }); autoSave(); };
+        window.customName = () => { const n = prompt("人員姓名："); if(n) assignStaff(n); };
+
+        window.updateWeekDay = () => {
+            const val = document.getElementById('eventDate').value;
+            if (val) {
+                const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                document.getElementById('displayWeek').innerText = days[new Date(val).getDay()];
+                localData.eventDate = val;
+                autoSave();
             }
-            autoSave();
-        };
-
-        window.addNewRow = () => {
-            const lastRow = localData.rundown[localData.rundown.length-1];
-            const nextStart = lastRow ? lastRow.e : "08:00";
-            localData.rundown.push({s:nextStart, e:nextStart, u:""});
-            autoSave();
-        };
-
-        window.switchView = (v) => {
-            document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active-view'));
-            document.getElementById(v+'View').classList.add('active-view');
-            document.getElementById('btn-card').classList.toggle('hidden', v==='card');
-            document.getElementById('btn-table').classList.toggle('hidden', v==='table');
         };
 
         window.autoSave = () => {
@@ -249,18 +179,66 @@
             renderAll();
         };
 
-        // Firebase 實時同步
-        onValue(dataRef, snap => {
-            if(snap.val() && !isAdmin) {
-                localData = snap.val();
-                renderAll();
-            }
-        });
+        window.renderAll = () => {
+            initSelectors();
+            document.getElementById('eventName').value = localData.eventName || "";
+            document.getElementById('eventDate').value = localData.eventDate || "";
+            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const d = new Date(localData.eventDate);
+            document.getElementById('displayWeek').innerText = isNaN(d.getTime()) ? "---" : days[d.getDay()];
 
-        // 初始執行
+            const staffGrid = document.getElementById('staffGrid'); staffGrid.innerHTML = "";
+            localData.staffRoles.forEach((role, i) => {
+                if (!isAdmin && !role.active) return;
+                const el = document.createElement('div');
+                el.className = `staff-tag ${role.active ? '' : 'inactive'} ${isAdmin?'cursor-pointer hover:border-red-400':''}`;
+                el.onclick = () => { if(isAdmin) { role.active = !role.active; autoSave(); } };
+                el.innerHTML = `<span>${role.n}</span><span>(${role.j})</span>
+                                ${isAdmin ? `<span class="ml-2 text-slate-400 hover:text-red-500" onclick="event.stopPropagation(); localData.staffRoles.splice(${i},1); autoSave();">✕</span>` : ''}`;
+                staffGrid.appendChild(el);
+            });
+
+            const tbody = document.getElementById('tableBody'); tbody.innerHTML = "";
+            const cardView = document.getElementById('cardView'); cardView.innerHTML = "";
+            const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
+
+            localData.rundown.forEach((item, i) => {
+                const [h, m] = item.t.split(':').map(Number);
+                const [eh, em] = (item.te || "00:00").split(':').map(Number);
+                const isActive = (curMin >= (h*60+m) && curMin < (eh*60+em));
+
+                const tr = document.createElement('tr');
+                if(isActive) tr.className = "is-now";
+                tr.innerHTML = `<td class="text-center font-bold"><div>${item.t}-${item.te}</div><div class="text-[10px] text-slate-400">(${item.d}m)</div></td>
+                                <td><input class="w-full font-bold text-sm bg-transparent" value="${item.u||''}" placeholder="單元名稱" onblur="localData.rundown[${i}].u=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
+                                <td class="text-right text-xs font-bold text-blue-600">${item.persons?.join(', ') || ''}</td>`;
+                tbody.appendChild(tr);
+
+                const card = document.createElement('div');
+                card.className = `glass-card p-4 ${isActive?'border-2 border-blue-500 shadow-lg':''}`;
+                card.innerHTML = `<div class="text-xs font-bold text-blue-500">${item.t}-${item.te}</div><div class="text-lg font-bold mt-1 text-slate-800">${item.u}</div>`;
+                cardView.appendChild(card);
+            });
+        };
+
+        window.handleAdminSwitch = () => {
+            if(!isAdmin && prompt("管理者密碼：") === "364401") isAdmin = true;
+            else if (isAdmin) isAdmin = false;
+            document.body.classList.toggle('admin-mode', isAdmin);
+            renderAll();
+        };
+
+        window.switchView = (m) => {
+            document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active-view'));
+            document.getElementById(m + 'View').classList.add('active-view');
+            document.getElementById('btn-card').classList.toggle('hidden', m === 'card');
+            document.getElementById('btn-table').classList.toggle('hidden', m === 'table');
+        };
+
+        window.addNewRow = () => { localData.rundown.push({t:"", te:"", d:"10", u:"", s:"", persons:[], lock:false}); autoSave(); };
+
+        onValue(dataRef, (snap) => { if(!isAdmin && snap.val()) { localData = snap.val(); renderAll(); } });
         renderAll();
-        // 每分鐘自動偵測時間高亮
-        setInterval(renderAll, 60000);
     </script>
 </body>
 </html>
