@@ -226,4 +226,43 @@
         window.togglePerson = (rowIndex, name) => {
             if (!localData.rundown[rowIndex].persons) localData.rundown[rowIndex].persons = [];
             const idx = localData.rundown[rowIndex].persons.indexOf(name);
-            if (idx > -1) localData
+            if (idx > -1) localData.rundown[rowIndex].persons.splice(idx, 1);
+            else localData.rundown[rowIndex].persons.push(name);
+            renderAll();
+        };
+
+        window.switchView = (mode) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
+            document.getElementById(mode + 'View').classList.add('active-view');
+            document.getElementById('btn-table').className = mode === 'table' ? "px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800" : "px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10";
+            document.getElementById('btn-card').className = mode === 'card' ? "px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800" : "px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10";
+        };
+
+        window.handleAdminSwitch = () => {
+            if(!isAdmin) {
+                if(prompt("編輯模式密碼") === "364401") {
+                    isAdmin = true;
+                    document.body.classList.add('admin-mode');
+                    document.getElementById('modeStatus').innerText = "編輯模式開啟";
+                    document.getElementById('modeStatus').className = "text-[10px] bg-red-500 px-2 py-0.5 rounded font-bold uppercase";
+                }
+            } else {
+                isAdmin = false;
+                document.body.classList.remove('admin-mode');
+                document.getElementById('modeStatus').innerText = "唯讀展示模式";
+                document.getElementById('modeStatus').className = "text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold uppercase";
+            }
+            renderAll();
+        };
+
+        window.addEqRow = (z) => { const n = prompt("輸入器材名稱"); if(n) { localData.eq[z].push({n, q:1, l:false}); renderAll(); } };
+        window.addNewRow = () => { localData.rundown.push({t:"", te:"", d:"10", u:"", s:"", persons:[], lock:false}); renderAll(); };
+        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ Ver. 15 全功能版已存檔！")); };
+        onValue(dataRef, (snap) => { if(!isAdmin) { const d = snap.val(); if(d) { localData = d; renderAll(); } } });
+        
+        // 每分鐘自動重新渲染一次，確保「進行中」高亮會隨時間跳轉
+        setInterval(() => renderAll(), 60000);
+        renderAll();
+    </script>
+</body>
+</html>
