@@ -3,81 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v27</title>
+    <title>執行製作平台 v30</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
     <style>
         :root { --win-blue: #0078D4; --win-bg: #FFFFFF; --win-border: #D1D1D1; }
-        body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: var(--win-bg); padding-bottom: 100px; }
+        body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: var(--win-bg); color: #000; overflow-x: hidden; }
         
-        /* 鎖定標題列 (18px) */
-        .app-header { background: var(--win-blue); color: #ffffff; border-bottom: 1px solid #005A9E; }
-        .header-text { font-size: 18px; font-weight: 700; }
-        .header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 2px; font-size: 18px; font-weight: 700; color: white; }
-        
-        /* 流程表樣式 */
-        .pro-table { border-collapse: collapse; width: 100%; border: 1px solid var(--win-border); }
-        .pro-table th { background: #F3F3F3; padding: 10px; font-size: 13px; border: 1px solid var(--win-border); }
-        .pro-table td { border: 1px solid var(--win-border); padding: 8px; vertical-align: middle; }
-        .time-input { width: 60px; text-align: center; font-weight: 700; border: 1px solid transparent; }
-        .time-input:focus { border-color: var(--win-blue); outline: none; background: #f0f7ff; }
+        /* 1. 標題列：18px 鋼鐵鎖定 */
+        .app-header { background: var(--win-blue); color: #ffffff; border-bottom: 1px solid #005A9E; height: 60px; display: flex; align-items: center; }
+        .lock-18px { font-size: 18px !important; font-weight: 700; color: #ffffff; }
+        .header-input-lock { 
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); 
+            padding: 2px 4px; border-radius: 2px; font-size: 18px !important; 
+            font-weight: 700; color: white !important; height: 32px;
+        }
 
-        /* 器材區行列式佈局 */
-        .equip-row { display: grid; grid-template-columns: 120px 1fr; border: 1px solid var(--win-border); margin-bottom: -1px; }
-        .equip-label { background: #F3F3F3; padding: 12px; font-weight: 700; border-right: 1px solid var(--win-border); display: flex; align-items: center; justify-content: center; }
-        .equip-content { padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-        .equip-item-tag { border: 1px solid #0078D4; padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; background: #f0f7ff; font-size: 14px; }
-        .editable-num { width: 40px; border-bottom: 1px solid #0078D4; text-align: center; background: transparent; font-weight: 700; color: #0078D4; }
+        /* 2. 人員分工：佈局隔離，不隨下方變動 */
+        .personnel-section { background: #fff; border-bottom: 1px solid #eee; padding: 12px 16px; }
+        .staff-tag-lock { 
+            border: 1px solid var(--win-border); padding: 4px 10px; 
+            font-size: 14px; font-weight: 600; display: inline-flex;
+            background: #F9F9F9; border-radius: 2px; align-items: center; white-space: nowrap;
+        }
+
+        /* 3. 流程與器材：主操作區 */
+        .main-scroll-area { padding: 16px; }
+        .pro-table { border-collapse: collapse; width: 100%; border: 1px solid var(--win-border); table-layout: fixed; }
+        .pro-table th { background: #F3F3F3; padding: 10px; font-size: 13px; border: 1px solid var(--win-border); }
+        .pro-table td { border: 1px solid var(--win-border); padding: 8px; overflow: hidden; }
+        .time-input { width: 52px; text-align: center; font-weight: 700; border: none; font-size: 14px; background: transparent; }
+
+        /* 4. 器材：文字數字緊密連接，寬度自適應 */
+        .equip-row { display: grid; grid-template-columns: 90px 1fr; border: 1px solid var(--win-border); margin-bottom: -1px; }
+        .equip-label { background: #F3F3F3; padding: 8px; font-weight: 700; border-right: 1px solid var(--win-border); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .equip-content { padding: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+        .equip-tag { 
+            border: 1px solid #0078D4; padding: 1px 6px; border-radius: 2px; 
+            background: #f0f7ff; font-size: 13px; display: flex; align-items: center; gap: 0;
+        }
+        .editable-v { 
+            width: auto; border: none; border-bottom: 1px solid #0078D4; 
+            text-align: center; font-weight: 700; color: #0078D4; 
+            background: transparent; outline: none; margin: 0; padding: 0;
+        }
 
         .edit-only { display: none !important; }
         .admin-mode .edit-only { display: block !important; }
-        .btn-action { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
+        .btn-op { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; color: white; }
     </style>
 </head>
 <body>
 
-    <header class="app-header sticky top-0 z-50 px-4 py-4 shadow-md">
-        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-4 w-full lg:w-auto overflow-x-auto">
-                <div class="flex items-center gap-2 whitespace-nowrap">
-                    <span class="header-text">日期：</span>
-                    <input type="date" id="eventDate" class="header-input" onchange="updateWeekDay()">
-                    <span id="displayWeek" class="header-text opacity-80">---</span>
+    <header class="app-header sticky top-0 z-50 px-4 shadow-md">
+        <div class="max-w-7xl mx-auto w-full flex justify-between items-center">
+            <div class="flex items-center gap-3 overflow-x-auto no-scrollbar">
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                    <span class="lock-18px">日期：</span>
+                    <input type="date" id="eventDate" class="header-input-lock" onchange="updateWeekDay()">
+                    <span id="displayWeek" class="lock-18px opacity-90">---</span>
                 </div>
                 <div class="h-6 w-[1px] bg-white/30 mx-1"></div>
-                <div class="flex items-center gap-2 flex-grow min-w-[300px]">
-                    <span class="header-text whitespace-nowrap">活動主題：</span>
-                    <input type="text" id="eventName" class="header-input border-none bg-transparent w-full" value="頭份四月八 靚燈好客節" onblur="autoSave()">
+                <div class="flex items-center gap-1 min-w-[250px]">
+                    <span class="lock-18px whitespace-nowrap">活動主題：</span>
+                    <input type="text" id="eventName" class="header-input-lock border-none bg-transparent w-full !p-0" value="頭份四月八 靚燈好客節" onblur="autoSave()">
                 </div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="window.open('https://your-checkin-link.com')" class="bg-[#E95420] text-white px-4 py-2 font-bold text-sm rounded-sm">長官即時簽到平台</button>
-                <button onclick="handleAdminSwitch()" class="p-2 border border-white/40 rounded-full text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" id="lockIcon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></button>
+            <div class="flex gap-2 shrink-0 ml-4">
+                <button onclick="handleAdminSwitch()" class="p-1.5 border border-white/40 rounded-full text-white"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-4 mt-6 space-y-10">
+    <section class="personnel-section sticky top-[60px] z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-[9px] font-black text-slate-400 mb-1 uppercase tracking-tighter">Personnel / 人員及分工 (已鎖定預設)</h2>
+            <div id="staffGrid" class="flex flex-wrap gap-2"></div>
+            <div class="edit-only mt-2 pt-2 border-t border-dashed border-slate-200" id="staffAdminArea">
+                </div>
+        </div>
+    </section>
+
+    <main class="max-w-7xl mx-auto main-scroll-area space-y-8">
         
         <section>
-            <h2 class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Personnel & Roles / 人員及分工</h2>
-            <div class="edit-only mb-4 p-4 border border-win-border bg-slate-50 flex flex-wrap gap-2" id="staffSelectors"></div>
-            <div id="staffGrid" class="flex flex-wrap gap-2"></div>
-        </section>
-
-        <section>
-            <div class="flex justify-between items-end mb-4">
-                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Rundown / 流程表</h2>
-                <button class="text-xs bg-slate-100 px-3 py-1 border border-slate-300 font-bold hover:bg-slate-200">📁 檔案/圖片自動識別</button>
+            <div class="flex justify-between items-end mb-2 border-b border-slate-200 pb-1">
+                <h2 class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Rundown / 流程表</h2>
+                <button class="text-[9px] font-bold text-blue-500">📁 檔案識別</button>
             </div>
-            <div class="overflow-x-auto shadow-sm">
+            <div class="overflow-x-auto">
                 <table class="pro-table">
                     <thead>
                         <tr>
-                            <th class="w-48 text-center">時段區間 (長度)</th>
-                            <th>執行單元與內容說明</th>
-                            <th class="w-40 text-right">負責人員</th>
-                            <th class="w-20 edit-only">操作</th>
+                            <th class="w-36 text-center">時段(長度)</th>
+                            <th>執行單元內容</th>
+                            <th class="w-20 text-right text-[10px]">負責人</th>
+                            <th class="w-16 edit-only">增減</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -86,14 +107,10 @@
         </section>
 
         <section>
-            <h2 class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Equipment List / 器材清單區</h2>
+            <h2 class="text-[9px] font-black text-slate-400 mb-2 uppercase tracking-tighter">Equipment / 器材清單區</h2>
             <div id="equipContainer" class="border-t border-win-border"></div>
-            
-            <div class="edit-only mt-6 p-4 bg-blue-50 border border-blue-200">
-                <p class="text-xs font-bold text-blue-800 mb-3">🛠️ 器材預設庫 (點擊品項加入清單)：</p>
-                <div class="flex flex-wrap gap-2" id="equipLibrary"></div>
-            </div>
         </section>
+
     </main>
 
     <script type="module">
@@ -102,13 +119,16 @@
 
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_platform_v27');
+        const dataRef = ref(db, 'execution_platform_v30');
 
         let isAdmin = false;
         let localData = {
             eventName: "頭份四月八 靚燈好客節",
             eventDate: "2026-03-27",
-            staffRoles: [],
+            staffRoles: [
+                {n: "江哥", j: "控場", active: true},
+                {n: "維憶", j: "服務台", active: true}
+            ],
             rundown: [
                 { t: "08:00", te: "08:30", u: "公司出發" },
                 { t: "08:30", te: "09:30", u: "會場佈置或綵排" },
@@ -119,52 +139,57 @@
             ],
             equipment: [
                 { cat: "服務台", items: [{n: "簽到表", v: "1", u: "式"}, {n: "西點餐盒", v: "50", u: "盒"}] },
-                { cat: "舞台區", items: [{n: "無線麥克風", v: "4", u: "支"}] }
+                { cat: "舞台區", items: [{n: "背景 truss", v: "5*3", u: ""}] }
             ]
         };
 
-        const EQUIP_LIB = {
-            "服務台": [{n:"簽到表",v:"1",u:"式"}, {n:"西點餐盒",v:"50",u:"盒"}, {n:"瓶水",v:"2",u:"箱"}, {n:"長桌+桌巾",v:"2",u:""}, {n:"短桌",v:"1",u:""}],
-            "舞台區": [{n:"背景 truss",v:"5*3",u:""}, {n:"帆布",v:"5*3",u:""}, {n:"3米帳",v:"2",u:"(快帳)"}, {n:"靠背椅",v:"30",u:"張"}, {n:"布丁椅",v:"30",u:"張"}]
-        };
-
-        // 時間計算邏輯
         const calcDur = (s, e) => {
-            const [h1, m1] = s.split(':').map(Number);
-            const [h2, m2] = e.split(':').map(Number);
-            return (h2 * 60 + m2) - (h1 * 60 + m1);
+            try {
+                const [h1, m1] = s.split(':').map(Number);
+                const [h2, m2] = e.split(':').map(Number);
+                return (h2 * 60 + m2) - (h1 * 60 + m1);
+            } catch(e) { return 0; }
         };
 
         window.renderAll = () => {
-            // 標題與人員渲染 (略過重複代碼以簡潔)
+            // 標題與日期
             document.getElementById('displayWeek').innerText = new Date(localData.eventDate).toLocaleDateString('zh-TW', {weekday: 'long'});
             
-            // 1. 流程表渲染
+            // 1. 人員派遣渲染 (姓名(職稱) 緊湊字級一致)
+            const staffGrid = document.getElementById('staffGrid'); staffGrid.innerHTML = "";
+            localData.staffRoles.filter(r => r.active).forEach(role => {
+                const el = document.createElement('div');
+                el.className = "staff-tag-lock";
+                el.innerHTML = `<span>${role.n}</span><span>(${role.j})</span>`;
+                staffGrid.appendChild(el);
+            });
+
+            // 2. 流程表渲染 (連動引擎)
             const tbody = document.getElementById('tableBody'); tbody.innerHTML = "";
             localData.rundown.forEach((row, i) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="text-center bg-slate-50/50">
-                        <div class="flex items-center justify-center gap-1">
+                    <td class="text-center bg-slate-50/10">
+                        <div class="flex items-center justify-center">
                             <input class="time-input" value="${row.t}" onblur="updateRowTime(${i},'t',this.value)">
-                            <span class="text-slate-400">-</span>
+                            <span class="text-slate-300">-</span>
                             <input class="time-input" value="${row.te}" onblur="updateRowTime(${i},'te',this.value)">
                         </div>
-                        <div class="text-[10px] font-bold text-slate-400">(${calcDur(row.t, row.te)}m)</div>
+                        <div class="text-[9px] font-bold text-slate-300">(${calcDur(row.t, row.te)}m)</div>
                     </td>
-                    <td><input class="w-full font-bold outline-none" value="${row.u}" onblur="localData.rundown[${i}].u=this.value; autoSave()"></td>
-                    <td class="text-right text-xs font-bold text-blue-600">---</td>
+                    <td><input class="w-full font-bold outline-none text-xs" value="${row.u}" onblur="localData.rundown[${i}].u=this.value; autoSave()"></td>
+                    <td class="text-right text-[10px] font-bold text-blue-500">---</td>
                     <td class="edit-only">
                         <div class="flex gap-1 justify-center">
-                            <div class="btn-action bg-blue-500 text-white" onclick="addRow(${i})">+</div>
-                            <div class="btn-action bg-red-500 text-white" onclick="removeRow(${i})">-</div>
+                            <div class="btn-op bg-blue-500" onclick="addRow(${i})">+</div>
+                            <div class="btn-op bg-red-400" onclick="removeRow(${i})">-</div>
                         </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            // 2. 器材行列式渲染
+            // 3. 器材渲染 (數字與文字緊密連接)
             const eContainer = document.getElementById('equipContainer'); eContainer.innerHTML = "";
             localData.equipment.forEach((group, i) => {
                 const row = document.createElement('div');
@@ -173,58 +198,36 @@
                     <div class="equip-label">${group.cat}</div>
                     <div class="equip-content">
                         ${group.items.map((it, ii) => `
-                            <div class="equip-item-tag">
-                                <input type="checkbox" class="w-3 h-3">
+                            <div class="equip-tag">
+                                <input type="checkbox" class="w-3 h-3 mr-1">
                                 <span>${it.n}</span>
-                                <input class="editable-num" value="${it.v}" onblur="localData.equipment[${i}].items[${ii}].v=this.value; autoSave()">
+                                <input class="editable-v" value="${it.v}" oninput="this.style.width = (this.value.length + 0.5) + 'ch';" onblur="localData.equipment[${i}].items[${ii}].v=this.value; autoSave()">
                                 <span>${it.u}</span>
                                 <span class="edit-only cursor-pointer text-red-400 ml-1" onclick="localData.equipment[${i}].items.splice(${ii},1); autoSave()">×</span>
                             </div>
                         `).join('')}
-                        <button class="edit-only text-[10px] font-bold text-blue-600 border border-blue-200 px-2 py-1" onclick="addManualEquip(${i})">+手動輸入</button>
                     </div>
                 `;
                 eContainer.appendChild(row);
-            });
-
-            // 3. 預設庫按鈕
-            const lib = document.getElementById('equipLibrary'); lib.innerHTML = "";
-            Object.keys(EQUIP_LIB).forEach(cat => {
-                EQUIP_LIB[cat].forEach(it => {
-                    const btn = document.createElement('button');
-                    btn.className = "text-[10px] bg-white border border-slate-300 px-2 py-1 rounded hover:bg-blue-100";
-                    btn.innerText = `[${cat}] ${it.n}`;
-                    btn.onclick = () => { 
-                        const target = localData.equipment.find(e => e.cat === cat);
-                        if(target) { target.items.push({...it}); autoSave(); }
-                    };
-                    lib.appendChild(btn);
-                });
+                row.querySelectorAll('.editable-v').forEach(el => el.style.width = (el.value.length + 0.5) + 'ch');
             });
         };
 
         window.updateRowTime = (idx, field, val) => {
             localData.rundown[idx][field] = val;
-            if(field === 'te' && localData.rundown[idx+1]) {
-                localData.rundown[idx+1].t = val; // 骨牌連動
-            }
+            if(field === 'te' && localData.rundown[idx+1]) localData.rundown[idx+1].t = val;
             autoSave();
         };
 
         window.addRow = (i) => { 
-            const prevTe = localData.rundown[i].te;
-            localData.rundown.splice(i+1, 0, {t: prevTe, te: prevTe, u: ""}); 
+            const t = localData.rundown[i].te;
+            localData.rundown.splice(i+1, 0, {t, te: t, u: ""}); 
             autoSave(); 
         };
         window.removeRow = (i) => { 
             localData.rundown.splice(i, 1); 
-            if(localData.rundown[i] && localData.rundown[i-1]) {
-                localData.rundown[i].t = localData.rundown[i-1].te; // 刪除後吸附銜接
-            }
+            if(localData.rundown[i] && localData.rundown[i-1]) localData.rundown[i].t = localData.rundown[i-1].te;
             autoSave(); 
-        };
-        window.addManualEquip = (i) => {
-            const n = prompt("品項名稱:"); const v = prompt("預設數量:"); if(n) { localData.equipment[i].items.push({n, v, u:""}); autoSave(); }
         };
 
         window.handleAdminSwitch = () => {
@@ -234,7 +237,13 @@
             renderAll();
         };
 
-        window.autoSave = () => set(dataRef, localData);
+        window.autoSave = () => {
+            localData.eventName = document.getElementById('eventName').value;
+            localData.eventDate = document.getElementById('eventDate').value;
+            set(dataRef, localData);
+            renderAll();
+        };
+
         onValue(dataRef, snap => { if(!isAdmin && snap.val()) { localData = snap.val(); renderAll(); } });
         renderAll();
     </script>
