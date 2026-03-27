@@ -3,21 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v15</title>
+    <title>執行製作平台 v17 - 雲端同步版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; color: #1e293b; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; color: #1e293b; padding-bottom: 100px; }
         .app-header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
         .glass-card { background: white; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         .pro-table { border-collapse: collapse; width: 100%; border: 2px solid #64748b; background: white; }
         .pro-table th, .pro-table td { border: 1px solid #94a3b8; padding: 12px; }
-        .pro-table thead th { background: #f1f5f9; border-bottom: 2px solid #64748b; }
-        
-        /* 補回高亮樣式 */
         .is-now { background: #f0fdf4 !important; }
         .is-now td { border-top: 2px solid #22c55e !important; border-bottom: 2px solid #22c55e !important; }
-
         .view-section { display: none; }
         .active-view { display: block !important; }
         #cardView.active-view { display: grid !important; }
@@ -29,21 +25,18 @@
         .tag-display { background: #4338ca; color: white; }
     </style>
 </head>
-<body class="pb-24">
+<body>
 
     <header class="app-header sticky top-0 z-50 px-4 py-4 text-white shadow-xl">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex-1">
-                <input type="text" class="bg-transparent font-black text-xl block w-full outline-none" value="頭份四月八 靚燈好客節">
-                <div class="flex items-center gap-2 mt-1">
-                    <span id="modeStatus" class="text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold uppercase">唯讀展示模式</span>
-                    <button onclick="window.open('https://your-checkin-link.com', '_blank')" class="text-[10px] bg-orange-500 px-3 py-0.5 rounded font-black shadow-lg">➔ 即時簽到系統</button>
-                </div>
+            <div class="flex-1 text-center md:text-left">
+                <h1 class="font-black text-xl tracking-tighter">頭份四月八 靚燈好客節</h1>
+                <span id="modeStatus" class="text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold uppercase">唯讀展示模式</span>
             </div>
             <div class="flex bg-black/20 p-1 rounded-xl border border-white/10">
                 <button onclick="switchView('table')" id="btn-table" class="px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800">表格模式</button>
                 <button onclick="switchView('card')" id="btn-card" class="px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10">名片模式</button>
-                <button onclick="handleAdminSwitch()" id="adminBtn" class="ml-2 p-2 rounded-full hover:bg-white/10 transition">
+                <button onclick="handleAdminSwitch()" class="ml-2 p-2 rounded-full hover:bg-white/10 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                 </button>
             </div>
@@ -63,10 +56,10 @@
             <div id="tableView" class="view-section active-view overflow-x-auto">
                 <table class="pro-table">
                     <thead>
-                        <tr class="text-[11px] text-slate-600 font-black">
-                            <th class="w-48 text-center">時間時段 (長度)</th>
-                            <th>執行單元與內容說明</th>
-                            <th class="w-48 text-right">負責人員</th>
+                        <tr class="text-[11px] text-slate-600 font-black bg-slate-50">
+                            <th class="w-48 text-center border-b-2 border-slate-400">時間時段 (長度)</th>
+                            <th class="border-b-2 border-slate-400">執行單元項目</th>
+                            <th class="w-48 text-right border-b-2 border-slate-400">負責人</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -78,98 +71,39 @@
 
         <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="glass-card p-5 border-t-4 border-orange-500">
-                <div class="flex justify-between items-center mb-4"><h3 class="font-black text-orange-600 text-sm">服務台物料</h3><button onclick="addEqRow('service')" class="edit-only text-[10px] bg-orange-100 px-2 py-1 rounded">新增</button></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-black text-orange-600 text-sm">服務台物料</h3>
+                    <button onclick="addEqRow('service')" class="edit-only text-[10px] bg-orange-100 px-2 py-1 rounded">新增</button>
+                </div>
                 <div id="serviceBox" class="flex flex-wrap gap-2"></div>
             </div>
             <div class="glass-card p-5 border-t-4 border-blue-600">
-                <div class="flex justify-between items-center mb-4"><h3 class="font-black text-blue-700 text-sm">舞台硬體</h3><button onclick="addEqRow('stage')" class="edit-only text-[10px] bg-blue-100 px-2 py-1 rounded">新增</button></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-black text-blue-700 text-sm">舞台硬體</h3>
+                    <button onclick="addEqRow('stage')" class="edit-only text-[10px] bg-blue-100 px-2 py-1 rounded">新增</button>
+                </div>
                 <div id="stageBox" class="flex flex-wrap gap-2"></div>
             </div>
         </section>
-
-        <button onclick="saveToCloud()" class="edit-only w-full bg-slate-900 text-white py-6 rounded-2xl font-black shadow-2xl transition hover:bg-black">💾 儲存 Ver. 15 完整功能版</button>
     </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // Firebase 初始化 (請確保路徑一致)
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_platform_v15');
+        const dataRef = ref(db, 'execution_platform_v17');
 
         let isAdmin = false;
         let localData = {
-            staffRoles: [{n: "鐵仁", j: "控場", active: true}, {n: "柏緯", j: "服務台", active: true}],
-            rundown: Array(6).fill().map((_, i) => ({ t: i===0?"08:00":"", te: "", d: i<2?"30":"10", u: "", s: "", persons: [], lock: i===0 })),
+            staffRoles: [{n: "鐵仁", j: "控場", active: true}],
+            rundown: [{ t: "08:00", te: "08:30", d: "30", u: "測試單元", s: "", persons: [], lock: true }],
             eq: { service: [], stage: [] }
         };
 
-        window.renderAll = () => {
-            calculateTimes();
-            renderStaff();
-            const tbody = document.getElementById('tableBody');
-            const cardView = document.getElementById('cardView');
-            
-            // 獲取當前總分鐘數用於比對
-            const now = new Date(); 
-            const curMin = now.getHours() * 60 + now.getMinutes();
-            
-            tbody.innerHTML = ""; cardView.innerHTML = "";
-            const activeStaff = localData.staffRoles.filter(r => r.active).map(r => r.n);
-
-            localData.rundown.forEach((item, i) => {
-                const [h, m] = item.t.split(':').map(Number);
-                const [eh, em] = item.te.split(':').map(Number);
-                const startTotal = h * 60 + m;
-                const endTotal = eh * 60 + em;
-                
-                // 補回：自動偵測進行中
-                const isActive = (curMin >= startTotal && curMin < endTotal);
-
-                let personHtml = "";
-                if (isAdmin) {
-                    activeStaff.forEach(name => {
-                        const isSelected = item.persons?.includes(name);
-                        personHtml += `<span class="person-tag cursor-pointer ${isSelected?'tag-selected':'tag-unselected'}" onclick="togglePerson(${i}, '${name}')">${name}</span>`;
-                    });
-                } else {
-                    item.persons?.forEach(name => { personHtml += `<span class="person-tag tag-display">${name}</span>`; });
-                }
-
-                const tr = document.createElement('tr');
-                if(isActive) tr.className = "is-now"; // 補回：高亮樣式觸發
-                tr.innerHTML = `
-                    <td class="text-center align-top bg-slate-50/50">
-                        <div class="flex items-center justify-center gap-1">
-                            <input class="w-12 text-right font-black text-blue-800 text-xs bg-transparent outline-none border-b border-transparent focus:border-blue-300" 
-                            value="${item.t}" onchange="updateStartTime(${i}, this.value)" ${!isAdmin?'readonly':''}>
-                            <span class="text-xs font-bold text-slate-400">-</span>
-                            <span class="w-12 text-left font-black text-blue-600 text-xs">${item.te}</span>
-                        </div>
-                        <div class="flex items-center justify-center mt-1">
-                            <span class="text-[10px] text-slate-400 font-bold">(</span>
-                            <input class="w-8 text-[10px] text-slate-500 font-black bg-transparent text-center outline-none" 
-                            value="${item.d}" onchange="localData.rundown[${i}].d=this.value; renderAll()" ${!isAdmin?'readonly':''}>
-                            <span class="text-[10px] text-slate-400 font-bold">m)</span>
-                        </div>
-                    </td>
-                    <td class="align-top">
-                        <input class="w-full font-black text-slate-800 bg-transparent outline-none text-sm" placeholder="單元項目" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}>
-                        <textarea class="w-full text-[11px] text-slate-500 bg-transparent outline-none mt-1 resize-none" rows="1" placeholder="說明..." oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}>${item.s||''}</textarea>
-                    </td>
-                    <td class="text-right align-top">${personHtml}${isAdmin?`<button onclick="if(confirm('確定刪除此行？')){localData.rundown.splice(${i},1); renderAll();}" class="text-rose-300 ml-2 text-xs">✕</button>`:''}</td>`;
-                tbody.appendChild(tr);
-
-                const card = document.createElement('div');
-                card.className = `glass-card p-5 ${isActive?'border-2 border-green-500 bg-green-50 shadow-lg':''}`;
-                card.innerHTML = `<div class="flex justify-between mb-3"><span class="text-blue-700 font-black text-[10px]">${item.t}-${item.te} (${item.d}m)</span><div class="flex flex-wrap justify-end">${personHtml}</div></div>
-                                  <div class="font-black text-slate-800 mb-1">${item.u || '未命名項目'}</div><div class="text-[11px] text-slate-500">${item.s}</div>`;
-                cardView.appendChild(card);
-            });
-            renderEq();
-        };
-
+        // 自動計算時間區間
         window.calculateTimes = () => {
             let nextStartTime = localData.rundown[0].t || "08:00";
             localData.rundown.forEach((item, i) => {
@@ -181,66 +115,112 @@
             });
         };
 
-        window.updateStartTime = (idx, val) => {
-            if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val)) {
-                localData.rundown[idx].t = val;
-                localData.rundown[idx].lock = true;
-                renderAll();
-            }
-        };
+        // 渲染畫面
+        window.renderAll = () => {
+            calculateTimes();
+            const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
 
-        window.renderStaff = () => {
+            // 1. 渲染人員
             const grid = document.getElementById('staffGrid'); grid.innerHTML = "";
             localData.staffRoles.forEach((role, i) => {
                 if (!isAdmin && !role.active) return;
                 const div = document.createElement('div');
                 div.className = `p-3 rounded-xl border-2 transition ${role.active ? 'border-blue-500 bg-blue-50' : 'border-slate-100 opacity-40'} ${isAdmin?'cursor-pointer':''}`;
-                div.onclick = () => { if(isAdmin) { localData.staffRoles[i].active = !localData.staffRoles[i].active; renderAll(); } };
+                div.onclick = () => { if(isAdmin) { role.active = !role.active; autoSave(); } };
                 div.innerHTML = `<div class="text-[8px] font-black text-slate-400 uppercase">${role.j}</div>
                                  <div class="flex justify-between items-center"><span class="font-black text-sm">${role.n}</span>
-                                 ${isAdmin ? `<button onclick="event.stopPropagation(); if(confirm('刪除人員？')){localData.staffRoles.splice(${i},1); renderAll();}" class="text-rose-300 ml-2">✕</button>` : ''}</div>`;
+                                 ${isAdmin ? `<span onclick="event.stopPropagation(); if(confirm('刪除？')){localData.staffRoles.splice(${i},1); autoSave();}" class="text-rose-300 ml-2">✕</span>` : ''}</div>`;
                 grid.appendChild(div);
             });
-        };
 
-        window.renderEq = () => {
+            // 2. 渲染流程與卡片
+            const tbody = document.getElementById('tableBody'); tbody.innerHTML = "";
+            const cardView = document.getElementById('cardView'); cardView.innerHTML = "";
+            const activeStaffNames = localData.staffRoles.filter(r => r.active).map(r => r.n);
+
+            localData.rundown.forEach((item, i) => {
+                const [h, m] = item.t.split(':').map(Number);
+                const [eh, em] = item.te.split(':').map(Number);
+                const isActive = (curMin >= (h*60+m) && curMin < (eh*60+em));
+
+                let pTags = "";
+                if (isAdmin) {
+                    activeStaffNames.forEach(name => {
+                        const sel = item.persons?.includes(name);
+                        pTags += `<span class="person-tag cursor-pointer ${sel?'tag-selected':'tag-unselected'}" onclick="togglePerson(${i}, '${name}')">${name}</span>`;
+                    });
+                } else {
+                    item.persons?.forEach(n => { pTags += `<span class="person-tag tag-display">${n}</span>`; });
+                }
+
+                const tr = document.createElement('tr');
+                if(isActive) tr.className = "is-now";
+                tr.innerHTML = `
+                    <td class="text-center bg-slate-50/50">
+                        <div class="flex items-center justify-center gap-1">
+                            <input class="w-12 text-right font-black text-blue-800 text-xs bg-transparent outline-none" value="${item.t}" onchange="updateStartTime(${i}, this.value)" ${!isAdmin?'readonly':''}>
+                            <span class="text-xs font-bold text-slate-400">-</span>
+                            <span class="w-12 text-left font-black text-blue-600 text-xs">${item.te}</span>
+                        </div>
+                        <div class="flex items-center justify-center mt-1">
+                            <span class="text-[10px] text-slate-300 font-bold">(</span>
+                            <input class="w-8 text-[10px] text-slate-500 font-black bg-transparent text-center outline-none" value="${item.d}" onchange="localData.rundown[${i}].d=this.value; autoSave();" ${!isAdmin?'readonly':''}>
+                            <span class="text-[10px] text-slate-300 font-bold">m)</span>
+                        </div>
+                    </td>
+                    <td>
+                        <input class="w-full font-black text-slate-800 bg-transparent text-sm outline-none" placeholder="輸入單元" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" onblur="autoSave()" ${!isAdmin?'readonly':''}>
+                        <textarea class="w-full text-[11px] text-slate-500 bg-transparent resize-none outline-none" oninput="localData.rundown[${i}].s=this.value" onblur="autoSave()" ${!isAdmin?'readonly':''}>${item.s||''}</textarea>
+                    </td>
+                    <td class="text-right">${pTags}${isAdmin?`<button onclick="if(confirm('刪除？')){localData.rundown.splice(${i},1); autoSave();}" class="ml-2 text-rose-300">✕</button>`:''}</td>`;
+                tbody.appendChild(tr);
+
+                const card = document.createElement('div');
+                card.className = `glass-card p-5 ${isActive?'border-2 border-green-500 bg-green-50 shadow-lg':''}`;
+                card.innerHTML = `<div class="text-blue-700 font-black text-[10px] mb-2">${item.t}-${item.te} (${item.d}m)</div><div class="font-black text-slate-800 mb-1">${item.u||'未命名'}</div><div class="text-[11px] text-slate-500">${item.s}</div><div class="mt-3 text-right">${pTags}</div>`;
+                cardView.appendChild(card);
+            });
+
+            // 3. 渲染器材 (補回)
             ['service', 'stage'].forEach(z => {
-                document.getElementById(z+'Box').innerHTML = localData.eq[z].map((e, idx) => `
-                    <div class="bg-white border-2 p-2 rounded-lg flex items-center gap-2 shadow-sm ${e.l?'opacity-30':''}">
-                        <input type="checkbox" class="w-4 h-4 accent-blue-600" ${e.l?'checked':''} onchange="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq(); if(!isAdmin) saveToCloud();">
+                const box = document.getElementById(z+'Box');
+                if(!localData.eq[z]) localData.eq[z] = [];
+                box.innerHTML = localData.eq[z].map((e, idx) => `
+                    <div class="bg-white border-2 p-2 rounded-lg flex items-center gap-2 shadow-sm ${e.l?'opacity-40 grayscale':''}">
+                        <input type="checkbox" class="w-4 h-4 accent-blue-600" ${e.l?'checked':''} onchange="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; autoSave();">
                         <span class="text-xs font-bold text-slate-700">${e.n}</span>
-                        <input type="number" class="w-10 text-[10px] font-black text-center bg-slate-100 rounded" value="${e.q}" onchange="localData.eq['${z}'][${idx}].q=this.value; renderEq()" ${!isAdmin?'readonly':''}>
+                        <input type="number" class="w-10 text-[10px] font-black text-center bg-slate-100 rounded" value="${e.q}" onchange="localData.eq['${z}'][${idx}].q=this.value; autoSave();" ${!isAdmin?'readonly':''}>
+                        ${isAdmin ? `<span onclick="localData.eq['${z}'].splice(${idx},1); autoSave();" class="text-rose-300 text-[10px] cursor-pointer ml-1">✕</span>` : ''}
                     </div>`).join('');
             });
         };
 
-        window.addStaffMember = () => {
-            const input = prompt("輸入人名+職稱 (例: 柏緯+服務台)");
-            if (input && input.includes('+')) {
-                const [n, j] = input.split('+');
-                localData.staffRoles.push({n, j, active: true});
-                renderAll();
-            }
-        };
-
-        window.togglePerson = (rowIndex, name) => {
-            if (!localData.rundown[rowIndex].persons) localData.rundown[rowIndex].persons = [];
-            const idx = localData.rundown[rowIndex].persons.indexOf(name);
-            if (idx > -1) localData.rundown[rowIndex].persons.splice(idx, 1);
-            else localData.rundown[rowIndex].persons.push(name);
+        // 全自動儲存函數
+        window.autoSave = () => {
+            set(dataRef, localData); 
             renderAll();
         };
 
-        window.switchView = (mode) => {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
-            document.getElementById(mode + 'View').classList.add('active-view');
-            document.getElementById('btn-table').className = mode === 'table' ? "px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800" : "px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10";
-            document.getElementById('btn-card').className = mode === 'card' ? "px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800" : "px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10";
+        // 功能控制
+        window.updateStartTime = (idx, val) => {
+            if (/^\d{1,2}:\d{2}$/.test(val)) {
+                localData.rundown[idx].t = val;
+                localData.rundown[idx].lock = true;
+                autoSave();
+            }
+        };
+
+        window.togglePerson = (idx, name) => {
+            if (!localData.rundown[idx].persons) localData.rundown[idx].persons = [];
+            const p = localData.rundown[idx].persons;
+            const i = p.indexOf(name);
+            if (i > -1) p.splice(i, 1); else p.push(name);
+            autoSave();
         };
 
         window.handleAdminSwitch = () => {
             if(!isAdmin) {
-                if(prompt("編輯模式密碼") === "364401") {
+                if(prompt("請輸入編輯密碼") === "364401") {
                     isAdmin = true;
                     document.body.classList.add('admin-mode');
                     document.getElementById('modeStatus').innerText = "編輯模式開啟";
@@ -255,12 +235,46 @@
             renderAll();
         };
 
-        window.addEqRow = (z) => { const n = prompt("輸入器材名稱"); if(n) { localData.eq[z].push({n, q:1, l:false}); renderAll(); } };
-        window.addNewRow = () => { localData.rundown.push({t:"", te:"", d:"10", u:"", s:"", persons:[], lock:false}); renderAll(); };
-        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ Ver. 15 全功能版已存檔！")); };
-        onValue(dataRef, (snap) => { if(!isAdmin) { const d = snap.val(); if(d) { localData = d; renderAll(); } } });
-        
-        // 每分鐘自動重新渲染一次，確保「進行中」高亮會隨時間跳轉
+        window.switchView = (m) => {
+            document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active-view'));
+            document.getElementById(m + 'View').classList.add('active-view');
+            document.getElementById('btn-table').className = m==='table' ? "px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800 shadow" : "px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10";
+            document.getElementById('btn-card').className = m==='card' ? "px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800 shadow" : "px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10";
+        };
+
+        window.addStaffMember = () => {
+            const i = prompt("請輸入 姓名+職稱 (例如: 阿明+控音)");
+            if(i && i.includes('+')) {
+                const [n, j] = i.split('+');
+                localData.staffRoles.push({n, j, active: true});
+                autoSave();
+            }
+        };
+
+        window.addEqRow = (z) => {
+            const n = prompt("輸入器材名稱");
+            if(n) {
+                if(!localData.eq[z]) localData.eq[z] = [];
+                localData.eq[z].push({n, q:1, l:false});
+                autoSave();
+            }
+        };
+
+        window.addNewRow = () => {
+            localData.rundown.push({t:"", te:"", d:"10", u:"", s:"", persons:[], lock:false});
+            autoSave();
+        };
+
+        // Firebase 監聽：當雲端有變動時，自動更新畫面
+        onValue(dataRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                localData = data;
+                renderAll();
+            }
+        });
+
+        // 每分鐘刷新一次時間高亮
         setInterval(() => renderAll(), 60000);
         renderAll();
     </script>
