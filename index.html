@@ -3,36 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v10</title>
+    <title>執行製作平台 v11</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; color: #1e293b; }
         .app-header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
         .glass-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        
-        /* 執行中高亮 */
         .is-now { background: #f0fdf4 !important; border-left: 6px solid #22c55e !important; }
-        .card-now { border: 2px solid #22c55e !important; background: #f0fdf4 !important; }
-
-        /* 模式控制 */
         .view-section { display: none; }
         .active-view { display: block !important; }
         #cardView.active-view { display: grid !important; }
-
-        /* 行政/管理模式 */
         .admin-only { display: none !important; }
         .admin-mode .admin-only { display: block !important; }
-        
-        /* 人員複選標籤 */
         .person-tag { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; margin: 1px; display: inline-block; cursor: pointer; }
         .tag-unselected { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
         .tag-selected { background: #1e40af; color: white; border: 1px solid #1e40af; }
-        .tag-display { background: #4338ca; color: white; } /* 前台顯示用 */
-
-        /* 器材 Chip */
-        .eq-item { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
-        .eq-item.checked { opacity: 0.4; background: #f1f5f9; }
+        .tag-display { background: #4338ca; color: white; }
     </style>
 </head>
 <body class="pb-24">
@@ -42,25 +29,23 @@
             <div class="flex-1">
                 <input type="text" class="bg-transparent font-black text-xl block w-full outline-none" value="頭份四月八 靚燈好客節">
                 <div class="flex items-center gap-2 mt-1">
-                    <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold uppercase">Ver 10.0 專業執行版</span>
-                    <button onclick="window.open('https://your-checkin-link.com', '_blank')" class="text-[10px] bg-orange-500 hover:bg-orange-600 px-3 py-0.5 rounded font-black shadow-sm transition">➔ 即時簽到系統</button>
+                    <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold uppercase">Ver 11.0 流程預設版</span>
+                    <button onclick="window.open('https://your-checkin-link.com', '_blank')" class="text-[10px] bg-orange-500 px-3 py-0.5 rounded font-black shadow-sm">➔ 即時簽到系統</button>
                 </div>
             </div>
-            
             <div class="flex bg-black/20 p-1 rounded-xl border border-white/10">
                 <button onclick="switchView('table')" id="btn-table" class="px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800">表格模式</button>
                 <button onclick="switchView('card')" id="btn-card" class="px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10">名片模式</button>
-                <button onclick="handleAdminSwitch()" class="ml-2 p-2 rounded-full hover:bg-white/10 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg></button>
+                <button onclick="handleAdminSwitch()" class="ml-2 p-2 rounded-full hover:bg-white/10 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg></button>
             </div>
         </div>
     </header>
 
     <main class="max-w-6xl mx-auto p-4 space-y-6">
-
         <section class="glass-card p-5">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="font-black text-slate-400 text-[10px] tracking-widest uppercase">執行人員派遣 (角色綁定)</h3>
-                <button onclick="addStaffMember()" class="admin-only text-[10px] bg-blue-600 text-white px-4 py-1.5 rounded-full font-bold shadow-md">+ 新增人員組合</button>
+                <h3 class="font-black text-slate-400 text-[10px] tracking-widest uppercase">執行人員派遣</h3>
+                <button onclick="addStaffMember()" class="admin-only text-[10px] bg-blue-600 text-white px-4 py-1.5 rounded-full font-bold">+ 新增人員組合</button>
             </div>
             <div id="staffGrid" class="flex flex-wrap gap-3"></div>
         </section>
@@ -70,32 +55,32 @@
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 border-b">
                         <tr class="text-[10px] text-slate-400 font-black">
-                            <th class="p-4 text-center">時間</th>
-                            <th class="p-4">單元項目 / 執行說明</th>
-                            <th class="p-4 text-right">負責人員 (複選)</th>
+                            <th class="p-4 text-center w-24">時間</th>
+                            <th class="p-4">項目內容</th>
+                            <th class="p-4 text-right">指派人員</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
-
             <div id="cardView" class="view-section p-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"></div>
-            
-            <button onclick="addNewRow()" class="admin-only w-full py-5 text-xs font-bold text-slate-400 border-t border-dashed hover:bg-slate-50">+ 插入新流程節點</button>
+            <button onclick="addNewRow()" class="admin-only w-full py-5 text-xs font-bold text-slate-400 border-t border-dashed hover:bg-slate-50">+ 增加新流程節點</button>
         </section>
 
         <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="glass-card p-5 border-t-4 border-orange-500">
-                <div class="flex justify-between items-center mb-4"><h3 class="font-black text-orange-600 text-sm">服務台物料</h3><button onclick="addEqRow('service')" class="admin-only text-[10px] bg-orange-100 px-2 py-1 rounded">新增</button></div>
+                <h3 class="font-black text-orange-600 text-sm mb-4">服務台物料</h3>
                 <div id="serviceBox" class="flex flex-wrap gap-2"></div>
+                <button onclick="addEqRow('service')" class="admin-only mt-4 text-[10px] bg-orange-100 px-3 py-1 rounded">＋ 新增器材</button>
             </div>
             <div class="glass-card p-5 border-t-4 border-blue-600">
-                <div class="flex justify-between items-center mb-4"><h3 class="font-black text-blue-700 text-sm">舞台硬體</h3><button onclick="addEqRow('stage')" class="admin-only text-[10px] bg-blue-100 px-2 py-1 rounded">新增</button></div>
+                <h3 class="font-black text-blue-700 text-sm mb-4">舞台硬體</h3>
                 <div id="stageBox" class="flex flex-wrap gap-2"></div>
+                <button onclick="addEqRow('stage')" class="admin-only mt-4 text-[10px] bg-blue-100 px-3 py-1 rounded">＋ 新增器材</button>
             </div>
         </section>
 
-        <button onclick="saveToCloud()" class="admin-only w-full bg-slate-900 text-white py-6 rounded-2xl font-black shadow-2xl transition hover:bg-black">💾 儲存 Ver. 10 全方位配置</button>
+        <button onclick="saveToCloud()" class="admin-only w-full bg-slate-900 text-white py-6 rounded-2xl font-black shadow-2xl transition hover:bg-black">💾 儲存並同步 Ver. 11 設定</button>
     </main>
 
     <script type="module">
@@ -104,9 +89,19 @@
 
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_platform_v10');
+        const dataRef = ref(db, 'execution_platform_v11');
 
         let isAdmin = false;
+        // 預設 6 行資料：第三行之後自動設為 10 分鐘
+        const defaultRundown = [
+            { t: "08:00", d: "30", u: "場地準備", s: "工作人員到位", persons: [], lock: false },
+            { t: "", d: "30", u: "彩排測試", s: "音響影片確認", persons: [], lock: false },
+            { t: "", d: "10", u: "", s: "", persons: [], lock: false },
+            { t: "", d: "10", u: "", s: "", persons: [], lock: false },
+            { t: "", d: "10", u: "", s: "", persons: [], lock: false },
+            { t: "", d: "10", u: "", s: "", persons: [], lock: false }
+        ];
+
         let localData = {
             staffRoles: [
                 {n: "鐵仁", j: "控場", active: true},
@@ -114,30 +109,10 @@
                 {n: "崧瑋", j: "執行製作", active: true},
                 {n: "露比", j: "行政執行", active: true}
             ],
-            rundown: [
-                { t: "08:00", d: "30", u: "場地準備", s: "全體人員到位", persons: ["鐵仁", "柏緯"], lock: false },
-                { t: "", d: "30", u: "彩排測試", s: "音響影片測試", persons: ["鐵仁"], lock: false }
-            ],
+            rundown: defaultRundown,
             eq: { service: [], stage: [] }
         };
 
-        // 人員派遣渲染
-        window.renderStaff = () => {
-            const grid = document.getElementById('staffGrid');
-            grid.innerHTML = "";
-            localData.staffRoles.forEach((role, i) => {
-                if (!isAdmin && !role.active) return;
-                const div = document.createElement('div');
-                div.className = `p-3 rounded-xl border-2 transition cursor-pointer min-w-[120px] ${role.active ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white opacity-40'}`;
-                div.onclick = () => { if (isAdmin) { localData.staffRoles[i].active = !localData.staffRoles[i].active; renderAll(); } };
-                div.innerHTML = `<div class="text-[8px] font-black text-slate-400 uppercase">${role.j}</div>
-                                 <div class="flex justify-between items-center"><span class="font-black text-sm">${role.n}</span>
-                                 ${isAdmin ? `<button onclick="event.stopPropagation(); localData.staffRoles.splice(${i},1); renderAll()" class="text-rose-300">✕</button>` : ''}</div>`;
-                grid.appendChild(div);
-            });
-        };
-
-        // 核心渲染
         window.renderAll = () => {
             calculateTimes();
             renderStaff();
@@ -153,45 +128,34 @@
                 const start = h * 60 + m;
                 const isActive = (curMin >= start && curMin < (start + parseInt(item.d)));
 
-                // 負責人標籤系統 (支援多選)
                 let personSelector = "";
                 if (isAdmin) {
                     activeStaff.forEach(name => {
-                        const isSelected = item.persons && item.persons.includes(name);
+                        const isSelected = item.persons?.includes(name);
                         personSelector += `<span class="person-tag ${isSelected?'tag-selected':'tag-unselected'}" onclick="togglePerson(${i}, '${name}')">${name}</span>`;
                     });
                 } else {
                     item.persons?.forEach(name => { personSelector += `<span class="person-tag tag-display">${name}</span>`; });
                 }
 
-                // 表格列
                 const tr = document.createElement('tr');
-                if(isActive) tr.className = "is-now";
+                if(isActive) tr.className = "is-now shadow-sm";
                 tr.innerHTML = `
-                    <td class="p-4 align-top text-center border-b border-slate-50"><div class="font-black text-blue-800 text-xs">${item.t}</div><div class="text-[9px] text-slate-400 font-bold mt-1">${item.d}m</div></td>
+                    <td class="p-4 align-top text-center border-b border-slate-50"><div class="font-black text-blue-800 text-xs">${item.t}</div><input class="w-10 text-[9px] text-slate-400 font-bold mt-1 bg-transparent text-center" value="${item.d}" onchange="localData.rundown[${i}].d=this.value; renderAll()" ${!isAdmin?'readonly':''}></td>
                     <td class="p-4 align-top border-b border-slate-50">
-                        <input class="w-full font-black text-slate-800 bg-transparent outline-none text-sm" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}>
-                        <textarea class="w-full text-[10px] text-slate-500 bg-transparent outline-none mt-1 resize-none" rows="1" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}>${item.s||''}</textarea>
+                        <input class="w-full font-black text-slate-800 bg-transparent outline-none text-sm" placeholder="輸入單元項目" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}>
+                        <textarea class="w-full text-[10px] text-slate-500 bg-transparent outline-none mt-1 resize-none" rows="1" placeholder="填寫說明..." oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}>${item.s||''}</textarea>
                     </td>
                     <td class="p-4 align-top text-right border-b border-slate-50">${personSelector}</td>`;
                 tbody.appendChild(tr);
 
-                // 卡片
                 const card = document.createElement('div');
-                card.className = `glass-card p-5 ${isActive?'card-now shadow-lg':''}`;
-                card.innerHTML = `<div class="flex justify-between mb-3"><span class="text-blue-700 font-black text-xs">${item.t} (+${item.d}m)</span><div class="flex flex-wrap justify-end">${personSelector}</div></div>
-                                  <div class="font-black text-slate-800 mb-2">${item.u || '未命名單元'}</div><div class="text-[11px] text-slate-500 leading-relaxed">${item.s}</div>`;
+                card.className = `glass-card p-5 ${isActive?'border-2 border-green-500 bg-green-50':''}`;
+                card.innerHTML = `<div class="flex justify-between mb-3"><span class="text-blue-700 font-black text-xs">${item.t} (${item.d}分)</span><div class="flex flex-wrap justify-end">${personSelector}</div></div>
+                                  <div class="font-black text-slate-800 mb-2">${item.u || '未命名單元'}</div><div class="text-[11px] text-slate-500">${item.s}</div>`;
                 cardView.appendChild(card);
             });
             renderEq();
-        };
-
-        window.togglePerson = (rowIndex, name) => {
-            if (!localData.rundown[rowIndex].persons) localData.rundown[rowIndex].persons = [];
-            const idx = localData.rundown[rowIndex].persons.indexOf(name);
-            if (idx > -1) localData.rundown[rowIndex].persons.splice(idx, 1);
-            else localData.rundown[rowIndex].persons.push(name);
-            renderAll();
         };
 
         window.calculateTimes = () => {
@@ -205,48 +169,51 @@
             });
         };
 
+        window.renderStaff = () => {
+            const grid = document.getElementById('staffGrid'); grid.innerHTML = "";
+            localData.staffRoles.forEach((role, i) => {
+                if (!isAdmin && !role.active) return;
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl border-2 min-w-[120px] transition ${role.active ? 'border-blue-500 bg-blue-50' : 'border-slate-100 opacity-40'}`;
+                div.onclick = () => { if(isAdmin) { localData.staffRoles[i].active = !localData.staffRoles[i].active; renderAll(); } };
+                div.innerHTML = `<div class="text-[8px] font-black text-slate-400 uppercase">${role.j}</div><div class="font-black text-sm">${role.n}</div>`;
+                grid.appendChild(div);
+            });
+        };
+
         window.renderEq = () => {
             ['service', 'stage'].forEach(z => {
                 document.getElementById(z+'Box').innerHTML = localData.eq[z].map((e, idx) => `
-                    <div class="eq-item shadow-sm ${e.l?'checked':''}">
+                    <div class="bg-white border p-2 rounded-lg flex items-center gap-2 shadow-sm ${e.l?'opacity-40':''}">
                         <input type="checkbox" class="w-4 h-4 accent-blue-600" ${e.l?'checked':''} onchange="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq(); if(!isAdmin) saveToCloud();">
-                        <span class="text-xs font-black text-slate-700">${e.n}</span>
-                        <input type="number" class="w-10 bg-slate-50 rounded text-center text-[11px] font-black text-blue-700" value="${e.q}" onchange="localData.eq['${z}'][${idx}].q=this.value; renderEq()" ${!isAdmin?'readonly':''}>
+                        <span class="text-xs font-bold text-slate-700">${e.n}</span>
+                        <input type="number" class="w-8 text-[10px] font-black text-center bg-slate-100 rounded" value="${e.q}" onchange="localData.eq['${z}'][${idx}].q=this.value; renderEq()" ${!isAdmin?'readonly':''}>
                     </div>`).join('');
             });
+        };
+
+        window.togglePerson = (rowIndex, name) => {
+            if (!localData.rundown[rowIndex].persons) localData.rundown[rowIndex].persons = [];
+            const idx = localData.rundown[rowIndex].persons.indexOf(name);
+            if (idx > -1) localData.rundown[rowIndex].persons.splice(idx, 1);
+            else localData.rundown[rowIndex].persons.push(name);
+            renderAll();
         };
 
         window.switchView = (mode) => {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
             document.getElementById(mode + 'View').classList.add('active-view');
-            
             document.getElementById('btn-table').className = mode === 'table' ? "px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800" : "px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10";
             document.getElementById('btn-card').className = mode === 'card' ? "px-4 py-2 rounded-lg text-xs font-black transition bg-white text-blue-800" : "px-4 py-2 rounded-lg text-xs font-black transition text-white hover:bg-white/10";
         };
 
-        window.addStaffMember = () => {
-            const input = prompt("請輸入人名+職稱 (例如：柏緯+服務台)");
-            if (input?.includes('+')) {
-                const [n, j] = input.split('+');
-                localData.staffRoles.push({n, j, active: true});
-                renderAll();
-            }
-        };
-
-        window.addEqRow = (z) => {
-            const n = prompt("輸入器材名稱");
-            if(n) { localData.eq[z].push({n, q:1, l:false}); renderAll(); }
-        };
-
         window.handleAdminSwitch = () => {
             if(!isAdmin && prompt("管理密碼") !== "364401") return;
-            isAdmin = !isAdmin;
-            document.body.classList.toggle('admin-mode', isAdmin);
-            renderAll();
+            isAdmin = !isAdmin; document.body.classList.toggle('admin-mode', isAdmin); renderAll();
         };
 
         window.addNewRow = () => { localData.rundown.push({t:"", d:"10", u:"", s:"", persons:[], lock:false}); renderAll(); };
-        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ Ver. 10 設定已同步雲端！")); };
+        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ Ver. 11 設定已同步雲端！")); };
         onValue(dataRef, (snap) => { if(!isAdmin) { const d = snap.val(); if(d) { localData = d; renderAll(); } } });
         
         renderAll();
