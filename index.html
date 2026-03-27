@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v36</title>
+    <title>執行製作平台 v37 - 最終整合版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;700&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
     <style>
         :root { --win-blue: #0078D4; --win-border: #D1D1D1; --now-green: #f0fdf4; }
         body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: #f8fafc; margin: 0; padding-bottom: 100px; }
         
-        /* 標題列：18px 鎖定 */
+        /* 1. 標題列：18px 強制鎖定 */
         .app-header { background: var(--win-blue); color: #FFF; height: 60px; display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 1000; }
         .lock-18px { font-size: 18px !important; font-weight: 700; display: flex; align-items: center; white-space: nowrap; }
         .header-input { 
@@ -20,21 +20,26 @@
         }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
-        /* 當前項目高亮 */
-        .is-now { background: var(--now-green) !important; outline: 3px solid #22c55e; outline-offset: -3px; }
+        /* 2. 當前項目高亮 (綠色偵測) */
+        .is-now { background: var(--now-green) !important; outline: 3px solid #22c55e; outline-offset: -3px; z-index: 10; position: relative; }
 
-        /* 模式切換 */
+        /* 3. 模式切換邏輯 */
         .view-section { display: none; }
         .active-view { display: block !important; }
         #cardView.active-view { display: grid !important; }
 
-        /* 樣式鎖定 */
+        /* 4. 專業表格樣式 */
         .pro-table { border-collapse: collapse; width: 100%; border: 1px solid var(--win-border); background: white; }
         .pro-table td, .pro-table th { border: 1px solid var(--win-border); padding: 10px; }
         .time-box { width: 55px; text-align: center; font-weight: 700; border: none; background: transparent; font-size: 14px; outline: none; }
         
+        /* 5. 管理員控制顯隱 */
         .admin-ctrl { display: none !important; }
         .admin-mode .admin-ctrl { display: block !important; }
+
+        /* 選單按鈕 */
+        .select-btn { border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; background: white; }
+        .selected-job { background: var(--win-blue) !important; color: white; border-color: #005a9e; }
     </style>
 </head>
 <body class="admin-mode">
@@ -46,117 +51,188 @@
                     <input type="date" id="eventDate" class="header-input" onchange="syncDateAndWeek()">
                     <span id="displayWeek" class="ml-2 opacity-80">---</span>
                 </div>
-                <div class="w-[1px] h-6 bg-white/30"></div>
+                <div class="w-[1px] h-6 bg-white/30 shrink-0"></div>
                 <div class="lock-18px flex-grow">
-                    <input type="text" id="eventName" class="header-input border-none bg-transparent w-full" onblur="autoSave()">
+                    <input type="text" id="eventName" class="header-input border-none bg-transparent w-full" value="頭份四月八 靚燈好客節" onblur="autoSave()">
                 </div>
             </div>
             
             <div class="flex items-center gap-2">
-                <button onclick="window.open('https://your-checkin-link.com')" class="bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded text-[11px] font-bold shadow-lg text-white">長官簽到平台</button>
-                <button onclick="switchView('card')" id="btn-card" class="bg-white/10 px-3 py-1.5 rounded text-[11px] font-bold">名片模式</button>
+                <button onclick="window.open('https://your-checkin-link.com')" class="bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded text-[11px] font-bold shadow-lg text-white transition-all">長官簽到平台</button>
+                <button onclick="switchView('card')" id="btn-card" class="bg-white/10 px-3 py-1.5 rounded text-[11px] font-bold hover:bg-white/20">名片模式</button>
                 <button onclick="switchView('table')" id="btn-table" class="hidden bg-white/20 px-3 py-1.5 rounded text-[11px] font-bold">表格模式</button>
-                <div class="cursor-pointer p-2 bg-white/10 rounded-full" onclick="toggleAdmin()">
-                    <svg id="lockIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-width="2"/></svg>
+                <div class="cursor-pointer p-2 bg-white/10 rounded-full hover:bg-blue-600 transition" onclick="toggleAdmin()">
+                    <svg id="lockIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path id="lockPath" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
                 </div>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto p-4 space-y-6">
+        
         <section class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-            <div class="admin-ctrl mb-4 p-3 bg-slate-50 rounded border border-slate-200 flex flex-col gap-2">
-                <div id="jobOptions" class="flex flex-wrap gap-1"></div>
-                <div id="nameOptions" class="flex flex-wrap gap-1"></div>
+            <div class="admin-ctrl mb-4 p-3 bg-slate-50 rounded border border-slate-200 flex flex-col gap-3">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-[10px] font-bold text-slate-500">1.先選分工：</span>
+                    <div id="jobOptions" class="flex flex-wrap gap-1"></div>
+                </div>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-[10px] font-bold text-slate-500">2.再選人員：</span>
+                    <div id="nameOptions" class="flex flex-wrap gap-1"></div>
+                </div>
             </div>
+            <div class="text-[10px] font-black text-slate-400 mb-2 tracking-widest uppercase">Personnel / 目前派遣人員</div>
             <div id="staffList" class="flex flex-wrap gap-2"></div>
         </section>
 
-        <div id="tableView" class="view-section active-view">
+        <div id="tableView" class="view-section active-view overflow-x-auto">
             <table class="pro-table">
-                <thead><tr class="bg-slate-100 text-[10px] text-slate-500 uppercase font-black"><th class="w-40">時段 (自動連動)</th><th>執行項目與說明</th><th class="w-32 admin-ctrl">控制</th></tr></thead>
+                <thead>
+                    <tr class="bg-slate-100 text-[10px] text-slate-500 uppercase font-black">
+                        <th class="w-40 text-center">時段區間 (連動)</th>
+                        <th>執行項目與內容說明</th>
+                        <th class="w-32 admin-ctrl text-center">操作</th>
+                    </tr>
+                </thead>
                 <tbody id="rundownBody"></tbody>
             </table>
         </div>
-        <div id="cardView" class="view-section grid gap-4 grid-cols-1 md:grid-cols-3"></div>
 
-        <button onclick="addNewRow()" class="admin-ctrl w-full py-6 text-slate-400 border-2 border-dashed rounded-lg font-bold">+ 增加流程節點</button>
+        <div id="cardView" class="view-section grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            </div>
+
+        <button onclick="addNewRow()" class="admin-ctrl w-full py-6 text-slate-300 border-2 border-dashed border-slate-200 rounded-lg font-bold hover:bg-gray-50 hover:text-blue-400 transition-all">+ 增加流程節點 (Rundown Row)</button>
     </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // Firebase 初始化
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_v36_full');
+        const dataRef = ref(db, 'execution_v37_stable');
 
+        // 核心資料與狀態
         let isAdmin = true;
         let selectedJob = "";
-        const JOBS = ["控場", "音響", "服務台", "機動", "料理"];
-        const NAMES = ["江哥", "瑩驊", "維憶", "芳瑜", "智明"];
+        const JOBS = ["控場", "音響", "服務台", "儀式", "攝影", "機動", "錄影", "燈光", "特效", "視訊", "料理"];
+        const NAMES = ["江哥", "瑩驊", "維憶", "芳瑜", "智明", "露比", "鐵仁", "柏緯", "崧瑋", "燕妮", "工讀1", "工讀2"];
 
         let localData = {
-            eventName: "頭份四月八 靚燈好客節", eventDate: "2026-03-27",
+            eventName: "頭份四月八 靚燈好客節",
+            eventDate: "2026-03-27",
             staff: [{n:"江哥", j:"控場"}],
-            rundown: [{ s: "08:00", e: "08:30", u: "公司出發/場地檢查" }]
+            rundown: [
+                { s: "08:00", e: "08:30", u: "公司出發/現場器材檢查" },
+                { s: "08:30", e: "09:30", u: "會場佈置與系統測試" }
+            ]
         };
 
+        // 管理員模式切換
         window.toggleAdmin = () => {
-            if(!isAdmin && prompt("密碼")==="364401") isAdmin = true; else isAdmin = false;
-            document.body.classList.toggle('admin-mode', isAdmin); renderAll();
+            if(!isAdmin) {
+                if(prompt("請輸入管理者密碼:") === "364401") {
+                    isAdmin = true;
+                }
+            } else {
+                isAdmin = false;
+            }
+            document.body.classList.toggle('admin-mode', isAdmin);
+            const path = document.getElementById('lockPath');
+            path.setAttribute('d', isAdmin ? 'M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z' : 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z');
+            renderAll();
         };
 
+        // 日期星期同步
         window.syncDateAndWeek = () => {
             localData.eventDate = document.getElementById('eventDate').value;
             autoSave();
         };
 
+        // 視圖渲染核心
         window.renderAll = () => {
+            // 標題與日期
             document.getElementById('eventDate').value = localData.eventDate;
-            document.getElementById('displayWeek').innerText = new Date(localData.eventDate).toLocaleDateString('zh-TW',{weekday:'long'});
+            const d = new Date(localData.eventDate);
+            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            document.getElementById('displayWeek').innerText = isNaN(d.getTime()) ? "---" : days[d.getDay()];
             document.getElementById('eventName').value = localData.eventName;
 
-            // 人員選單
-            document.getElementById('jobOptions').innerHTML = JOBS.map(j => `<button class="px-2 py-1 border text-[10px] rounded ${selectedJob===j?'bg-blue-600 text-white':''}" onclick="selectedJob='${j}';renderAll()">${j}</button>`).join('');
-            document.getElementById('nameOptions').innerHTML = NAMES.map(n => `<button class="px-2 py-1 border text-[10px] rounded" onclick="addStaff('${n}')">${n}</button>`).join('');
+            // 人員選單渲染
+            const jBox = document.getElementById('jobOptions');
+            jBox.innerHTML = JOBS.map(j => `<button class="select-btn ${selectedJob===j?'selected-job':''}" onclick="setJob('${j}')">${j}</button>`).join('');
+            
+            const nBox = document.getElementById('nameOptions');
+            nBox.innerHTML = NAMES.map(n => `<button class="select-btn" onclick="addStaff('${n}')">${n}</button>`).join('');
 
             // 人員標籤 (14px)
             const sList = document.getElementById('staffList'); sList.innerHTML = "";
             localData.staff.forEach((r, i) => {
-                sList.innerHTML += `<div class="px-2 py-1 border-2 border-blue-500 bg-blue-50 text-[14px] font-bold rounded">${r.n}(${r.j}) ${isAdmin?`<span class="text-red-300 ml-1" onclick="removeStaff(${i})">✕</span>`:''}</div>`;
+                sList.innerHTML += `<div class="px-2 py-1 border-2 border-blue-500 bg-blue-50 text-[14px] font-bold rounded flex items-center gap-1">${r.n}(${r.j}) ${isAdmin?`<span class="text-red-400 cursor-pointer ml-1 font-black" onclick="removeStaff(${i})">✕</span>`:''}</div>`;
             });
 
-            // 流程渲染 (高亮邏輯)
+            // 流程渲染與時間偵測
             const rBody = document.getElementById('rundownBody'); rBody.innerHTML = "";
             const cView = document.getElementById('cardView'); cView.innerHTML = "";
-            const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
 
             localData.rundown.forEach((row, i) => {
                 const [sh, sm] = row.s.split(':').map(Number);
                 const [eh, em] = row.e.split(':').map(Number);
                 const isNow = (nowMin >= (sh*60+sm) && nowMin < (eh*60+em));
 
-                rBody.innerHTML += `
-                    <tr class="${isNow?'is-now':''}">
-                        <td class="text-center font-bold">
-                            <input class="time-box" value="${row.s}" onblur="updateTime(${i},'s',this.value)"> - 
-                            <input class="time-box" value="${row.e}" onblur="updateTime(${i},'e',this.value)">
-                        </td>
-                        <td><input class="w-full outline-none font-bold text-sm bg-transparent" value="${row.u}" onblur="localData.rundown[${i}].u=this.value; autoSave()"></td>
-                        <td class="admin-ctrl text-right"><button onclick="localData.rundown.splice(${i},1); autoSave()" class="text-red-300">刪除</button></td>
-                    </tr>`;
-                
-                cView.innerHTML += `<div class="p-4 rounded-lg border-2 ${isNow?'border-green-500 bg-green-50':'bg-white'} shadow-sm">
-                    <div class="text-[10px] font-black opacity-50">${row.s}-${row.e}</div>
-                    <div class="text-lg font-black">${row.u}</div>
-                </div>`;
+                // 表格列
+                const tr = document.createElement('tr');
+                if(isNow) tr.className = "is-now";
+                tr.innerHTML = `
+                    <td class="text-center">
+                        <input class="time-box" value="${row.s}" onblur="updateTime(${i},'s',this.value)"> - 
+                        <input class="time-box" value="${row.e}" onblur="updateTime(${i},'e',this.value)">
+                    </td>
+                    <td><input class="w-full outline-none font-bold text-sm bg-transparent" value="${row.u}" onblur="localData.rundown[${i}].u=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
+                    <td class="admin-ctrl text-center"><button onclick="localData.rundown.splice(${i},1); autoSave()" class="text-red-400 font-bold">✕ 刪除</button></td>
+                `;
+                rBody.appendChild(tr);
+
+                // 名片模式
+                cView.innerHTML += `
+                    <div class="p-5 rounded-xl border-2 ${isNow?'border-green-500 bg-green-50 shadow-lg':'border-slate-100 bg-white'} transition-all">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-black ${isNow?'text-green-600':''}">${row.s} - ${row.e}</span>
+                            ${isNow?'<span class="text-green-600 font-black text-[10px] animate-pulse">● 進行中</span>':''}
+                        </div>
+                        <div class="text-lg font-black text-slate-800 leading-tight">${row.u}</div>
+                    </div>
+                `;
             });
         };
 
+        // 輔助功能
+        window.setJob = (j) => { selectedJob = j; renderAll(); };
+        window.addStaff = (n) => {
+            if(!selectedJob) { alert("請先選擇一個分工職稱！"); return; }
+            localData.staff.push({n, j:selectedJob});
+            autoSave();
+        };
+        window.removeStaff = (i) => { localData.staff.splice(i,1); autoSave(); };
+        
         window.updateTime = (i, f, v) => {
             localData.rundown[i][f] = v;
-            if(f === 'e' && localData.rundown[i+1]) localData.rundown[i+1].s = v;
+            // 連動邏輯：這一行的結束就是下一行的開始
+            if(f === 'e' && localData.rundown[i+1]) {
+                localData.rundown[i+1].s = v;
+            }
+            autoSave();
+        };
+
+        window.addNewRow = () => {
+            const lastRow = localData.rundown[localData.rundown.length-1];
+            const nextStart = lastRow ? lastRow.e : "08:00";
+            localData.rundown.push({s:nextStart, e:nextStart, u:""});
             autoSave();
         };
 
@@ -167,13 +243,24 @@
             document.getElementById('btn-table').classList.toggle('hidden', v==='table');
         };
 
-        window.addStaff = (n) => { if(selectedJob) { localData.staff.push({n, j:selectedJob}); autoSave(); } else alert("請先選職稱"); };
-        window.removeStaff = (i) => { localData.staff.splice(i,1); autoSave(); };
-        window.addNewRow = () => { localData.rundown.push({s:"", e:"", u:""}); autoSave(); };
-        window.autoSave = () => { localData.eventName = document.getElementById('eventName').value; set(dataRef, localData); renderAll(); };
+        window.autoSave = () => {
+            localData.eventName = document.getElementById('eventName').value;
+            set(dataRef, localData);
+            renderAll();
+        };
 
-        onValue(dataRef, snap => { if(snap.val() && !isAdmin) { localData = snap.val(); renderAll(); } });
+        // Firebase 實時同步
+        onValue(dataRef, snap => {
+            if(snap.val() && !isAdmin) {
+                localData = snap.val();
+                renderAll();
+            }
+        });
+
+        // 初始執行
         renderAll();
+        // 每分鐘自動偵測時間高亮
+        setInterval(renderAll, 60000);
     </script>
 </body>
 </html>
