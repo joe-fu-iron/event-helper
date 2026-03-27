@@ -3,103 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行平台 Ver. 2</title>
+    <title>Event Pro v7</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; background: #ffffff; color: #000; }
+        :root { --main-blue: #1e40af; --accent-orange: #f97316; }
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #1e293b; }
         
-        /* 標題區維持深色底 */
-        .bg-main-blue { background: #4a72c2; color: white; }
-        .bg-main-orange { background: #ed7d31; color: white; }
+        /* App 導覽列風格 */
+        .app-header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); box-shadow: 0 4px 20px rgba(30, 64, 175, 0.2); }
         
-        /* 內容區：黑線白底 */
-        .border-black { border: 1px solid #000 !important; }
-        .table-bw th, .table-bw td { border: 1px solid #000; padding: 8px; background: #fff; }
-        .input-bw { background: #fff; border: 1px solid #000; padding: 2px 4px; }
+        /* 專業卡片陰影 */
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
         
-        /* 自動高亮：現在進行中的單元 */
-        .is-now { background: #e2e8f0 !important; font-weight: bold; border: 3px solid #000 !important; }
+        /* 流程高亮邏輯 */
+        .is-now { background: #ecfdf5 !important; border-left: 6px solid #10b981 !important; transform: scale(1.01); transition: all 0.3s; }
         
-        .admin-only { display: none !important; }
-        .admin-mode .admin-only { display: block !important; }
-        .admin-mode .admin-bg { background: #fffbeb !important; }
+        /* 滾動條隱藏但保有功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        body.card-view .table-wrapper { display: none; }
-        #cardContainer { display: none; }
-        body.card-view #cardContainer { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        
-        input, select { outline: none; }
-        .memory-tag { cursor: pointer; border: 1px solid #000; padding: 1px 6px; font-size: 11px; margin: 2px; display: inline-block; background: #f8fafc; color: #000; }
+        /* 器材 Chip 專業化 */
+        .eq-chip { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .eq-chip.checked { background: #f8fafc; opacity: 0.6; }
+        .eq-chip input[type="number"] { width: 32px; background: #f1f5f9; border-radius: 6px; text-align: center; font-weight: 800; color: #1e40af; font-size: 12px; }
+
+        /* 輸入框專業化 */
+        input:focus { outline: none; border-bottom: 2px solid #3b82f6 !important; }
+        .admin-mode .editable { background: #fffbeb !important; border-radius: 4px; }
+
+        /* 標籤設計 */
+        .tag { font-size: 10px; font-weight: 800; padding: 2px 10px; border-radius: 20px; text-transform: uppercase; }
+        .tag-all { background: #be123c; color: white; }
+        .tag-staff { background: #4338ca; color: white; }
     </style>
 </head>
-<body class="p-4">
+<body class="pb-20">
 
-    <div class="max-w-[1400px] mx-auto space-y-4">
-        
-        <div class="grid grid-cols-12 gap-2">
-            <div class="col-span-12 md:col-span-6 bg-main-blue p-6 flex items-center text-lg font-bold">
-                <span>日期：</span><input type="text" id="eventDate" class="border-b border-white w-32 mr-6 bg-transparent px-2" value="2026/03/27">
-                <span>活動主題：</span><input type="text" id="eventTitle" class="border-b border-white flex-1 bg-transparent px-2" value="頭份四月八 靚燈好客節">
+    <header class="app-header sticky top-0 z-50 px-4 py-4 text-white">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div>
+                <input type="text" class="bg-transparent font-black text-lg block w-full outline-none" value="頭份四月八 靚燈好客節">
+                <span class="text-xs opacity-80 font-semibold tracking-widest">2026 / 03 / 27 · EVENT EXECUTION</span>
             </div>
-            <a href="https://your-sign-in-board-url.web.app" target="_blank" class="col-span-4 md:col-span-2 bg-main-blue text-white flex items-center justify-center font-bold text-sm border border-white">即時簽到看板連結鈕</a>
-            <button onclick="toggleCardView()" id="viewBtn" class="col-span-4 md:col-span-2 bg-main-blue text-white font-bold text-sm border border-white">名片模式</button>
-            <button onclick="handleAdminSwitch()" id="modeBtn" class="col-span-4 md:col-span-2 bg-main-blue text-white font-bold text-sm border border-white">後台模式</button>
-        </div>
-
-        <div class="border-black">
-            <div class="bg-main-blue text-center font-bold p-2">執行人員分工及名單</div>
-            <div id="staffGrid" class="grid grid-cols-2 md:grid-cols-5 gap-0 bg-white">
-                </div>
-        </div>
-
-        <div class="border-black">
-            <div class="bg-main-blue text-center font-bold p-2">
-                流程表<br>
-                <span class="text-xs font-normal">序 / 時間(長度) / 單元項目 / 執行說明 / 負責人員 / 增加 or 刪除</span>
+            <div class="flex gap-2">
+                <button onclick="handleAdminSwitch()" id="modeBtn" class="bg-white/20 hover:bg-white/30 p-2 rounded-full transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg></button>
             </div>
-            
-            <div class="table-wrapper">
-                <table class="table-bw w-full text-sm">
-                    <thead>
-                        <tr class="bg-slate-100">
-                            <th width="40">序</th>
-                            <th width="120">時間(長度)</th>
-                            <th>單元項目</th>
-                            <th>執行說明</th>
-                            <th width="150">負責人員</th>
-                            <th width="80">簽到</th>
-                            <th class="admin-only" width="40">✕</th>
-                        </tr>
-                    </thead>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto p-4 space-y-6">
+
+        <section>
+            <div class="flex justify-between items-center mb-3 px-1">
+                <h3 class="font-black text-slate-400 text-xs tracking-widest uppercase">Staff List</h3>
+            </div>
+            <div id="staffGrid" class="flex gap-3 overflow-x-auto no-scrollbar pb-2"></div>
+        </section>
+
+        <section class="glass-card overflow-hidden">
+            <div class="bg-slate-50 border-b border-slate-100 p-4 flex justify-between items-center">
+                <h3 class="font-black text-blue-900">Rundown</h3>
+                <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">LIVE SYNC</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
                     <tbody id="tableBody"></tbody>
                 </table>
-                <button onclick="addNewRow()" class="admin-only w-full p-4 border-t border-black font-bold text-slate-400">+ 增加流程項目</button>
             </div>
-            <div id="cardContainer" class="p-2"></div>
-        </div>
+            <button onclick="addNewRow()" class="admin-only w-full py-4 text-sm font-bold text-slate-400 border-t border-dashed hover:bg-slate-50">+ 新增流程節點</button>
+        </section>
 
-        <div class="border-black p-1">
-            <div class="bg-main-blue font-bold p-2 mb-2 italic">器材清單</div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="border-black p-3">
-                    <div class="bg-main-orange flex justify-between items-center p-2 mb-2">
-                        <span class="font-black text-lg">服務台</span>
-                        <button onclick="addEqRow('service')" class="admin-only border border-white px-2 py-0.5 text-xs">新增</button>
-                    </div>
-                    <div id="serviceTags" class="mb-2"></div> <div id="serviceBox" class="space-y-1"></div>
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="glass-card p-4 border-t-4 border-orange-500">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-black text-orange-600 flex items-center gap-2"><span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>服務台物料</h3>
+                    <button onclick="addEqRow('service')" class="admin-only text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-md">新增</button>
                 </div>
-                <div class="border-black p-3">
-                    <div class="bg-main-orange flex justify-between items-center p-2 mb-2">
-                        <span class="font-black text-lg">舞台區</span>
-                        <button onclick="addEqRow('stage')" class="admin-only border border-white px-2 py-0.5 text-xs">新增</button>
-                    </div>
-                    <div id="stageTags" class="mb-2"></div> <div id="stageBox" class="space-y-1"></div>
-                </div>
+                <div id="serviceTags" class="flex flex-wrap gap-1 mb-4"></div>
+                <div id="serviceBox" class="flex flex-wrap gap-2"></div>
             </div>
-        </div>
 
-        <button onclick="saveToCloud()" class="admin-only w-full bg-black text-white p-4 font-black">💾 儲存並更新雲端資料 (Ver. 2)</button>
-    </div>
+            <div class="glass-card p-4 border-t-4 border-blue-600">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-black text-blue-700 flex items-center gap-2"><span class="w-2 h-2 bg-blue-600 rounded-full"></span>舞台硬體</h3>
+                    <button onclick="addEqRow('stage')" class="admin-only text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-md">新增</button>
+                </div>
+                <div id="stageTags" class="flex flex-wrap gap-1 mb-4"></div>
+                <div id="stageBox" class="flex flex-wrap gap-2"></div>
+            </div>
+        </section>
+
+        <button onclick="saveToCloud()" class="admin-only w-full bg-slate-900 text-white py-5 rounded-2xl font-black shadow-xl transform active:scale-95 transition">💾 發佈 Ver. 7 專業執行版本</button>
+    </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -107,115 +102,122 @@
 
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_platform_v2');
+        const dataRef = ref(db, 'execution_platform_v7');
 
-        let isAdmin = false, isCardView = false;
-        
+        let isAdmin = false;
         let localData = {
-            date: "2026/03/27",
-            title: "頭份四月八 靚燈好客節",
-            staff: [
-                { j: "控場", n: "鐵仁" }, { j: "執行", n: "崧瑋" }, { j: "執行", n: "露比" },
-                { j: "執行", n: "志明" }, { j: "執行", n: "維憶" }, { j: "執行", n: "芳瑜" },
-                { j: "服務台", n: "柏緯" }, { j: "攝影", n: "江哥" }, { j: "執行", n: "中瑜" }, { j: "物料", n: "貝克里" }
+            staff: [{j:"控場", n:"鐵仁"}, {j:"執行", n:"崧瑋"}, {j:"執行", n:"露比"}],
+            rundown: [
+                { t: "08:00", d: "30", u: "場地準備", s: "全體人員到位、器材最終測試", person: "全選-ALL STAFF", lock: false },
+                { t: "", d: "30", u: "彩排測試", s: "燈光音響、影片首播確認", person: "鐵仁", lock: false },
+                { t: "", d: "10", u: "貴賓簽到", s: "服務台導引", person: "露比", lock: false },
+                { t: "", d: "10", u: "", s: "", person: "", lock: false },
+                { t: "", d: "10", u: "", s: "", person: "", lock: false },
+                { t: "", d: "10", u: "", s: "", person: "", lock: false },
+                { t: "", d: "10", u: "", s: "", person: "", lock: false }
             ],
-            rundown: [{ t: "10:00", d: "10", u: "開幕式", s: "長官致詞與大合照", person: "全選-ALL STAFF", checkin: "" }],
             eq: { service: [], stage: [] },
-            memory: ["無線電", "麥克風", "指示牌", "瓶裝水", "講稿"]
+            memory: ["無線電", "新聞袋", "摸彩箱", "瓶裝水", "簽到表"]
         };
 
-        // 自動檢查時間並更新 UI
-        setInterval(() => { renderAll(); }, 60000);
+        const calculateTimes = () => {
+            let lastTime = "08:00";
+            localData.rundown.forEach((item, i) => {
+                if (i === 0 && !item.t) item.t = "08:00";
+                if (item.t && (i === 0 || item.lock)) lastTime = item.t;
+                else item.t = lastTime;
+                let [h, m] = lastTime.split(':').map(Number);
+                m += parseInt(item.d || 0);
+                h += Math.floor(m / 60);
+                m = m % 60;
+                lastTime = `${String(h % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            });
+        };
 
         const renderStaff = () => {
             const grid = document.getElementById('staffGrid');
-            grid.innerHTML = localData.staff.map((s, i) => `
-                <div class="border border-black p-2 ${isAdmin?'admin-bg':''}">
-                    <input class="text-[10px] w-full border-b border-black mb-1 block" value="${s.j}" onchange="localData.staff[${i}].j=this.value" ${!isAdmin?'readonly':''}>
-                    <input class="font-bold w-full" value="${s.n}" onchange="localData.staff[${i}].n=this.value" ${!isAdmin?'readonly':''}>
-                </div>
-            `).join('');
+            grid.innerHTML = "";
+            localData.staff.forEach((s, i) => {
+                if(s.n || isAdmin) {
+                    const div = document.createElement('div');
+                    div.className = "flex-shrink-0 bg-white p-3 rounded-2xl border border-slate-200 min-w-[120px] shadow-sm";
+                    div.innerHTML = `
+                        <input class="text-[9px] font-bold text-slate-400 block bg-transparent outline-none uppercase tracking-tighter" value="${s.j}" onchange="localData.staff[${i}].j=this.value" ${!isAdmin?'readonly':''}>
+                        <div class="flex items-center justify-between">
+                            <input class="font-black text-slate-800 outline-none text-sm bg-transparent" value="${s.n}" onchange="localData.staff[${i}].n=this.value; renderAll()" ${!isAdmin?'readonly':''}>
+                            ${isAdmin ? `<button onclick="localData.staff.splice(${i},1); renderAll()" class="text-rose-300">✕</button>` : ''}
+                        </div>`;
+                    grid.appendChild(div);
+                }
+            });
+            if(isAdmin) {
+                const addBtn = document.createElement('button');
+                addBtn.className = "flex-shrink-0 border-2 border-dashed border-slate-300 rounded-2xl px-4 flex items-center text-slate-400 font-black text-xs";
+                addBtn.innerHTML = "＋ ADD";
+                addBtn.onclick = () => { localData.staff.push({j:"STAFF", n:""}); renderAll(); };
+                grid.appendChild(addBtn);
+            }
         };
 
         window.renderAll = () => {
+            calculateTimes();
             renderStaff();
             const tbody = document.getElementById('tableBody');
-            const cardContainer = document.getElementById('cardContainer');
             const now = new Date();
             const curMin = now.getHours() * 60 + now.getMinutes();
             
-            tbody.innerHTML = ""; cardContainer.innerHTML = "";
-            let staffOptions = `<option value="">負責人</option><option value="全選-ALL STAFF">📢 全選: ALL STAFF</option>`;
-            localData.staff.forEach(s => { if(s.n) staffOptions += `<option value="${s.j}-${s.n}">${s.j}:${s.n}</option>`; });
+            tbody.innerHTML = "";
+            let options = `<option value="">負責人</option><option value="全選-ALL STAFF">📢 ALL STAFF</option>`;
+            localData.staff.forEach(s => { if(s.n) options += `<option value="${s.n}">${s.n}</option>`; });
 
             localData.rundown.forEach((item, i) => {
-                let isActive = false;
-                if(item.t && item.t.includes(':')) {
-                    const [h, m] = item.t.split(':').map(Number);
-                    const start = h * 60 + m;
-                    const duration = parseInt(item.d) || 5;
-                    if(curMin >= start && curMin < (start + duration)) isActive = true;
-                }
+                const [h, m] = item.t.split(':').map(Number);
+                const start = h * 60 + m;
+                const isActive = (curMin >= start && curMin < (start + parseInt(item.d)));
 
                 const tr = document.createElement('tr');
                 if(isActive) tr.className = "is-now";
+                tr.className += " border-b border-slate-100 last:border-0";
                 tr.innerHTML = `
-                    <td class="text-center font-bold border border-black">${i+1}</td>
-                    <td class="border border-black"><input class="w-full bg-transparent font-bold" value="${item.t||''} (${item.d||''})" onchange="updateTime(${i}, this.value)" ${!isAdmin?'readonly':''}></td>
-                    <td class="border border-black"><input class="w-full bg-transparent font-bold" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td class="border border-black"><input class="w-full bg-transparent text-xs" value="${item.s||''}" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}></td>
-                    <td class="border border-black text-center">
-                        ${isAdmin ? `<select class="w-full text-xs font-bold bg-transparent" onchange="localData.rundown[${i}].person=this.value; renderAll()">${staffOptions.replace(`value="${item.person}"`, `value="${item.person}" selected`)}</select>` 
-                        : `<div class="text-[11px] font-bold p-1 ${item.person.includes('全選')?'bg-black text-white':''}">${item.person || '-'}</div>`}
+                    <td class="p-4 align-top">
+                        <div class="flex flex-col items-center">
+                            <input class="w-12 font-black text-blue-800 text-sm bg-transparent outline-none ${item.lock?'underline':''}" value="${item.t}" onchange="localData.rundown[${i}].t=this.value; localData.rundown[${i}].lock=true; renderAll()" ${!isAdmin?'readonly':''}>
+                            <input class="w-8 text-[10px] font-bold text-slate-400 bg-slate-100 rounded text-center mt-1" value="${item.d}" onchange="localData.rundown[${i}].d=this.value; renderAll()" ${!isAdmin?'readonly':''}>
+                        </div>
                     </td>
-                    <td class="border border-black text-center">${item.checkin ? `<span class="font-bold">✅${item.checkin}</span>` : `<button onclick="doCheckIn(${i})" class="border border-black px-2 py-0.5 text-[10px]">簽到</button>`}</td>
-                    <td class="border border-black admin-only text-center"><button onclick="localData.rundown.splice(${i}, 1); renderAll()" class="text-rose-500 font-bold">✕</button></td>
+                    <td class="p-4 align-top">
+                        <input class="w-full font-black text-slate-800 bg-transparent outline-none mb-1" placeholder="單元名稱" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}>
+                        <textarea class="w-full text-xs text-slate-500 bg-transparent outline-none resize-none no-scrollbar" placeholder="執行說明..." rows="2" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}>${item.s||''}</textarea>
+                    </td>
+                    <td class="p-4 align-top text-right">
+                        ${isAdmin ? `<select class="text-[10px] font-bold border rounded p-1" onchange="localData.rundown[${i}].person=this.value; renderAll()">${options.replace(`value="${item.person}"`, `value="${item.person}" selected`)}</select>` 
+                        : `<span class="${item.person.includes('全選')?'tag-all':'tag-staff'} tag">${item.person || '-'}</span>`}
+                        <div class="mt-4 admin-only"><button onclick="localData.rundown.splice(${i}, 1); renderAll()" class="text-rose-300 text-xs">移除</button></div>
+                    </td>
                 `;
                 tbody.appendChild(tr);
-
-                // 名片模式
-                const card = document.createElement('div');
-                card.className = `p-4 border-2 border-black ${isActive?'bg-slate-100':''}`;
-                card.innerHTML = `<div class="flex justify-between font-black"><span>${item.t} (${item.d}m)</span><span>${item.u}</span></div>
-                                  <div class="text-sm border-t border-black mt-2 pt-2">${item.s}</div>
-                                  <div class="flex justify-between mt-3 italic text-xs">
-                                      <span>簽到: ${item.checkin||'---'}</span>
-                                      <span class="font-black border-b border-black">${item.person}</span>
-                                  </div>`;
-                cardContainer.appendChild(card);
             });
             renderEq();
         };
 
-        window.updateTime = (i, val) => {
-            const parts = val.replace(')', '').split('(');
-            localData.rundown[i].t = parts[0].trim();
-            localData.rundown[i].d = parts[1] || "10";
-            renderAll();
-        };
-
         window.renderEq = () => {
             ['service', 'stage'].forEach(z => {
-                document.getElementById(z+'Tags').innerHTML = localData.memory.map(m => `<span class="memory-tag" onclick="useMemory('${z}','${m}')">${m}</span>`).join('');
+                document.getElementById(z+'Tags').innerHTML = localData.memory.map(m => `<button class="text-[9px] bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full hover:bg-slate-300 transition" onclick="useMemory('${z}','${m}')">${m}</button>`).join('');
                 document.getElementById(z+'Box').innerHTML = localData.eq[z].map((e, idx) => `
-                    <div class="flex items-center gap-2 border-b border-black pb-1 mb-1">
-                        <input type="checkbox" class="w-4 h-4" ${e.l?'checked':''} onchange="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq(); if(!isAdmin) saveToCloud();">
-                        <input type="text" class="flex-1 text-sm font-bold bg-transparent outline-none" value="${e.n}" onchange="updateEqName('${z}',${idx},this.value)" ${!isAdmin?'readonly':''}>
-                        <input type="number" class="w-10 text-center font-bold bg-transparent" value="${e.q}" onchange="localData.eq['${z}'][${idx}].q=this.value; renderEq()" ${!isAdmin?'readonly':''}>
-                        ${isAdmin ? `<button onclick="localData.eq['${z}'].splice(${idx},1); renderEq()" class="text-xs">✕</button>` : ''}
-                    </div>
-                `).join('');
+                    <div class="eq-chip ${e.l?'checked':''}">
+                        <input type="checkbox" class="w-4 h-4 rounded-full border-slate-300 accent-blue-600" ${e.l?'checked':''} onchange="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq(); if(!isAdmin) saveToCloud();">
+                        <input type="text" class="text-xs font-bold text-slate-700 bg-transparent outline-none" value="${e.n}" onchange="updateEqName('${z}',${idx},this.value)" ${!isAdmin?'readonly':''} style="width:${(e.n.length+1)*10}px">
+                        <input type="number" value="${e.q}" onchange="localData.eq['${z}'][${idx}].q=this.value; renderEq()" ${!isAdmin?'readonly':''}>
+                    </div>`).join('');
             });
         };
 
         window.useMemory = (z, val) => { if(!isAdmin) return; localData.eq[z].push({n:val, q:1, l:false}); renderEq(); };
         window.updateEqName = (z, idx, val) => { localData.eq[z][idx].n = val; if(val && !localData.memory.includes(val)) localData.memory.push(val); renderEq(); };
         window.addEqRow = (z) => { localData.eq[z].push({n:"", q:1, l:false}); renderEq(); };
-        window.doCheckIn = (i) => { const n = new Date(); localData.rundown[i].checkin = n.getHours()+":"+String(n.getMinutes()).padStart(2,'0'); renderAll(); if(!isAdmin) saveToCloud(); };
-        window.toggleCardView = () => { isCardView = !isCardView; document.body.classList.toggle('card-view', isCardView); document.getElementById('viewBtn').innerText = isCardView ? "表格模式" : "名片模式"; renderAll(); };
-        window.handleAdminSwitch = () => { if(!isAdmin && prompt("管理密碼") !== "364401") return; isAdmin = !isAdmin; document.body.classList.toggle('admin-mode', isAdmin); document.getElementById('modeBtn').innerText = isAdmin ? "結束後台" : "後台模式"; renderAll(); };
-        window.addNewRow = () => { localData.rundown.push({t:"", d:"10", u:"新單元", s:"", person:"", checkin:""}); renderAll(); };
-        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ Ver. 2 資料已更新同步")); };
+        window.handleAdminSwitch = () => { if(!isAdmin && prompt("管理密碼") !== "364401") return; isAdmin = !isAdmin; document.body.classList.toggle('admin-mode', isAdmin); renderAll(); };
+        window.addNewRow = () => { localData.rundown.push({t:"", d:"10", u:"", s:"", person:"", lock:false}); renderAll(); };
+        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ Ver. 7 專業 App 版同步完成！")); };
         onValue(dataRef, (snap) => { if(!isAdmin) { const d = snap.val(); if(d) { localData = d; renderAll(); } } });
         
         renderAll();
