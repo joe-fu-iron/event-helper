@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v14</title>
+    <title>執行製作平台 v15</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -11,46 +11,31 @@
         .app-header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
         .glass-card { background: white; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         
-        /* 模式切換邏輯 */
         .view-content { display: none !important; }
         .view-content.active { display: block !important; }
         #cardView.active { display: grid !important; }
 
-        /* 表格格線與自適應高度優化 */
         .pro-table { border-collapse: collapse; width: 100%; border: 2px solid #475569; background: white; table-layout: fixed; }
-        .pro-table th, .pro-table td { border: 1px solid #94a3b8; padding: 12px 8px; vertical-align: top; }
+        .pro-table th, .pro-table td { border: 1px solid #94a3b8; padding: 12px 6px; vertical-align: middle; }
         
-        /* 欄位寬度分配 (手機優先) */
-        .col-time { width: 65px; }
+        /* 寬度優化：時間欄位放寬以容納 起訖+長度 */
+        .col-time { width: 110px; }
         .col-content { width: auto; }
-        .col-staff { width: 35%; } /* 給予足夠寬度讓標籤伸縮 */
+        .col-staff { width: 30%; }
 
         .is-now { background: #f0fdf4 !important; outline: 3px solid #22c55e; outline-offset: -3px; }
 
-        /* 編輯模式樣式 */
-        .admin-mode input, .admin-mode textarea { 
-            border: 1px solid #3b82f6 !important; 
-            background: #fff !important; 
-            padding: 4px;
-            border-radius: 4px;
-        }
-
-        /* 人員標籤容器：自動伸縮關鍵 */
-        .staff-container { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 4px; 
-            justify-content: flex-end; 
-            min-height: 30px; 
-        }
-
-        .person-tag { font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 6px; display: inline-block; white-space: nowrap; }
+        .staff-container { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+        .person-tag { font-size: 10px; font-weight: 800; padding: 3px 6px; border-radius: 4px; display: inline-block; white-space: nowrap; }
         .tag-unselected { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
-        .tag-selected { background: #1e40af; color: white; border: 1px solid #1e40af; box-shadow: 0 2px 4px rgba(30,64,175,0.2); }
+        .tag-selected { background: #1e40af; color: white; border: 1px solid #1e40af; }
         .tag-display { background: #4338ca; color: white; }
 
         .edit-only { display: none !important; }
         .admin-mode .edit-only { display: block !important; }
+        
+        /* 編輯模式下的輸入框樣式 */
+        .admin-mode input.edit-time-start { border-bottom: 1px dashed #3b82f6 !important; width: 50px; text-align: center; font-weight: 900; }
     </style>
 </head>
 <body class="pb-20">
@@ -60,17 +45,17 @@
             <div class="w-full md:w-auto">
                 <input type="text" class="bg-transparent font-black text-lg block w-full outline-none" value="頭份四月八 靚燈好客節">
                 <div class="flex items-center gap-2 mt-1">
-                    <span id="modeLabel" class="text-[9px] bg-white/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest">唯讀模式</span>
+                    <span id="modeLabel" class="text-[9px] bg-white/20 px-2 py-0.5 rounded font-bold uppercase">唯讀模式</span>
                     <button onclick="window.open('https://your-checkin-link.com', '_blank')" class="text-[9px] bg-orange-500 px-2 py-0.5 rounded font-black">➔ 簽到</button>
                 </div>
             </div>
             
             <div class="flex bg-black/20 p-1 rounded-xl w-full md:w-auto justify-between md:justify-start">
                 <div class="flex gap-1">
-                    <button onclick="switchView('table')" id="btn-table" class="px-5 py-2 rounded-lg text-xs font-black bg-white text-blue-800 transition shadow-inner">表格模式</button>
-                    <button onclick="switchView('card')" id="btn-card" class="px-5 py-2 rounded-lg text-xs font-black text-white hover:bg-white/10 transition">名片模式</button>
+                    <button onclick="switchView('table')" id="btn-table" class="px-5 py-2 rounded-lg text-xs font-black bg-white text-blue-800 shadow-inner">表格模式</button>
+                    <button onclick="switchView('card')" id="btn-card" class="px-5 py-2 rounded-lg text-xs font-black text-white hover:bg-white/10">名片模式</button>
                 </div>
-                <button onclick="handleAdminSwitch()" class="ml-2 p-2 rounded-full hover:bg-white/10 transition">
+                <button onclick="handleAdminSwitch()" class="ml-2 p-2 rounded-full hover:bg-white/10">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                 </button>
             </div>
@@ -78,11 +63,10 @@
     </header>
 
     <main class="max-w-6xl mx-auto p-3 space-y-4">
-
-        <section class="glass-card p-4">
+        <section id="staffSection" class="glass-card p-4">
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-black text-slate-400 text-[10px] tracking-widest uppercase">執行團隊派遣</h3>
-                <button onclick="addStaffMember()" class="edit-only text-[10px] bg-blue-700 text-white px-3 py-1.5 rounded-full font-bold shadow-md">+ 新增人員</button>
+                <h3 class="font-black text-slate-400 text-[10px] tracking-widest uppercase">TEAM</h3>
+                <button onclick="addStaffMember()" class="edit-only text-[10px] bg-blue-700 text-white px-3 py-1 rounded-full">+ 新增人員</button>
             </div>
             <div id="staffGrid" class="flex flex-wrap gap-2"></div>
         </section>
@@ -92,32 +76,30 @@
                 <table class="pro-table">
                     <thead>
                         <tr class="text-[10px] text-slate-500 font-black bg-slate-50">
-                            <th class="col-time">時間</th>
-                            <th class="col-content">執行內容</th>
+                            <th class="col-time">時間時段</th>
+                            <th class="col-content">執行項目</th>
                             <th class="col-staff">負責人員</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
-
             <div id="cardView" class="view-content p-3 grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"></div>
-            
-            <button onclick="addNewRow()" class="edit-only w-full py-5 text-xs font-black text-slate-400 border-t border-dashed bg-slate-50">+ 增加新流程節點</button>
+            <button onclick="addNewRow()" class="edit-only w-full py-5 text-xs font-black text-slate-400 border-t border-dashed bg-slate-50">+ 增加新流程</button>
         </section>
 
         <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="glass-card p-4 border-t-4 border-orange-500">
-                <div class="flex justify-between items-center mb-3 font-black text-xs text-orange-600"><span>服務台物料</span><button onclick="addEqRow('service')" class="edit-only bg-orange-100 px-2 py-0.5 rounded">＋</button></div>
+                <div class="flex justify-between items-center mb-3 font-black text-xs text-orange-600"><span>服務台</span><button onclick="addEqRow('service')" class="edit-only bg-orange-100 px-2 py-0.5 rounded">＋</button></div>
                 <div id="serviceBox" class="flex flex-wrap gap-2"></div>
             </div>
             <div class="glass-card p-4 border-t-4 border-blue-600">
-                <div class="flex justify-between items-center mb-3 font-black text-xs text-blue-700"><span>舞台硬體區</span><button onclick="addEqRow('stage')" class="edit-only bg-blue-100 px-2 py-0.5 rounded">＋</button></div>
+                <div class="flex justify-between items-center mb-3 font-black text-xs text-blue-700"><span>舞台區</span><button onclick="addEqRow('stage')" class="edit-only bg-blue-100 px-2 py-0.5 rounded">＋</button></div>
                 <div id="stageBox" class="flex flex-wrap gap-2"></div>
             </div>
         </section>
 
-        <button onclick="saveToCloud()" class="edit-only w-full bg-slate-900 text-white py-6 rounded-xl font-black shadow-xl">💾 儲存所有變動數據</button>
+        <button onclick="saveToCloud()" class="edit-only w-full bg-slate-900 text-white py-6 rounded-xl font-black shadow-xl">💾 同步 Ver. 15 到雲端</button>
     </main>
 
     <script type="module">
@@ -126,13 +108,41 @@
 
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_platform_v14');
+        const dataRef = ref(db, 'execution_platform_v15');
 
         let isAdmin = false;
         let localData = {
             staffRoles: [{n: "鐵仁", j: "控場", active: true}, {n: "柏緯", j: "服務台", active: true}],
-            rundown: Array(6).fill().map((_, i) => ({ t: i===0?"08:00":"", d: i<2?"30":"10", u: "", s: "", persons: [] })),
+            rundown: Array(6).fill().map((_, i) => ({ 
+                start: i===0?"08:00":"", 
+                end: "", 
+                d: i<2?30:10, 
+                u: "", s: "", persons: [] 
+            })),
             eq: { service: [], stage: [] }
+        };
+
+        // 核心計算邏輯：自動連動所有時間
+        window.calculateTimes = () => {
+            let lastEndTime = localData.rundown[0].start || "08:00";
+            
+            localData.rundown.forEach((item, i) => {
+                // 如果是第一行，允許手動設定開始時間
+                if (i === 0) {
+                    if(!item.start) item.start = "08:00";
+                } else {
+                    item.start = lastEndTime;
+                }
+
+                // 計算結束時間 = 開始時間 + 持續分鐘
+                let [h, m] = item.start.split(':').map(Number);
+                m += parseInt(item.d || 0);
+                h += Math.floor(m / 60);
+                m = m % 60;
+                item.end = `${String(h % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                
+                lastEndTime = item.end;
+            });
         };
 
         window.renderAll = () => {
@@ -146,11 +156,10 @@
             const activeStaffNames = localData.staffRoles.filter(r => r.active).map(r => r.n);
 
             localData.rundown.forEach((item, i) => {
-                const [h, m] = (item.t || "00:00").split(':').map(Number);
-                const start = h * 60 + m;
-                const isActive = (curMin >= start && curMin < (start + parseInt(item.d)));
+                const [h, m] = item.start.split(':').map(Number);
+                const startTotal = h * 60 + m;
+                const isActive = (curMin >= startTotal && curMin < (startTotal + parseInt(item.d)));
 
-                // 人員標籤容器 - 增加伸縮邏輯
                 let staffHtml = `<div class="staff-container">`;
                 if (isAdmin) {
                     activeStaffNames.forEach(name => {
@@ -162,38 +171,39 @@
                 }
                 staffHtml += `</div>`;
 
+                // 表格行
                 const tr = document.createElement('tr');
                 if(isActive) tr.className = "is-now";
                 tr.innerHTML = `
-                    <td class="text-center bg-slate-50/50">
-                        <div class="font-black text-blue-900 text-[13px]">${item.t}</div>
-                        <input type="number" class="w-10 text-[10px] font-bold bg-transparent text-center text-slate-400 outline-none" value="${item.d}" onchange="localData.rundown[${i}].d=this.value; renderAll()" ${!isAdmin?'readonly':''}>
+                    <td class="text-center bg-slate-50/30">
+                        ${(isAdmin && i===0) ? 
+                            `<input class="edit-time-start" value="${item.start}" onchange="localData.rundown[0].start=this.value; renderAll()">` : 
+                            `<div class="font-black text-blue-900 text-[11px]">${item.start}</div>`
+                        }
+                        <div class="text-[10px] text-slate-400 font-bold my-1">至 ${item.end}</div>
+                        <div class="flex items-center justify-center gap-1">
+                            <input type="number" class="w-8 text-[11px] font-black text-blue-600 bg-blue-50 rounded text-center" value="${item.d}" onchange="localData.rundown[${i}].d=this.value; renderAll()" ${!isAdmin?'readonly':''}>
+                            <span class="text-[9px] text-slate-400 font-bold">m</span>
+                        </div>
                     </td>
                     <td>
-                        <input class="w-full font-black text-slate-800 bg-transparent text-[14px] outline-none mb-1" value="${item.u||''}" placeholder="單元項目" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}>
-                        <textarea class="w-full text-[11px] text-slate-500 bg-transparent leading-snug resize-none outline-none" rows="2" placeholder="細節備註..." oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}>${item.s||''}</textarea>
+                        <input class="w-full font-black text-slate-800 bg-transparent text-[14px] outline-none mb-1" value="${item.u||''}" placeholder="項目名稱" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}>
+                        <textarea class="w-full text-[10px] text-slate-500 bg-transparent leading-tight resize-none outline-none" rows="2" placeholder="細節..." oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}>${item.s||''}</textarea>
                     </td>
                     <td>${staffHtml}</td>`;
                 tbody.appendChild(tr);
 
+                // 名片模式
                 const card = document.createElement('div');
                 card.className = `glass-card p-4 ${isActive?'border-2 border-green-500 bg-green-50 shadow-md':''}`;
-                card.innerHTML = `<div class="flex justify-between items-start mb-2"><span class="text-blue-700 font-black text-xs">${item.t} (${item.d}分)</span><div class="flex-1 ml-4">${staffHtml}</div></div>
+                card.innerHTML = `<div class="flex justify-between items-start mb-2">
+                                    <div class="text-blue-800 font-black text-[11px] leading-tight">${item.start}-${item.end}<br><span class="text-slate-400">(${item.d}m)</span></div>
+                                    <div class="flex-1 ml-4">${staffHtml}</div>
+                                  </div>
                                   <div class="font-black text-slate-800 text-sm mb-1">${item.u || '未定項目'}</div><div class="text-[11px] text-slate-500">${item.s}</div>`;
                 cardView.appendChild(card);
             });
             renderEq();
-        };
-
-        window.calculateTimes = () => {
-            let lastTime = "08:00";
-            localData.rundown.forEach((item, i) => {
-                if (i === 0 && !item.t) item.t = "08:00";
-                if (item.t && i === 0) lastTime = item.t; else item.t = lastTime;
-                let [h, m] = lastTime.split(':').map(Number);
-                m += parseInt(item.d || 0); h += Math.floor(m / 60); m = m % 60;
-                lastTime = `${String(h % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-            });
         };
 
         window.renderStaff = () => {
@@ -201,10 +211,10 @@
             localData.staffRoles.forEach((role, i) => {
                 if (!isAdmin && !role.active) return;
                 const div = document.createElement('div');
-                div.className = `p-3 rounded-xl border-2 min-w-[110px] transition ${role.active ? 'border-blue-500 bg-blue-50' : 'border-slate-100 opacity-40'} ${isAdmin?'cursor-pointer shadow-sm':''}`;
+                div.className = `p-2 rounded-lg border-2 min-w-[100px] transition ${role.active ? 'border-blue-500 bg-blue-50' : 'border-slate-100 opacity-40'} ${isAdmin?'cursor-pointer shadow-sm':''}`;
                 div.onclick = () => { if(isAdmin) { localData.staffRoles[i].active = !localData.staffRoles[i].active; renderAll(); } };
-                div.innerHTML = `<div class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">${role.j}</div>
-                                 <div class="flex justify-between items-center"><span class="font-black text-[13px]">${role.n}</span>
+                div.innerHTML = `<div class="text-[7px] font-bold text-slate-400 uppercase tracking-wider">${role.j}</div>
+                                 <div class="flex justify-between items-center"><span class="font-black text-[12px]">${role.n}</span>
                                  ${isAdmin ? `<button onclick="event.stopPropagation(); localData.staffRoles.splice(${i},1); renderAll()" class="text-rose-400 ml-1 font-bold">✕</button>` : ''}</div>`;
                 grid.appendChild(div);
             });
@@ -224,47 +234,44 @@
         window.switchView = (mode) => {
             document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
             document.getElementById(mode + 'View').classList.add('active');
-            
-            const isTable = mode === 'table';
-            document.getElementById('btn-table').className = isTable ? "px-5 py-2 rounded-lg text-xs font-black bg-white text-blue-800 transition shadow-inner" : "px-5 py-2 rounded-lg text-xs font-black text-white hover:bg-white/10 transition";
-            document.getElementById('btn-card').className = !isTable ? "px-5 py-2 rounded-lg text-xs font-black bg-white text-blue-800 transition shadow-inner" : "px-5 py-2 rounded-lg text-xs font-black text-white hover:bg-white/10 transition";
-            window.scrollTo(0,0);
+            const isT = mode === 'table';
+            document.getElementById('btn-table').className = isT ? "px-5 py-2 rounded-lg text-xs font-black bg-white text-blue-800 shadow-inner" : "px-5 py-2 rounded-lg text-xs font-black text-white hover:bg-white/10";
+            document.getElementById('btn-card').className = !isT ? "px-5 py-2 rounded-lg text-xs font-black bg-white text-blue-800 shadow-inner" : "px-5 py-2 rounded-lg text-xs font-black text-white hover:bg-white/10";
         };
 
         window.handleAdminSwitch = () => {
             if(!isAdmin) {
-                if(prompt("請輸入管理密碼") === "364401") {
+                if(prompt("密碼") === "364401") {
                     isAdmin = true;
                     document.body.classList.add('admin-mode');
                     document.getElementById('modeLabel').innerText = "編輯模式";
-                    document.getElementById('modeLabel').className = "text-[9px] bg-red-600 px-2 py-0.5 rounded font-bold uppercase tracking-widest";
+                    document.getElementById('modeLabel').className = "text-[9px] bg-red-600 px-2 py-0.5 rounded font-bold uppercase";
                 }
             } else {
                 isAdmin = false;
                 document.body.classList.remove('admin-mode');
                 document.getElementById('modeLabel').innerText = "唯讀模式";
-                document.getElementById('modeLabel').className = "text-[9px] bg-white/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest";
+                document.getElementById('modeLabel').className = "text-[9px] bg-white/20 px-2 py-0.5 rounded font-bold uppercase";
             }
             renderAll();
         };
 
         window.addStaffMember = () => {
-            const val = prompt("新增人員與職稱 (例: 柏緯+服務台)");
-            if (val?.includes('+')) { const [n, j] = val.split('+'); localData.staffRoles.push({n, j, active: true}); renderAll(); }
-            else if(val) alert("格式錯誤，請使用 姓名+職稱");
+            const v = prompt("姓名+職稱 (例: 鐵仁+控場)");
+            if (v?.includes('+')) { const [n, j] = v.split('+'); localData.staffRoles.push({n, j, active: true}); renderAll(); }
         };
 
-        window.togglePerson = (rowIndex, name) => {
-            if (!localData.rundown[rowIndex].persons) localData.rundown[rowIndex].persons = [];
-            const idx = localData.rundown[rowIndex].persons.indexOf(name);
-            if (idx > -1) localData.rundown[rowIndex].persons.splice(idx, 1);
-            else localData.rundown[rowIndex].persons.push(name);
+        window.togglePerson = (ri, name) => {
+            if (!localData.rundown[ri].persons) localData.rundown[ri].persons = [];
+            const idx = localData.rundown[ri].persons.indexOf(name);
+            if (idx > -1) localData.rundown[ri].persons.splice(idx, 1);
+            else localData.rundown[ri].persons.push(name);
             renderAll();
         };
 
-        window.addEqRow = (z) => { const n = prompt("輸入器材名稱"); if(n) { localData.eq[z].push({n, q:1, l:false}); renderAll(); } };
-        window.addNewRow = () => { localData.rundown.push({t:"", d:"10", u:"", s:"", persons:[]}); renderAll(); };
-        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ Ver. 14 雲端同步成功！")); };
+        window.addEqRow = (z) => { const n = prompt("名稱"); if(n) { localData.eq[z].push({n, q:1, l:false}); renderAll(); } };
+        window.addNewRow = () => { localData.rundown.push({start:"", end:"", d:10, u:"", s:"", persons:[]}); renderAll(); };
+        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ Ver. 15 已存檔")); };
         onValue(dataRef, (snap) => { if(!isAdmin) { const d = snap.val(); if(d) { localData = d; renderAll(); } } });
         
         renderAll();
