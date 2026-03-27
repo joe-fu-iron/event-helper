@@ -3,39 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v24</title>
+    <title>執行製作平台 v25</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
     <style>
-        /* Windows 系統配色風格 */
         :root {
             --win-blue: #0078D4;
             --win-bg: #FFFFFF;
             --win-border: #D1D1D1;
             --win-text: #000000;
-            --win-hover: #E5E5E5;
         }
 
         body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: var(--win-bg); color: var(--win-text); padding-bottom: 100px; }
         
-        /* 1. 標題列：Windows 經典藍 */
+        /* 標題列：橫向一致化排版 */
         .app-header { background: var(--win-blue); color: #ffffff; border-bottom: 1px solid #005A9E; }
-        .app-header input, .app-header span { color: #ffffff !important; }
-        .app-header input[type="date"] { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 2px; }
+        .header-item { font-size: 18px; font-weight: 700; color: #ffffff !important; }
+        
+        input[type="date"].header-input { 
+            background: rgba(255,255,255,0.15); 
+            border: 1px solid rgba(255,255,255,0.3); 
+            padding: 2px 8px; 
+            border-radius: 2px;
+            font-size: 18px; /* 字體一致 */
+            font-weight: 700;
+        }
+        input[type="text"].header-input-text {
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 18px; /* 字體一致 */
+            font-weight: 700;
+            width: auto;
+            flex-grow: 1;
+        }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
-        /* 2. 內容區域：純白底 */
+        /* 內容區域 */
         .glass-card { background: #ffffff; border: 1px solid var(--win-border); border-radius: 2px; }
-        
-        /* 表格樣式：乾淨系統化 */
         .pro-table { border-collapse: collapse; width: 100%; border: 1px solid var(--win-border); }
-        .pro-table th { background: #F3F3F3; color: #333333; padding: 12px; font-size: 13px; border: 1px solid var(--win-border); text-align: left; }
-        .pro-table td { border: 1px solid var(--win-border); padding: 12px; background: #ffffff; color: var(--win-text); }
+        .pro-table th { background: #F3F3F3; color: #333333; padding: 12px; font-size: 13px; border: 1px solid var(--win-border); }
+        .pro-table td { border: 1px solid var(--win-border); padding: 12px; background: #ffffff; }
         
-        /* 當前執行項目高亮 (系統藍邊) */
         .is-now { background: #F0F7FF !important; outline: 3px solid var(--win-blue); outline-offset: -3px; z-index: 10; position: relative; }
 
-        /* 人員及分工標籤：字級一致 */
+        /* 人員及分工標籤 */
         .staff-tag { 
             border: 1px solid var(--win-border); 
             padding: 5px 12px; 
@@ -44,23 +56,17 @@
             display: inline-flex;
             gap: 4px;
             background: #F9F9F9;
-            color: #333333;
             border-radius: 2px;
         }
-        .staff-tag.inactive { opacity: 0.2; }
         
-        /* 選單按鈕 */
-        .select-btn { border: 1px solid var(--win-border); padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; background: #FFFFFF; color: #000000; transition: background 0.1s; }
-        .select-btn:hover { background: var(--win-hover); }
+        .select-btn { border: 1px solid var(--win-border); padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; background: #FFFFFF; }
         .selected-job { background: var(--win-blue) !important; color: #ffffff !important; border-color: var(--win-blue); }
         
         .edit-only { display: none !important; }
         .admin-mode .edit-only { display: block !important; }
         
-        /* 按鈕視覺 */
         .btn-orange { background: #E95420; color: #ffffff; padding: 8px 18px; font-weight: 600; font-size: 13px; border-radius: 2px; }
-        .btn-header-outline { border: 1px solid rgba(255,255,255,0.7); color: #ffffff; padding: 8px 18px; font-weight: 600; font-size: 13px; border-radius: 2px; background: transparent; }
-        .btn-header-outline:hover { background: rgba(255,255,255,0.1); }
+        .btn-header-outline { border: 1px solid rgba(255,255,255,0.7); color: #ffffff; padding: 8px 18px; font-weight: 600; font-size: 13px; border-radius: 2px; }
         
         .view-section { display: none; }
         .active-view { display: block !important; }
@@ -70,19 +76,21 @@
 
     <header class="app-header sticky top-0 z-50 px-4 py-4 shadow-md">
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
-            <div class="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
-                <div class="bg-white/20 px-3 py-1 text-xs font-bold text-white border border-white/30">RUNNING</div>
-                <div class="flex flex-col">
-                    <input type="text" class="font-bold text-xl w-full md:w-96 bg-transparent outline-none text-white placeholder-white/50" value="頭份四月八 靚燈好客節" id="eventName" onblur="autoSave()">
-                    <div class="flex items-center gap-2 mt-1 text-xs font-semibold text-white/90">
-                        <input type="date" id="eventDate" onchange="updateWeekDay()">
-                        <span id="displayWeek" class="border-l border-white/30 pl-2 ml-1">---</span>
-                    </div>
+            <div class="flex items-center gap-4 w-full lg:w-auto overflow-x-auto">
+                <div class="flex items-center gap-2 whitespace-nowrap">
+                    <span class="header-item">日期：</span>
+                    <input type="date" id="eventDate" class="header-input" onchange="updateWeekDay()">
+                    <span id="displayWeek" class="header-item opacity-80">---</span>
+                </div>
+                <div class="h-6 w-[1px] bg-white/30 mx-1"></div>
+                <div class="flex items-center gap-2 flex-grow min-w-[200px]">
+                    <span class="header-item whitespace-nowrap">活動主題：</span>
+                    <input type="text" id="eventName" class="header-input-text text-white placeholder-white/50" value="頭份四月八 靚燈好客節" onblur="autoSave()">
                 </div>
             </div>
+            
             <div class="flex flex-wrap items-center justify-center gap-2">
                 <button onclick="window.open('https://your-checkin-link.com', '_blank')" class="btn-orange">長官即時簽到平台</button>
-                <div class="h-8 w-[1px] bg-white/20 mx-1 hidden md:block"></div>
                 <button onclick="switchView('card')" id="btn-card" class="btn-header-outline">名片模式</button>
                 <button onclick="switchView('table')" id="btn-table" class="hidden btn-header-outline">表格模式</button>
                 <button onclick="handleAdminSwitch()" class="p-2 border border-white/40 hover:bg-white/20 transition rounded-full text-white">
@@ -101,11 +109,11 @@
             
             <div class="edit-only space-y-4 p-4 border border-win-border bg-slate-50/50">
                 <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-xs font-bold text-slate-600">步驟 1. 分工：</span>
+                    <span class="text-xs font-bold text-slate-600">1. 分工：</span>
                     <div id="jobOptions" class="flex flex-wrap gap-1"></div>
                 </div>
                 <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-xs font-bold text-slate-600">步驟 2. 人員：</span>
+                    <span class="text-xs font-bold text-slate-600">2. 人員：</span>
                     <div id="nameOptions" class="flex flex-wrap gap-1"></div>
                 </div>
             </div>
@@ -118,7 +126,7 @@
                 <table class="pro-table">
                     <thead>
                         <tr>
-                            <th class="w-40">時段區間 (長度)</th>
+                            <th class="w-40 text-left">時段區間 (長度)</th>
                             <th>執行單元與內容說明</th>
                             <th class="w-48 text-right">負責人員</th>
                         </tr>
@@ -137,7 +145,7 @@
 
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_platform_v24');
+        const dataRef = ref(db, 'execution_platform_v25');
 
         let isAdmin = false;
         let selectedJob = ""; 
@@ -209,7 +217,7 @@
 
                 const tr = document.createElement('tr');
                 if(isActive) tr.className = "is-now";
-                tr.innerHTML = `<td class="text-center font-bold"><div>${item.t}-${item.te}</div><div class="text-[10px] text-slate-400">(${item.d}m)</div></td>
+                tr.innerHTML = `<td class="text-left font-bold"><div>${item.t}-${item.te}</div><div class="text-[10px] text-slate-400">(${item.d}m)</div></td>
                                 <td><input class="w-full font-bold text-sm bg-transparent" value="${item.u||''}" placeholder="單元名稱" onblur="localData.rundown[${i}].u=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
                                 <td class="text-right text-xs font-bold text-blue-600">${item.persons?.join(', ') || ''}</td>`;
                 tbody.appendChild(tr);
