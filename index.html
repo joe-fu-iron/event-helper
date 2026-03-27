@@ -3,80 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v25</title>
+    <title>執行製作平台 v25 - Optimized</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --win-blue: #0078D4;
-            --win-bg: #FFFFFF;
-            --win-border: #D1D1D1;
-            --win-text: #000000;
-        }
-
+        :root { --win-blue: #0078D4; --win-bg: #FFFFFF; --win-border: #D1D1D1; --win-text: #000000; }
         body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: var(--win-bg); color: var(--win-text); padding-bottom: 100px; }
-        
-        /* 標題列：橫向一致化排版 */
         .app-header { background: var(--win-blue); color: #ffffff; border-bottom: 1px solid #005A9E; }
         .header-item { font-size: 18px; font-weight: 700; color: #ffffff !important; }
-        
-        input[type="date"].header-input { 
-            background: rgba(255,255,255,0.15); 
-            border: 1px solid rgba(255,255,255,0.3); 
-            padding: 2px 8px; 
-            border-radius: 2px;
-            font-size: 18px; /* 字體一致 */
-            font-weight: 700;
-        }
-        input[type="text"].header-input-text {
-            background: transparent;
-            border: none;
-            outline: none;
-            font-size: 18px; /* 字體一致 */
-            font-weight: 700;
-            width: auto;
-            flex-grow: 1;
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-
-        /* 內容區域 */
-        .glass-card { background: #ffffff; border: 1px solid var(--win-border); border-radius: 2px; }
+        input[type="date"].header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 2px; font-size: 18px; font-weight: 700; }
+        input[type="text"].header-input-text { background: transparent; border: none; outline: none; font-size: 18px; font-weight: 700; width: auto; flex-grow: 1; }
         .pro-table { border-collapse: collapse; width: 100%; border: 1px solid var(--win-border); }
         .pro-table th { background: #F3F3F3; color: #333333; padding: 12px; font-size: 13px; border: 1px solid var(--win-border); }
-        .pro-table td { border: 1px solid var(--win-border); padding: 12px; background: #ffffff; }
-        
+        .pro-table td { border: 1px solid var(--win-border); padding: 8px; background: #ffffff; }
         .is-now { background: #F0F7FF !important; outline: 3px solid var(--win-blue); outline-offset: -3px; z-index: 10; position: relative; }
-
-        /* 人員及分工標籤 */
-        .staff-tag { 
-            border: 1px solid var(--win-border); 
-            padding: 5px 12px; 
-            font-size: 14px; 
-            font-weight: 600;
-            display: inline-flex;
-            gap: 4px;
-            background: #F9F9F9;
-            border-radius: 2px;
-        }
-        
+        .staff-tag { border: 1px solid var(--win-border); padding: 5px 12px; font-size: 14px; font-weight: 600; display: inline-flex; gap: 4px; background: #F9F9F9; border-radius: 2px; }
         .select-btn { border: 1px solid var(--win-border); padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; background: #FFFFFF; }
         .selected-job { background: var(--win-blue) !important; color: #ffffff !important; border-color: var(--win-blue); }
-        
         .edit-only { display: none !important; }
         .admin-mode .edit-only { display: block !important; }
-        
         .btn-orange { background: #E95420; color: #ffffff; padding: 8px 18px; font-weight: 600; font-size: 13px; border-radius: 2px; }
         .btn-header-outline { border: 1px solid rgba(255,255,255,0.7); color: #ffffff; padding: 8px 18px; font-weight: 600; font-size: 13px; border-radius: 2px; }
-        
         .view-section { display: none; }
         .active-view { display: block !important; }
+        .person-pill { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; margin: 1px; display: inline-block; font-size: 11px; }
+        /* 人員彈窗簡易樣式 */
+        #personPickerModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border:2px solid var(--win-blue); z-index:100; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
     <header class="app-header sticky top-0 z-50 px-4 py-4 shadow-md">
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-4 w-full lg:w-auto overflow-x-auto">
+            <div class="flex items-center gap-4 w-full lg:w-auto">
                 <div class="flex items-center gap-2 whitespace-nowrap">
                     <span class="header-item">日期：</span>
                     <input type="date" id="eventDate" class="header-input" onchange="updateWeekDay()">
@@ -88,7 +47,6 @@
                     <input type="text" id="eventName" class="header-input-text text-white placeholder-white/50" value="頭份四月八 靚燈好客節" onblur="autoSave()">
                 </div>
             </div>
-            
             <div class="flex flex-wrap items-center justify-center gap-2">
                 <button onclick="window.open('https://your-checkin-link.com', '_blank')" class="btn-orange">長官即時簽到平台</button>
                 <button onclick="switchView('card')" id="btn-card" class="btn-header-outline">名片模式</button>
@@ -101,23 +59,12 @@
     </header>
 
     <main class="max-w-7xl mx-auto p-4 space-y-8 mt-4">
-        
         <section class="space-y-4">
-            <div class="border-b border-win-border pb-2">
-                <span class="text-xs font-bold tracking-wider uppercase text-slate-500">Personnel & Roles / 人員及分工</span>
-            </div>
-            
+            <div class="border-b border-win-border pb-2"><span class="text-xs font-bold tracking-wider uppercase text-slate-500">Personnel & Roles / 人員及分工</span></div>
             <div class="edit-only space-y-4 p-4 border border-win-border bg-slate-50/50">
-                <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-xs font-bold text-slate-600">1. 分工：</span>
-                    <div id="jobOptions" class="flex flex-wrap gap-1"></div>
-                </div>
-                <div class="flex flex-wrap gap-2 items-center">
-                    <span class="text-xs font-bold text-slate-600">2. 人員：</span>
-                    <div id="nameOptions" class="flex flex-wrap gap-1"></div>
-                </div>
+                <div class="flex flex-wrap gap-2 items-center"><span class="text-xs font-bold text-slate-600">1. 分工：</span><div id="jobOptions" class="flex flex-wrap gap-1"></div></div>
+                <div class="flex flex-wrap gap-2 items-center"><span class="text-xs font-bold text-slate-600">2. 人員：</span><div id="nameOptions" class="flex flex-wrap gap-1"></div></div>
             </div>
-
             <div id="staffGrid" class="flex flex-wrap gap-2"></div>
         </section>
 
@@ -126,9 +73,10 @@
                 <table class="pro-table">
                     <thead>
                         <tr>
-                            <th class="w-40 text-left">時段區間 (長度)</th>
-                            <th>執行單元與內容說明</th>
-                            <th class="w-48 text-right">負責人員</th>
+                            <th class="w-48 text-left">時段區間 (長度)</th>
+                            <th class="w-48">執行單元</th>
+                            <th>內容說明</th>
+                            <th class="w-40 text-right">負責人員</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -138,6 +86,15 @@
             <button onclick="addNewRow()" class="edit-only w-full py-6 text-sm font-bold border border-win-border border-t-0 hover:bg-slate-50 transition">+ 增加流程節點</button>
         </section>
     </main>
+
+    <div id="personPickerModal">
+        <h3 class="font-bold mb-4 border-b pb-2">選擇負責人員</h3>
+        <div id="pickerList" class="grid grid-cols-2 gap-2 mb-4 max-h-60 overflow-y-auto"></div>
+        <div class="flex justify-end gap-2">
+            <button onclick="closePicker()" class="px-4 py-2 bg-gray-200 text-sm">取消</button>
+            <button id="savePickerBtn" class="px-4 py-2 bg-blue-600 text-white text-sm">確認選擇</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -149,6 +106,7 @@
 
         let isAdmin = false;
         let selectedJob = ""; 
+        let activeEditRow = null;
         const JOBS = ["控場", "音響", "服務台", "儀式", "攝影", "機動", "錄影", "燈光", "特效", "視訊", "料理"];
         const NAMES = ["江哥", "瑩驊", "維憶", "芳瑜", "智明", "露比", "鐵仁", "柏緯", "崧瑋", "燕妮", "工讀1", "工讀2"];
 
@@ -156,7 +114,7 @@
             eventName: "頭份四月八 靚燈好客節",
             eventDate: "2026-03-27",
             staffRoles: [],
-            rundown: [{ t: "08:00", te: "08:30", d: "30", u: "場地檢查", s: "全區電力負載測試", persons: [], lock: true }]
+            rundown: [{ t: "08:00", te: "08:30", d: "30", u: "場地檢查", s: "全區電力負載測試", persons: [] }]
         };
 
         window.initSelectors = () => {
@@ -187,6 +145,32 @@
             renderAll();
         };
 
+        // 開啟人員選擇器
+        window.openPicker = (idx) => {
+            if(!isAdmin) return;
+            activeEditRow = idx;
+            const modal = document.getElementById('personPickerModal');
+            const pickerList = document.getElementById('pickerList');
+            const currentPersons = localData.rundown[idx].persons || [];
+            
+            pickerList.innerHTML = localData.staffRoles.map(role => `
+                <label class="flex items-center gap-2 p-2 border hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" value="${role.n}" ${currentPersons.includes(role.n)?'checked':''}>
+                    <span class="text-sm">${role.n} (${role.j})</span>
+                </label>
+            `).join('');
+
+            modal.style.display = 'block';
+            document.getElementById('savePickerBtn').onclick = () => {
+                const selected = Array.from(pickerList.querySelectorAll('input:checked')).map(i => i.value);
+                localData.rundown[activeEditRow].persons = selected;
+                modal.style.display = 'none';
+                autoSave();
+            };
+        };
+
+        window.closePicker = () => document.getElementById('personPickerModal').style.display = 'none';
+
         window.renderAll = () => {
             initSelectors();
             document.getElementById('eventName').value = localData.eventName || "";
@@ -197,12 +181,11 @@
 
             const staffGrid = document.getElementById('staffGrid'); staffGrid.innerHTML = "";
             localData.staffRoles.forEach((role, i) => {
-                if (!isAdmin && !role.active) return;
                 const el = document.createElement('div');
-                el.className = `staff-tag ${role.active ? '' : 'inactive'} ${isAdmin?'cursor-pointer hover:border-red-400':''}`;
+                el.className = `staff-tag ${role.active ? '' : 'opacity-40'} ${isAdmin?'cursor-pointer hover:border-red-400':''}`;
                 el.onclick = () => { if(isAdmin) { role.active = !role.active; autoSave(); } };
                 el.innerHTML = `<span>${role.n}</span><span>(${role.j})</span>
-                                ${isAdmin ? `<span class="ml-2 text-slate-400 hover:text-red-500" onclick="event.stopPropagation(); localData.staffRoles.splice(${i},1); autoSave();">✕</span>` : ''}`;
+                    ${isAdmin ? `<span class="ml-2 text-slate-400 hover:text-red-500" onclick="event.stopPropagation(); localData.staffRoles.splice(${i},1); autoSave();">✕</span>` : ''}`;
                 staffGrid.appendChild(el);
             });
 
@@ -211,20 +194,40 @@
             const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
 
             localData.rundown.forEach((item, i) => {
-                const [h, m] = item.t.split(':').map(Number);
-                const [eh, em] = (item.te || "00:00").split(':').map(Number);
+                const [h, m] = (item.t||"00:00").split(':').map(Number);
+                const [eh, em] = (item.te||"00:00").split(':').map(Number);
                 const isActive = (curMin >= (h*60+m) && curMin < (eh*60+em));
 
                 const tr = document.createElement('tr');
                 if(isActive) tr.className = "is-now";
-                tr.innerHTML = `<td class="text-left font-bold"><div>${item.t}-${item.te}</div><div class="text-[10px] text-slate-400">(${item.d}m)</div></td>
-                                <td><input class="w-full font-bold text-sm bg-transparent" value="${item.u||''}" placeholder="單元名稱" onblur="localData.rundown[${i}].u=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
-                                <td class="text-right text-xs font-bold text-blue-600">${item.persons?.join(', ') || ''}</td>`;
+                
+                tr.innerHTML = `
+                    <td class="text-left font-bold space-y-1">
+                        <div class="flex items-center gap-1">
+                            <input class="w-14 text-center border-b border-transparent focus:border-blue-400 focus:bg-white" value="${item.t}" onblur="localData.rundown[${i}].t=this.value; autoSave()" ${!isAdmin?'readonly':''}>
+                            <span>-</span>
+                            <input class="w-14 text-center border-b border-transparent focus:border-blue-400 focus:bg-white" value="${item.te}" onblur="localData.rundown[${i}].te=this.value; autoSave()" ${!isAdmin?'readonly':''}>
+                        </div>
+                        <div class="text-[10px] text-slate-400 flex items-center gap-1">
+                            長度: <input class="w-8 text-center bg-transparent border-b border-slate-200" value="${item.d}" onblur="localData.rundown[${i}].d=this.value; autoSave()" ${!isAdmin?'readonly':''}> m
+                        </div>
+                    </td>
+                    <td><input class="w-full font-bold text-sm bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white" value="${item.u||''}" placeholder="單元" onblur="localData.rundown[${i}].u=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
+                    <td><textarea class="w-full text-xs bg-transparent border-b border-transparent focus:border-blue-400 focus:bg-white resize-none" placeholder="詳細內容說明..." onblur="localData.rundown[${i}].s=this.value; autoSave()" ${!isAdmin?'readonly':''}>${item.s||''}</textarea></td>
+                    <td class="text-right align-top cursor-pointer" onclick="openPicker(${i})">
+                        <div class="flex flex-wrap justify-end gap-1">
+                            ${(item.persons && item.persons.length > 0) 
+                                ? item.persons.map(p => `<span class="person-pill">${p}</span>`).join('') 
+                                : '<span class="text-slate-300 text-xs italic">點擊指派</span>'}
+                        </div>
+                        ${isAdmin ? `<button class="text-[10px] text-red-400 mt-2 block ml-auto" onclick="event.stopPropagation(); localData.rundown.splice(${i},1); autoSave();">刪除單元</button>` : ''}
+                    </td>`;
                 tbody.appendChild(tr);
 
+                // 名片模式同步更新
                 const card = document.createElement('div');
                 card.className = `glass-card p-4 ${isActive?'border-2 border-blue-500 shadow-lg':''}`;
-                card.innerHTML = `<div class="text-xs font-bold text-blue-500">${item.t}-${item.te}</div><div class="text-lg font-bold mt-1 text-slate-800">${item.u}</div>`;
+                card.innerHTML = `<div class="text-xs font-bold text-blue-500">${item.t}-${item.te}</div><div class="text-lg font-bold mt-1 text-slate-800">${item.u}</div><div class="text-sm text-slate-500 mt-2 line-clamp-2">${item.s||''}</div>`;
                 cardView.appendChild(card);
             });
         };
@@ -243,7 +246,10 @@
             document.getElementById('btn-table').classList.toggle('hidden', m === 'table');
         };
 
-        window.addNewRow = () => { localData.rundown.push({t:"", te:"", d:"10", u:"", s:"", persons:[], lock:false}); autoSave(); };
+        window.addNewRow = () => { 
+            localData.rundown.push({t:"00:00", te:"00:00", d:"10", u:"", s:"", persons:[]}); 
+            autoSave(); 
+        };
 
         onValue(dataRef, (snap) => { if(!isAdmin && snap.val()) { localData = snap.val(); renderAll(); } });
         renderAll();
