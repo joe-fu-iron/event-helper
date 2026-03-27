@@ -3,222 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v17</title>
+    <title>執行製作平台 v25 - Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Noto+Sans+TC:wght@500;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #1e293b; -webkit-tap-highlight-color: transparent; }
-        .app-header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
-        .glass-card { background: white; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .view-content { display: none !important; }
-        .view-content.active { display: block !important; }
-        .pro-table { border-collapse: collapse; width: 100%; border: 2px solid #475569; background: white; table-layout: fixed; }
-        .pro-table th, .pro-table td { border: 1px solid #94a3b8; padding: 12px 6px; vertical-align: middle; }
-        .col-time { width: 110px; }
-        .col-staff { width: 32%; }
-        .is-now { background: #f0fdf4 !important; outline: 3px solid #22c55e; outline-offset: -3px; }
-        .staff-container { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
-        .person-tag { font-size: 10px; font-weight: 800; padding: 3px 6px; border-radius: 4px; display: inline-block; }
-        .tag-unselected { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
-        .tag-selected { background: #1e40af; color: white; border: 1px solid #1e40af; }
-        .tag-display { background: #4338ca; color: white; }
+        :root { --win-blue: #0078D4; --win-bg: #FFFFFF; --win-border: #D1D1D1; --win-text: #000000; }
+        body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: var(--win-bg); color: var(--win-text); padding-bottom: 100px; }
+        .app-header { background: var(--win-blue); color: #ffffff; border-bottom: 1px solid #005A9E; }
+        .header-item { font-size: 18px; font-weight: 700; color: #ffffff !important; }
+        input[type="date"].header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 2px; font-size: 18px; font-weight: 700; }
+        input[type="text"].header-input-text { background: transparent; border: none; outline: none; font-size: 18px; font-weight: 700; width: auto; flex-grow: 1; }
+        .pro-table { border-collapse: collapse; width: 100%; border: 1px solid var(--win-border); }
+        .pro-table th { background: #F3F3F3; color: #333333; padding: 12px; font-size: 13px; border: 1px solid var(--win-border); }
+        .pro-table td { border: 1px solid var(--win-border); padding: 8px; background: #ffffff; }
+        .is-now { background: #F0F7FF !important; outline: 3px solid var(--win-blue); outline-offset: -3px; z-index: 10; position: relative; }
+        .staff-tag { border: 1px solid var(--win-border); padding: 5px 12px; font-size: 14px; font-weight: 600; display: inline-flex; gap: 4px; background: #F9F9F9; border-radius: 2px; }
+        .select-btn { border: 1px solid var(--win-border); padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; background: #FFFFFF; }
+        .selected-job { background: var(--win-blue) !important; color: #ffffff !important; border-color: var(--win-blue); }
         .edit-only { display: none !important; }
         .admin-mode .edit-only { display: block !important; }
-        .admin-mode input.edit-time-root { border-bottom: 2px solid #ef4444 !important; width: 60px; text-align: center; font-weight: 900; background: #fff5f5 !important; border-radius: 0; }
+        .btn-orange { background: #E95420; color: #ffffff; padding: 8px 18px; font-weight: 600; font-size: 13px; border-radius: 2px; }
+        .btn-header-outline { border: 1px solid rgba(255,255,255,0.7); color: #ffffff; padding: 8px 18px; font-weight: 600; font-size: 13px; border-radius: 2px; }
+        .view-section { display: none; }
+        .active-view { display: block !important; }
+        .person-pill { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; margin: 1px; display: inline-block; font-size: 11px; }
+        #personPickerModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border:2px solid var(--win-blue); z-index:100; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.2); width: 300px; }
+        .row-tool { display: flex; gap: 4px; justify-content: center; align-items: center; }
+        .btn-tool { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; border: 1px solid #ddd; }
+        .btn-add { color: green; border-color: green; }
+        .btn-del { color: red; border-color: red; }
     </style>
 </head>
-<body class="pb-20">
+<body>
 
-    <header class="app-header sticky top-0 z-50 px-4 py-3 text-white shadow-lg">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
-            <div class="w-full md:w-auto text-center md:text-left">
-                <input type="text" class="bg-transparent font-black text-lg block w-full outline-none" value="執行現場管理系統">
-                <div class="flex items-center justify-center md:justify-start gap-2 mt-1">
-                    <span id="modeLabel" class="text-[9px] bg-white/20 px-2 py-0.5 rounded font-bold">唯讀模式</span>
+    <header class="app-header sticky top-0 z-50 px-4 py-4 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4 w-full lg:w-auto">
+                <div class="flex items-center gap-2 whitespace-nowrap">
+                    <span class="header-item">日期：</span>
+                    <input type="date" id="eventDate" class="header-input" onchange="updateWeekDay()">
+                    <span id="displayWeek" class="header-item opacity-80">---</span>
+                </div>
+                <div class="h-6 w-[1px] bg-white/30 mx-1"></div>
+                <div class="flex items-center gap-2 flex-grow min-w-[200px]">
+                    <span class="header-item whitespace-nowrap">活動主題：</span>
+                    <input type="text" id="eventName" class="header-input-text text-white placeholder-white/50" value="頭份四月八 靚燈好客節" onblur="autoSave()">
                 </div>
             </div>
-            <div class="flex bg-black/20 p-1 rounded-xl w-full md:w-auto justify-between">
-                <div class="flex gap-1">
-                    <button onclick="switchView('table')" id="btn-table" class="px-5 py-2 rounded-lg text-xs font-black bg-white text-blue-800 shadow-inner">表格</button>
-                    <button onclick="switchView('card')" id="btn-card" class="px-5 py-2 rounded-lg text-xs font-black text-white hover:bg-white/10">名片</button>
-                </div>
-                <button onclick="handleAdminSwitch()" class="ml-2 p-2 rounded-full hover:bg-white/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                </button>
+            <div class="flex flex-wrap items-center justify-center gap-2">
+                <button onclick="window.open('https://your-checkin-link.com', '_blank')" class="btn-orange">長官即時簽到平台</button>
+                <button onclick="switchView('card')" id="btn-card" class="btn-header-outline">名片模式</button>
+                <button onclick="switchView('table')" id="btn-table" class="hidden btn-header-outline">表格模式</button>
+                <button onclick="handleAdminSwitch()" class="p-2 border border-white/40 hover:bg-white/20 transition rounded-full text-white" id="adminBtn">
+                    </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto p-3 space-y-4">
-        <section class="glass-card p-4">
-            <div class="flex justify-between items-center mb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <span>Team Members</span>
-                <button onclick="addStaffMember()" class="edit-only bg-blue-700 text-white px-3 py-1 rounded-full">+ 新增</button>
+    <main class="max-w-7xl mx-auto p-4 space-y-8 mt-4">
+        <section class="space-y-4">
+            <div class="border-b border-win-border pb-2"><span class="text-xs font-bold tracking-wider uppercase text-slate-500">Personnel & Roles / 人員及分工</span></div>
+            <div class="edit-only space-y-4 p-4 border border-win-border bg-slate-50/50">
+                <div class="flex flex-wrap gap-2 items-center"><span class="text-xs font-bold text-slate-600">1. 分工：</span><div id="jobOptions" class="flex flex-wrap gap-1"></div></div>
+                <div class="flex flex-wrap gap-2 items-center"><span class="text-xs font-bold text-slate-600">2. 人員：</span><div id="nameOptions" class="flex flex-wrap gap-1"></div></div>
             </div>
             <div id="staffGrid" class="flex flex-wrap gap-2"></div>
         </section>
 
-        <section class="glass-card overflow-hidden">
-            <div id="tableView" class="view-content active overflow-x-auto">
+        <section class="overflow-hidden">
+            <div id="tableView" class="view-section active-view overflow-x-auto">
                 <table class="pro-table">
                     <thead>
-                        <tr class="text-[10px] text-slate-500 font-black bg-slate-50">
-                            <th class="col-time text-center">時段 (m)</th>
-                            <th>內容 / 負責人員</th>
+                        <tr>
+                            <th class="w-48 text-left">時段區間 (長度)</th>
+                            <th class="w-48">執行單元</th>
+                            <th>內容說明</th>
+                            <th class="w-40 text-right">負責人員</th>
+                            <th class="w-16 edit-only">編輯</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
-            <div id="cardView" class="view-content p-3 grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"></div>
-            <button onclick="addNewRow()" class="edit-only w-full py-5 text-xs font-black text-slate-400 border-t border-dashed bg-slate-50">+ 增加新節點</button>
+            <div id="cardView" class="view-section grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"></div>
         </section>
-
-        <button onclick="saveToCloud()" class="edit-only w-full bg-slate-900 text-white py-6 rounded-xl font-black shadow-xl">💾 同步至雲端</button>
     </main>
+
+    <div id="personPickerModal">
+        <h3 class="font-bold mb-4 border-b pb-2">選擇負責人員</h3>
+        <div id="pickerList" class="flex flex-col gap-2 mb-4 max-h-60 overflow-y-auto"></div>
+        <div class="flex justify-end gap-2">
+            <button onclick="closePicker()" class="px-4 py-2 bg-gray-200 text-sm">取消</button>
+            <button id="savePickerBtn" class="px-4 py-2 bg-blue-600 text-white text-sm">確認</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // 如果您有新的 Firebase 配置請替換這裡
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_platform_v17');
+        const dataRef = ref(db, 'execution_platform_v25');
 
-        window.isAdmin = false;
-        window.localData = {
-            staffRoles: [{n: "鐵仁", j: "控場", active: true}],
-            rundown: [{ start: "08:00", end: "", d: 30, u: "活動開始", s: "", persons: [] }],
-            eq: { service: [], stage: [] }
+        let isAdmin = false;
+        let selectedJob = ""; 
+        let activeEditRow = null;
+        const JOBS = ["控場", "音響", "服務台", "儀式", "攝影", "機動", "錄影", "燈光", "特效", "視訊", "料理"];
+        const NAMES = ["江哥", "瑩驊", "維憶", "芳瑜", "智明", "露比", "鐵仁", "柏緯", "崧瑋", "燕妮", "工讀1", "工讀2"];
+
+        let localData = {
+            eventName: "頭份四月八 靚燈好客節",
+            eventDate: "2026-03-27",
+            staffRoles: [],
+            rundown: [
+                { t: "08:00", te: "08:30", d: "30", u: "場地檢查", s: "全區電力負載測試", persons: [] },
+                { t: "08:30", te: "09:30", d: "60", u: "設備調試", s: "音響與視訊同步測試", persons: [] },
+                { t: "09:30", te: "10:00", d: "30", u: "工作人員集合", s: "今日流程最後確認", persons: [] }
+            ]
         };
 
-        window.recalculateChain = () => {
-            if (!localData.rundown || localData.rundown.length === 0) return;
-            let lastEnd = localData.rundown[0].start || "08:00";
-            localData.rundown.forEach((item, i) => {
-                if (i !== 0) item.start = lastEnd;
-                let [h, m] = item.start.split(':').map(Number);
-                if (isNaN(h) || isNaN(m)) { h=8; m=0; }
-                m += parseInt(item.d || 0);
-                h += Math.floor(m / 60); m = m % 60;
-                item.end = `${String(h % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                lastEnd = item.end;
-            });
+        window.initSelectors = () => {
+            const jBox = document.getElementById('jobOptions');
+            jBox.innerHTML = JOBS.map(j => `<button class="select-btn ${selectedJob===j?'selected-job':''}" onclick="selectJob('${j}')">${j}</button>`).join('') + `<button class="select-btn" onclick="customJob()">+手動</button>`;
+            const nBox = document.getElementById('nameOptions');
+            nBox.innerHTML = NAMES.map(n => `<button class="select-btn" onclick="assignStaff('${n}')">${n}</button>`).join('') + `<button class="select-btn" onclick="customName()">+手動</button>`;
+            updateAdminIcon();
+        };
+
+        const updateAdminIcon = () => {
+            const adminBtn = document.getElementById('adminBtn');
+            adminBtn.innerHTML = isAdmin 
+                ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>` // 開鎖
+                : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>`; // 鎖住
+        };
+
+        window.selectJob = (j) => { selectedJob = j; initSelectors(); };
+        window.customJob = () => { const j = prompt("分工名稱："); if(j) selectJob(j); };
+        window.assignStaff = (n) => { if(!selectedJob) { alert("請先選分工！"); return; } localData.staffRoles.push({ n, j: selectedJob, active: true }); autoSave(); };
+        window.customName = () => { const n = prompt("人員姓名："); if(n) assignStaff(n); };
+
+        window.updateWeekDay = () => {
+            const val = document.getElementById('eventDate').value;
+            if (val) {
+                const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                document.getElementById('displayWeek').innerText = days[new Date(val).getDay()];
+                localData.eventDate = val;
+                autoSave();
+            }
+        };
+
+        window.autoSave = () => {
+            localData.eventName = document.getElementById('eventName').value;
+            set(dataRef, localData);
+            renderAll();
+        };
+
+        window.openPicker = (idx) => {
+            if(!isAdmin) return;
+            activeEditRow = idx;
+            const modal = document.getElementById('personPickerModal');
+            const pickerList = document.getElementById('pickerList');
+            const currentPersons = localData.rundown[idx].persons || [];
+            pickerList.innerHTML = localData.staffRoles.map(role => `
+                <label class="flex items-center gap-2 p-2 border hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" value="${role.n}" ${currentPersons.includes(role.n)?'checked':''}>
+                    <span class="text-sm">${role.n} (${role.j})</span>
+                </label>
+            `).join('');
+            modal.style.display = 'block';
+            document.getElementById('savePickerBtn').onclick = () => {
+                localData.rundown[activeEditRow].persons = Array.from(pickerList.querySelectorAll('input:checked')).map(i => i.value);
+                modal.style.display = 'none';
+                autoSave();
+            };
+        };
+
+        window.closePicker = () => document.getElementById('personPickerModal').style.display = 'none';
+
+        // 核心邏輯：自動推算下一行時間
+        window.addNewRow = (afterIndex = -1) => {
+            let lastTime = "08:00";
+            let nextDuration = "10";
+            
+            if (localData.rundown.length > 0) {
+                const target = afterIndex >= 0 ? localData.rundown[afterIndex] : localData.rundown[localData.rundown.length-1];
+                lastTime = target.te;
+            }
+
+            // 預排規則：第1行30, 第2行60, 第3行30, 其餘10
+            const nextIdx = afterIndex >= 0 ? afterIndex + 1 : localData.rundown.length;
+            if(nextIdx === 0) nextDuration = "30";
+            else if(nextIdx === 1) nextDuration = "60";
+            else if(nextIdx === 2) nextDuration = "30";
+            else nextDuration = "10";
+
+            const [h, m] = lastTime.split(':').map(Number);
+            let date = new Date(); date.setHours(h, m + parseInt(nextDuration));
+            const newTe = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+
+            const newItem = {t: lastTime, te: newTe, d: nextDuration, u: "", s: "", persons: []};
+            
+            if(afterIndex >= 0) localData.rundown.splice(afterIndex + 1, 0, newItem);
+            else localData.rundown.push(newItem);
+            
+            autoSave();
+        };
+
+        window.removeRow = (idx) => {
+            if(confirm("確定刪除此行？")) {
+                localData.rundown.splice(idx, 1);
+                autoSave();
+            }
         };
 
         window.renderAll = () => {
-            recalculateChain();
-            const grid = document.getElementById('staffGrid'); grid.innerHTML = "";
-            localData.staffRoles.forEach((role, i) => {
-                if (!isAdmin && !role.active) return;
-                const div = document.createElement('div');
-                div.className = `p-2 rounded-lg border-2 min-w-[80px] transition ${role.active ? 'border-blue-500 bg-blue-50' : 'border-slate-100 opacity-40'}`;
-                div.onclick = () => { if(isAdmin) { localData.staffRoles[i].active = !localData.staffRoles[i].active; renderAll(); } };
-                div.innerHTML = `<div class="text-[7px] font-bold text-slate-400 uppercase">${role.j}</div>
-                                 <div class="flex justify-between items-center"><span class="font-black text-[11px]">${role.n}</span>
-                                 ${isAdmin ? `<button onclick="event.stopPropagation(); localData.staffRoles.splice(${i},1); renderAll()" class="text-rose-400 ml-1">✕</button>` : ''}</div>`;
-                grid.appendChild(div);
-            });
-
-            const tbody = document.getElementById('tableBody');
-            const cardView = document.getElementById('cardView');
+            initSelectors();
+            const tbody = document.getElementById('tableBody'); tbody.innerHTML = "";
+            const cardView = document.getElementById('cardView'); cardView.innerHTML = "";
             const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
-            
-            tbody.innerHTML = ""; cardView.innerHTML = "";
-            const activeStaffNames = localData.staffRoles.filter(r => r.active).map(r => r.n);
 
             localData.rundown.forEach((item, i) => {
-                const [h, m] = item.start.split(':').map(Number);
-                const isActive = (curMin >= (h*60+m) && curMin < (h*60+m + parseInt(item.d)));
-
-                let staffHtml = `<div class="staff-container">`;
-                if (isAdmin) {
-                    activeStaffNames.forEach(name => {
-                        const sel = item.persons?.includes(name);
-                        staffHtml += `<span class="person-tag cursor-pointer ${sel?'tag-selected':'tag-unselected'}" onclick="togglePerson(${i}, '${name}')">${name}</span>`;
-                    });
-                } else {
-                    item.persons?.forEach(name => { staffHtml += `<span class="person-tag tag-display">${name}</span>`; });
-                }
-                staffHtml += `</div>`;
+                const [h, m] = (item.t||"00:00").split(':').map(Number);
+                const [eh, em] = (item.te||"00:00").split(':').map(Number);
+                const isActive = (curMin >= (h*60+m) && curMin < (eh*60+em));
 
                 const tr = document.createElement('tr');
                 if(isActive) tr.className = "is-now";
+                
                 tr.innerHTML = `
-                    <td class="text-center bg-slate-50/50">
-                        <div class="flex flex-col items-center">
-                            ${(isAdmin && i===0) ? `<input class="edit-time-root" value="${item.start}" onchange="localData.rundown[0].start=this.value; renderAll()">` : `<span class="font-black text-blue-900 text-[11px]">${item.start}</span>`}
-                            <span class="text-[9px] text-slate-300">▼</span>
-                            <span class="font-black text-blue-700 text-[11px]">${item.end}</span>
-                            <div class="mt-1 flex items-center bg-blue-100 px-1 rounded-full"><input type="number" class="w-7 text-[10px] font-black text-blue-800 bg-transparent text-center" value="${item.d}" onchange="localData.rundown[${i}].d=this.value; renderAll()" ${!isAdmin?'readonly':''}></div>
+                    <td class="text-left font-bold">
+                        <div class="flex items-center gap-1">
+                            <input class="w-14 text-center bg-transparent" value="${item.t}" onblur="localData.rundown[${i}].t=this.value; autoSave()" ${!isAdmin?'readonly':''}>
+                            <span>-</span>
+                            <input class="w-14 text-center bg-transparent" value="${item.te}" onblur="localData.rundown[${i}].te=this.value; autoSave()" ${!isAdmin?'readonly':''}>
+                        </div>
+                        <div class="text-[10px] text-slate-400">長度: ${item.d} m</div>
+                    </td>
+                    <td><input class="w-full font-bold text-sm bg-transparent" value="${item.u||''}" placeholder="單元" onblur="localData.rundown[${i}].u=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
+                    <td><input class="w-full text-xs bg-transparent" value="${item.s||''}" placeholder="內容..." onblur="localData.rundown[${i}].s=this.value; autoSave()" ${!isAdmin?'readonly':''}></td>
+                    <td class="text-right align-top cursor-pointer" onclick="openPicker(${i})">
+                        <div class="flex flex-wrap justify-end gap-1">
+                            ${(item.persons && item.persons.length > 0) ? item.persons.map(p => `<span class="person-pill">${p}</span>`).join('') : '<span class="text-slate-300 text-[10px]">未指派</span>'}
                         </div>
                     </td>
-                    <td>
-                        <input class="w-full font-black text-slate-800 bg-transparent text-[14px] outline-none mb-1" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}>
-                        <div class="flex flex-wrap justify-between items-end gap-2">
-                           <textarea class="flex-1 text-[10px] text-slate-500 bg-transparent leading-tight resize-none outline-none" rows="1" oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}>${item.s||''}</textarea>
-                           ${staffHtml}
+                    <td class="edit-only">
+                        <div class="row-tool">
+                            <button class="btn-tool btn-add" onclick="addNewRow(${i})">+</button>
+                            <button class="btn-tool btn-del" onclick="removeRow(${i})">-</button>
                         </div>
                     </td>`;
                 tbody.appendChild(tr);
 
+                // 名片模式：依照您的圖片修正，去掉底部多餘資料
                 const card = document.createElement('div');
-                card.className = `glass-card p-4 ${isActive?'border-2 border-green-500 bg-green-50':''}`;
-                card.innerHTML = `<div class="flex justify-between items-start mb-2"><div class="text-blue-900 font-black text-[12px]">${item.start}-${item.end} (${item.d}m)</div>${staffHtml}</div>
-                                  <div class="font-black text-slate-800 text-sm mb-1">${item.u || '未定項目'}</div><div class="text-[11px] text-slate-500">${item.s}</div>`;
+                card.className = `glass-card p-4 border border-win-border rounded ${isActive?'border-blue-500 bg-blue-50/30':''}`;
+                card.innerHTML = `
+                    <div class="text-[13px] font-bold text-blue-500 mb-1">${item.t}-${item.te}</div>
+                    <div class="text-xl font-black text-slate-800 mb-2">${item.u || '未命名單元'}</div>
+                    <div class="text-sm text-slate-600 font-bold">${item.s || ''}</div>
+                `;
                 cardView.appendChild(card);
             });
-        };
-
-        window.switchView = (mode) => {
-            document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(mode + 'View').classList.add('active');
-            const isT = mode === 'table';
-            document.getElementById('btn-table').className = isT ? "px-5 py-2 rounded-lg text-xs font-black bg-white text-blue-800 shadow-inner" : "px-5 py-2 rounded-lg text-xs font-black text-white hover:bg-white/10";
-            document.getElementById('btn-card').className = !isT ? "px-5 py-2 rounded-lg text-xs font-black bg-white text-blue-800 shadow-inner" : "px-5 py-2 rounded-lg text-xs font-black text-white hover:bg-white/10";
+            // 初始如果沒資料顯示一個加號按鈕
+            if(localData.rundown.length === 0 && isAdmin) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center"><button onclick="addNewRow()" class="text-blue-500 font-bold">+ 開始建立第一筆流程</button></td></tr>`;
+            }
         };
 
         window.handleAdminSwitch = () => {
-            if(!isAdmin) {
-                if(prompt("密碼") === "364401") {
-                    isAdmin = true;
-                    document.body.classList.add('admin-mode');
-                    document.getElementById('modeLabel').innerText = "編輯模式";
-                    document.getElementById('modeLabel').className = "text-[9px] bg-red-600 px-2 py-0.5 rounded font-bold uppercase";
-                }
-            } else {
-                isAdmin = false;
-                document.body.classList.remove('admin-mode');
-                document.getElementById('modeLabel').innerText = "唯讀模式";
-            }
+            if(!isAdmin && prompt("管理者密碼：") === "364401") isAdmin = true;
+            else if (isAdmin) isAdmin = false;
+            document.body.classList.toggle('admin-mode', isAdmin);
             renderAll();
         };
 
-        window.addStaffMember = () => {
-            const v = prompt("姓名+職稱");
-            if (v?.includes('+')) { const [n, j] = v.split('+'); localData.staffRoles.push({n, j, active: true}); renderAll(); }
+        window.switchView = (m) => {
+            document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active-view'));
+            document.getElementById(m + 'View').classList.add('active-view');
+            document.getElementById('btn-card').classList.toggle('hidden', m === 'card');
+            document.getElementById('btn-table').classList.toggle('hidden', m === 'table');
         };
 
-        window.togglePerson = (ri, name) => {
-            if (!localData.rundown[ri].persons) localData.rundown[ri].persons = [];
-            const idx = localData.rundown[ri].persons.indexOf(name);
-            if (idx > -1) localData.rundown[ri].persons.splice(idx, 1);
-            else localData.rundown[ri].persons.push(name);
-            renderAll();
-        };
-
-        window.addNewRow = () => { localData.rundown.push({start:"", end:"", d:10, u:"", s:"", persons:[]}); renderAll(); };
-        window.saveToCloud = () => { set(dataRef, localData).then(() => alert("✅ 已存檔")); };
-        
-        onValue(dataRef, (snap) => {
-            const d = snap.val();
-            if (d && !isAdmin) { 
-                localData = d; 
-                renderAll(); 
-            }
-        });
-        
+        onValue(dataRef, (snap) => { if(!isAdmin && snap.val()) { localData = snap.val(); renderAll(); } });
         renderAll();
     </script>
 </body>
