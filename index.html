@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作平台 v14</title>
+    <title>執行製作平台 v15</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -13,8 +13,11 @@
         .pro-table { border-collapse: collapse; width: 100%; border: 2px solid #64748b; background: white; }
         .pro-table th, .pro-table td { border: 1px solid #94a3b8; padding: 12px; }
         .pro-table thead th { background: #f1f5f9; border-bottom: 2px solid #64748b; }
+        
+        /* 補回高亮樣式 */
         .is-now { background: #f0fdf4 !important; }
-        .is-now td { border: 2px solid #22c55e !important; }
+        .is-now td { border-top: 2px solid #22c55e !important; border-bottom: 2px solid #22c55e !important; }
+
         .view-section { display: none; }
         .active-view { display: block !important; }
         #cardView.active-view { display: grid !important; }
@@ -84,7 +87,7 @@
             </div>
         </section>
 
-        <button onclick="saveToCloud()" class="edit-only w-full bg-slate-900 text-white py-6 rounded-2xl font-black shadow-2xl transition hover:bg-black">💾 儲存 Ver. 14 區間配置</button>
+        <button onclick="saveToCloud()" class="edit-only w-full bg-slate-900 text-white py-6 rounded-2xl font-black shadow-2xl transition hover:bg-black">💾 儲存 Ver. 15 完整功能版</button>
     </main>
 
     <script type="module">
@@ -93,17 +96,12 @@
 
         const app = initializeApp({ databaseURL: "https://rundown-worker-default-rtdb.firebaseio.com/" });
         const db = getDatabase(app);
-        const dataRef = ref(db, 'execution_platform_v14');
+        const dataRef = ref(db, 'execution_platform_v15');
 
         let isAdmin = false;
         let localData = {
             staffRoles: [{n: "鐵仁", j: "控場", active: true}, {n: "柏緯", j: "服務台", active: true}],
-            rundown: Array(6).fill().map((_, i) => ({ 
-                t: i===0?"08:00":"", 
-                te: "", // 結束時間
-                d: i<2?"30":"10", 
-                u: "", s: "", persons: [], lock: i===0 
-            })),
+            rundown: Array(6).fill().map((_, i) => ({ t: i===0?"08:00":"", te: "", d: i<2?"30":"10", u: "", s: "", persons: [], lock: i===0 })),
             eq: { service: [], stage: [] }
         };
 
@@ -112,16 +110,22 @@
             renderStaff();
             const tbody = document.getElementById('tableBody');
             const cardView = document.getElementById('cardView');
-            const now = new Date(); const curMin = now.getHours() * 60 + now.getMinutes();
+            
+            // 獲取當前總分鐘數用於比對
+            const now = new Date(); 
+            const curMin = now.getHours() * 60 + now.getMinutes();
             
             tbody.innerHTML = ""; cardView.innerHTML = "";
             const activeStaff = localData.staffRoles.filter(r => r.active).map(r => r.n);
 
             localData.rundown.forEach((item, i) => {
                 const [h, m] = item.t.split(':').map(Number);
-                const startMin = h * 60 + m;
-                const endMin = startMin + parseInt(item.d);
-                const isActive = (curMin >= startMin && curMin < endMin);
+                const [eh, em] = item.te.split(':').map(Number);
+                const startTotal = h * 60 + m;
+                const endTotal = eh * 60 + em;
+                
+                // 補回：自動偵測進行中
+                const isActive = (curMin >= startTotal && curMin < endTotal);
 
                 let personHtml = "";
                 if (isAdmin) {
@@ -133,9 +137,8 @@
                     item.persons?.forEach(name => { personHtml += `<span class="person-tag tag-display">${name}</span>`; });
                 }
 
-                // 表格列：顯示 08:00-08:30(30m)
                 const tr = document.createElement('tr');
-                if(isActive) tr.className = "is-now";
+                if(isActive) tr.className = "is-now"; // 補回：高亮樣式觸發
                 tr.innerHTML = `
                     <td class="text-center align-top bg-slate-50/50">
                         <div class="flex items-center justify-center gap-1">
@@ -155,10 +158,9 @@
                         <input class="w-full font-black text-slate-800 bg-transparent outline-none text-sm" placeholder="單元項目" value="${item.u||''}" oninput="localData.rundown[${i}].u=this.value" ${!isAdmin?'readonly':''}>
                         <textarea class="w-full text-[11px] text-slate-500 bg-transparent outline-none mt-1 resize-none" rows="1" placeholder="說明..." oninput="localData.rundown[${i}].s=this.value" ${!isAdmin?'readonly':''}>${item.s||''}</textarea>
                     </td>
-                    <td class="text-right align-top">${personHtml}${isAdmin?`<button onclick="localData.rundown.splice(${i},1); renderAll()" class="text-rose-300 ml-2 text-xs">✕</button>`:''}</td>`;
+                    <td class="text-right align-top">${personHtml}${isAdmin?`<button onclick="if(confirm('確定刪除此行？')){localData.rundown.splice(${i},1); renderAll();}" class="text-rose-300 ml-2 text-xs">✕</button>`:''}</td>`;
                 tbody.appendChild(tr);
 
-                // 卡片模式同步更新
                 const card = document.createElement('div');
                 card.className = `glass-card p-5 ${isActive?'border-2 border-green-500 bg-green-50 shadow-lg':''}`;
                 card.innerHTML = `<div class="flex justify-between mb-3"><span class="text-blue-700 font-black text-[10px]">${item.t}-${item.te} (${item.d}m)</span><div class="flex flex-wrap justify-end">${personHtml}</div></div>
@@ -168,35 +170,60 @@
             renderEq();
         };
 
-        window.updateStartTime = (idx, val) => {
-            if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val)) {
-                localData.rundown[idx].t = val;
-                localData.rundown[idx].lock = true;
-            }
-            renderAll();
-        };
-
         window.calculateTimes = () => {
             let nextStartTime = localData.rundown[0].t || "08:00";
             localData.rundown.forEach((item, i) => {
-                if (i === 0) {
-                    if (!item.t) item.t = "08:00";
-                } else {
-                    if (!item.lock) item.t = nextStartTime;
-                }
-
-                // 計算該單元結束時間
+                if (i !== 0 && !item.lock) item.t = nextStartTime;
                 let [h, m] = item.t.split(':').map(Number);
-                m += parseInt(item.d || 0);
-                h += Math.floor(m / 60);
-                m = m % 60;
+                m += parseInt(item.d || 0); h += Math.floor(m / 60); m = m % 60;
                 item.te = `${String(h % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                
-                // 下一格的開始時間等於這一格的結束時間
                 nextStartTime = item.te;
             });
         };
 
-        // 其它功能 (人員、器材、切換、管理員) 維持 Ver 13
+        window.updateStartTime = (idx, val) => {
+            if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(val)) {
+                localData.rundown[idx].t = val;
+                localData.rundown[idx].lock = true;
+                renderAll();
+            }
+        };
+
         window.renderStaff = () => {
-            const grid = document.getElementById('staffGrid
+            const grid = document.getElementById('staffGrid'); grid.innerHTML = "";
+            localData.staffRoles.forEach((role, i) => {
+                if (!isAdmin && !role.active) return;
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl border-2 transition ${role.active ? 'border-blue-500 bg-blue-50' : 'border-slate-100 opacity-40'} ${isAdmin?'cursor-pointer':''}`;
+                div.onclick = () => { if(isAdmin) { localData.staffRoles[i].active = !localData.staffRoles[i].active; renderAll(); } };
+                div.innerHTML = `<div class="text-[8px] font-black text-slate-400 uppercase">${role.j}</div>
+                                 <div class="flex justify-between items-center"><span class="font-black text-sm">${role.n}</span>
+                                 ${isAdmin ? `<button onclick="event.stopPropagation(); if(confirm('刪除人員？')){localData.staffRoles.splice(${i},1); renderAll();}" class="text-rose-300 ml-2">✕</button>` : ''}</div>`;
+                grid.appendChild(div);
+            });
+        };
+
+        window.renderEq = () => {
+            ['service', 'stage'].forEach(z => {
+                document.getElementById(z+'Box').innerHTML = localData.eq[z].map((e, idx) => `
+                    <div class="bg-white border-2 p-2 rounded-lg flex items-center gap-2 shadow-sm ${e.l?'opacity-30':''}">
+                        <input type="checkbox" class="w-4 h-4 accent-blue-600" ${e.l?'checked':''} onchange="localData.eq['${z}'][${idx}].l=!localData.eq['${z}'][${idx}].l; renderEq(); if(!isAdmin) saveToCloud();">
+                        <span class="text-xs font-bold text-slate-700">${e.n}</span>
+                        <input type="number" class="w-10 text-[10px] font-black text-center bg-slate-100 rounded" value="${e.q}" onchange="localData.eq['${z}'][${idx}].q=this.value; renderEq()" ${!isAdmin?'readonly':''}>
+                    </div>`).join('');
+            });
+        };
+
+        window.addStaffMember = () => {
+            const input = prompt("輸入人名+職稱 (例: 柏緯+服務台)");
+            if (input && input.includes('+')) {
+                const [n, j] = input.split('+');
+                localData.staffRoles.push({n, j, active: true});
+                renderAll();
+            }
+        };
+
+        window.togglePerson = (rowIndex, name) => {
+            if (!localData.rundown[rowIndex].persons) localData.rundown[rowIndex].persons = [];
+            const idx = localData.rundown[rowIndex].persons.indexOf(name);
+            if (idx > -1) localData
