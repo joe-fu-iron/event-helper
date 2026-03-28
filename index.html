@@ -3,677 +3,224 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>執行製作控管台 v46</title>
+<title>執行製作控管台 v46.3 - 大字列印版</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-:root { --win-blue: #0078D4; --win-border: #D1D1D1; }
-* { box-sizing: border-box; }
-body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; padding-bottom: 80px; }
+    :root { --win-blue: #0078D4; --win-border: #D1D1D1; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; padding-bottom: 80px; }
 
-.app-header { background: var(--win-blue); color: #FFF; height: 60px; display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 1000; }
-.header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 2px; font-size: 18px !important; font-weight: 700; color: #FFF; outline: none; }
+    /* UI 介面樣式 */
+    .app-header { background: var(--win-blue); color: #FFF; height: 60px; display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 1000; }
+    .header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 2px; font-size: 18px !important; font-weight: 700; color: #FFF; outline: none; }
+    .pro-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--win-border); }
+    .pro-table th { background: #F3F3F3; padding: 10px; font-size: 14px; border: 1px solid var(--win-border); font-weight: 900; }
+    .pro-table td { border: 1px solid var(--win-border); padding: 10px; }
 
-.switch { position: relative; display: inline-block; width: 44px; height: 22px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.3); transition: .4s; border-radius: 34px; border: 1px solid rgba(255,255,255,0.4); }
-.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-input:checked + .slider { background-color: #22c55e; border-color: #16a34a; }
-input:checked + .slider:before { transform: translateX(22px); }
+    /* 隱藏邏輯 */
+    .admin-ctrl { display: none !important; }
+    .admin-mode .admin-ctrl { display: block !important; }
 
-@keyframes pulse-orange { 0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,0.5);} 50%{box-shadow:0 0 0 8px rgba(249,115,22,0);} }
-.checkin-btn { animation: pulse-orange 2s infinite; }
-@keyframes ai-glow { 0%,100%{box-shadow:0 0 5px rgba(0,120,212,0.2);} 50%{box-shadow:0 0 15px rgba(0,120,212,0.5);} }
-.ai-bot-card { background: linear-gradient(145deg,#ffffff,#f0f7ff); border:1px solid #bae6fd; animation:ai-glow 3s infinite; }
+    /* ==========================================
+       🖨️ 列印優化系統 (大字體 + 窄邊界)
+       ========================================== */
+    @media print {
+        /* 設定 A4 最小邊界 */
+        @page { size: A4 landscape; margin: 0.5cm; }
+        
+        body { background: white; padding: 0; margin: 0; }
+        
+        /* 頁首美化 */
+        .app-header { 
+            background: white !important; 
+            color: black !important; 
+            position: static; 
+            border-bottom: 3px solid black;
+            height: auto;
+            padding: 10px 0;
+            margin-bottom: 10px;
+        }
+        .header-input { 
+            color: black !important; 
+            border: none !important; 
+            background: transparent !important; 
+            font-size: 28px !important; /* 標題超大字 */
+            font-weight: 900 !important;
+        }
+        
+        /* 分工看板轉為簡潔列印模式 */
+        #staffBoard { background: #f9f9f9 !important; border: 1px solid black !important; color: black !important; padding: 10px !important; }
+        .staff-board-card { border: 1px solid black !important; color: black !important; background: white !important; min-width: 120px !important; }
+        .staff-board-card .job-label { color: black !important; font-weight: bold !important; font-size: 11px !important; }
+        .staff-board-card .name-label { color: black !important; font-size: 18px !important; }
 
-.pro-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--win-border); }
-.pro-table th { background: #F3F3F3; color: #333; padding: 10px 12px; font-size: 12px; border: 1px solid var(--win-border); text-align: left; font-weight: 800; }
-.pro-table td { border: 1px solid var(--win-border); padding: 7px 10px; vertical-align: middle; }
-.admin-ctrl { display: none !important; }
-.admin-mode .admin-ctrl { display: block !important; }
-.admin-mode .pro-table input { background: #fffdf0; }
-
-/* 分工看板 */
-#staffBoard { background: linear-gradient(90deg, #1e3a5f 0%, #0078D4 100%); border-bottom: 3px solid #005fa3; }
-.staff-board-card { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 8px 12px; min-width: 100px; text-align: center; }
-.staff-board-card .job-label { font-size: 9px; font-weight: 900; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-.staff-board-card .name-label { font-size: 14px; font-weight: 900; color: #fff; }
-
-#mobileView { display: none; }
-.mobile-row { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 12px; margin-bottom: 10px; position: relative; }
-.mobile-row.is-current { border-left: 4px solid #22c55e; background: #f0fdf4; }
-.time-pill { background: var(--win-blue); color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 900; }
-
-.dropdown-menu { display: none; position: fixed; background: white; border: 1px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 3000; width: 180px; border-radius: 8px; overflow: hidden; }
-.dropdown-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
-.dropdown-item:hover { background: #f0f7ff; }
-
-#aiModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5000; width:95%; max-width:560px; background:white; border-radius:24px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.3); padding: 24px; }
-#checkinPanel { display: none; }
-.checkin-card { background: white; border-radius: 10px; border: 1px solid #e2e8f0; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
-.badge-in { background:#dcfce7; color:#16a34a; font-size:10px; font-weight:900; padding:2px 8px; border-radius:20px; }
-.badge-out { background:#f1f5f9; color:#94a3b8; font-size:10px; font-weight:900; padding:2px 8px; border-radius:20px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 1s linear infinite; display: inline-block; }
-
-.hdr-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; color: white; cursor: pointer; transition: all .2s; white-space: nowrap; }
-.hdr-btn:hover { background: rgba(255,255,255,0.25); }
-.hdr-btn.active { background: rgba(255,255,255,0.9); color: var(--win-blue); }
-
-/* AI 串流動畫 */
-#aiOutput { min-height: 60px; max-height: 260px; overflow-y: auto; }
-.ai-thinking { display: flex; gap: 4px; align-items: center; padding: 8px 0; }
-.ai-thinking span { width: 7px; height: 7px; background: #0078D4; border-radius: 50%; animation: bounce 1.2s infinite; }
-.ai-thinking span:nth-child(2) { animation-delay: .2s; }
-.ai-thinking span:nth-child(3) { animation-delay: .4s; }
-@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+        /* 隱藏所有按鈕與 UI 元件 */
+        .admin-ctrl, button, .hdr-btn, .switch, #checkinPanel, .checkin-btn, .no-print { display: none !important; }
+        
+        /* 表格字體極大化 */
+        .pro-table { border: 2px solid black !important; width: 100% !important; }
+        .pro-table th { background: #eee !important; color: black !important; border: 1px solid black !important; font-size: 16px !important; }
+        .pro-table td { border: 1px solid black !important; color: black !important; font-size: 18px !important; line-height: 1.4; }
+        
+        /* 輸入框內容強制顯示 */
+        input { border: none !important; background: transparent !important; color: black !important; font-size: inherit !important; font-weight: inherit !important; }
+        
+        /* 分頁處理 */
+        tr { page-break-inside: avoid; }
+    }
 </style>
 </head>
 <body class="admin-mode">
 
-<!-- HEADER -->
 <header class="app-header shadow-xl">
-  <div class="max-w-7xl mx-auto w-full flex items-center justify-between gap-2">
-    <div class="flex items-center gap-2 flex-1 min-w-0">
-      <input type="date" id="eventDate" class="header-input text-sm shrink-0" onchange="saveData()">
-      <span id="displayWeek" class="opacity-70 text-xs hidden sm:inline shrink-0">---</span>
-      <input type="text" id="eventName" class="header-input border-none bg-transparent flex-1 text-sm truncate" placeholder="專案名稱" onblur="saveData()">
+  <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
+    <div class="flex items-center gap-4 flex-1">
+      <input type="date" id="eventDate" class="header-input text-sm" onchange="saveAll()">
+      <input type="text" id="eventName" class="header-input border-none bg-transparent flex-1" placeholder="請輸入專案名稱..." onblur="saveAll()">
     </div>
-    <div class="flex items-center gap-2 shrink-0">
-      <button id="checkinToggleBtn" onclick="toggleCheckinPanel()" class="hdr-btn flex items-center gap-1">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        簽到
-      </button>
-      <button id="mobileToggleBtn" onclick="toggleMobileView()" class="hdr-btn">手機版</button>
-      <div class="flex items-center gap-1.5">
-        <span class="text-[10px] font-bold text-white/60 hidden sm:block">編輯</span>
-        <label class="switch">
-          <input type="checkbox" id="adminToggle" checked onchange="toggleAdmin(this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
+    <div class="flex items-center gap-3 admin-ctrl">
+        <button onclick="window.print()" class="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg text-sm font-black text-white shadow-lg transition">🖨️ 轉存 PDF / 列印</button>
+        <div class="h-6 w-px bg-white/30"></div>
+        <label class="font-bold text-[10px] text-white/50">編輯開關</label>
+        <input type="checkbox" id="adminToggle" checked onchange="toggleAdmin(this.checked)" class="w-5 h-5">
     </div>
   </div>
 </header>
 
-<!-- ★ 當日分工看板 (流程表正上方，永遠顯示) -->
-<div id="staffBoard" class="px-4 py-3">
+<div id="staffBoard" class="px-4 py-4 bg-slate-900 text-white">
   <div class="max-w-7xl mx-auto">
-    <div class="flex items-center gap-2 mb-2">
-      <span class="text-[9px] font-black text-white/50 uppercase tracking-widest">當日分工</span>
-      <span id="boardEventName" class="text-[10px] font-bold text-white/70"></span>
-    </div>
-    <div id="staffBoardCards" class="flex flex-wrap gap-2">
-      <div class="text-white/30 text-xs font-bold">尚未設定分工 — 請在下方派遣設定中指派人員</div>
-    </div>
+    <div class="text-[10px] font-black opacity-50 uppercase tracking-widest mb-2">Personnel Allocation / 當日分工看板</div>
+    <div id="staffBoardCards" class="flex flex-wrap gap-3">
+      </div>
   </div>
 </div>
 
-<!-- 簽到面板 -->
-<div id="checkinPanel" class="max-w-7xl mx-auto px-4 pt-4">
-  <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-orange-50 to-white">
-      <div class="flex items-center gap-2">
-        <span class="text-orange-500 text-lg">📋</span>
-        <div>
-          <div class="font-black text-slate-800 text-sm">長官簽到即時狀態</div>
-          <div id="checkinMeta" class="text-[10px] text-slate-400 font-bold">點擊「重新整理」載入資料</div>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <button onclick="fetchCheckin()" id="refreshBtn" class="checkin-btn bg-orange-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-orange-600 transition">
-          <svg id="refreshIcon" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          重新整理
-        </button>
-        <a href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" target="_blank" class="bg-slate-100 text-slate-600 text-[11px] font-bold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition">開啟簽到頁 ↗</a>
-      </div>
-    </div>
-    <div class="flex border-b border-slate-100">
-      <div class="flex-1 py-3 text-center border-r border-slate-100"><div id="countTotal" class="text-2xl font-black text-slate-700">—</div><div class="text-[9px] font-bold text-slate-400 uppercase">總人數</div></div>
-      <div class="flex-1 py-3 text-center border-r border-slate-100"><div id="countIn" class="text-2xl font-black text-green-500">—</div><div class="text-[9px] font-bold text-slate-400 uppercase">已簽到</div></div>
-      <div class="flex-1 py-3 text-center"><div id="countOut" class="text-2xl font-black text-slate-300">—</div><div class="text-[9px] font-bold text-slate-400 uppercase">未簽到</div></div>
-    </div>
-    <div id="checkinList" class="p-3 space-y-2 max-h-64 overflow-y-auto">
-      <div class="text-center text-slate-300 text-sm py-6 font-bold">請按「重新整理」載入簽到資料</div>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN -->
 <main class="max-w-7xl mx-auto p-4">
-
-  <!-- AI 助理 -->
-  <section class="admin-ctrl ai-bot-card rounded-xl p-4 mb-6 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl">🤖</div>
-      <div>
-        <h3 class="text-xs font-black text-blue-900">AI 流程助理</h3>
-        <p class="text-[9px] text-blue-500 font-bold uppercase">貼上文字或上傳截圖，自動產生流程表</p>
-      </div>
-    </div>
-    <button onclick="openAIModal()" class="bg-blue-600 text-white text-[10px] font-bold px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition">開始自動輸入</button>
-  </section>
-
-  <!-- 桌面版 -->
-  <div id="desktopView">
-    <!-- 派遣設定 -->
-    <section class="admin-ctrl bg-white p-4 rounded border border-slate-200 shadow-sm mb-6">
-      <div class="flex items-center justify-between mb-3">
-        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">派遣設定 / Personnel Selection</div>
-        <button onclick="toggleManualInput()" id="manualInputToggleBtn" class="text-[10px] font-bold px-2 py-1 rounded border border-slate-200 text-slate-500 hover:bg-slate-50 transition">✏️ 手動新增</button>
-      </div>
-      <div class="mb-2">
-        <div class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">1. 選職稱</div>
-        <div id="jobOptions" class="flex flex-wrap gap-1"></div>
-      </div>
-      <div class="mb-3">
-        <div class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">2. 選人員（選完職稱再點姓名）</div>
-        <div id="nameOptions" class="flex flex-wrap gap-1"></div>
-      </div>
-      <div id="manualInputArea" style="display:none" class="border-t border-dashed border-slate-200 pt-3 mt-1 mb-3 space-y-3">
-        <div>
-          <div class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5">新增職稱</div>
-          <div class="flex gap-2">
-            <input id="newJobInput" type="text" placeholder="如：翻譯、司機" maxlength="10" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400" onkeydown="if(event.key==='Enter') addCustomJob()">
-            <button onclick="addCustomJob()" class="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition">＋ 新增</button>
-          </div>
-          <div id="customJobTags" class="flex flex-wrap gap-1 mt-2"></div>
-        </div>
-        <div>
-          <div class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1.5">新增人員</div>
-          <div class="flex gap-2">
-            <input id="newNameInput" type="text" placeholder="如：小美、阿明" maxlength="10" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-400" onkeydown="if(event.key==='Enter') addCustomName()">
-            <button onclick="addCustomName()" class="bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-green-700 transition">＋ 新增</button>
-          </div>
-          <div id="customNameTags" class="flex flex-wrap gap-1 mt-2"></div>
-        </div>
-      </div>
-      <div class="border-t border-slate-100 pt-3">
-        <div class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2">目前派遣庫</div>
+    <section class="admin-ctrl mb-6 bg-white p-5 border-2 border-blue-100 rounded-xl shadow-sm no-print">
+        <div class="text-xs font-black text-blue-500 mb-3">1. 選擇職稱 > 2. 點擊人員姓名進行指派</div>
+        <div id="jobOptions" class="flex flex-wrap gap-2 mb-3"></div>
+        <div id="nameOptions" class="flex flex-wrap gap-2 mb-4"></div>
+        <div class="text-[10px] text-slate-400 mb-1">已指派清單：</div>
         <div id="staffList" class="flex flex-wrap gap-2"></div>
-      </div>
     </section>
 
-    <!-- 流程表 (★ 執行單元拆成2欄) -->
-    <div class="overflow-x-auto shadow-sm rounded border border-slate-200 bg-white">
-      <table class="pro-table">
-        <thead>
-          <tr>
-            <th class="w-20 text-center">開始</th>
-            <th class="w-20 text-center">結束</th>
-            <th class="w-16 text-center">長度(m)</th>
-            <th class="w-44">執行單元</th>
-            <th>說明</th>
-            <th class="w-44 text-right">負責人員</th>
-            <th class="w-10 admin-ctrl"></th>
-          </tr>
-        </thead>
-        <tbody id="rundownBody"></tbody>
-      </table>
+    <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-slate-200">
+        <table class="pro-table">
+            <thead>
+                <tr>
+                    <th class="w-24">時間</th>
+                    <th class="w-20">長度</th>
+                    <th class="w-1/3">執行單元</th>
+                    <th>詳細說明與備註</th>
+                    <th class="w-48 text-right">負責人</th>
+                </tr>
+            </thead>
+            <tbody id="rundownBody"></tbody>
+        </table>
     </div>
-    <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 text-slate-400 border-2 border-dashed rounded font-bold hover:bg-white transition">+ 增加後續單元</button>
-  </div>
-
-  <!-- 手機版 -->
-  <div id="mobileView">
-    <div id="mobileRundown"></div>
-    <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 text-slate-400 border-2 border-dashed rounded font-bold mb-4">+ 增加單元</button>
-    <a href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" target="_blank" class="checkin-btn flex items-center justify-center gap-2 bg-orange-500 text-white font-bold py-4 rounded-xl text-base shadow-lg mb-6">📱 長官簽到即時平台</a>
-  </div>
-
-  <!-- 器材清單 -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-    <div class="bg-white p-4 rounded border shadow-sm">
-      <div class="font-black text-blue-600 mb-2 border-b pb-1 text-xs flex justify-between">1. 服務台 <button onclick="addItem('service')" class="admin-ctrl text-blue-400 font-bold">+</button></div>
-      <div id="list-service" class="space-y-1"></div>
-    </div>
-    <div class="bg-white p-4 rounded border shadow-sm">
-      <div class="font-black text-orange-600 mb-2 border-b pb-1 text-xs flex justify-between">2. 舞台硬體 <button onclick="addItem('stage')" class="admin-ctrl text-orange-400 font-bold">+</button></div>
-      <div id="list-stage" class="space-y-1"></div>
-    </div>
-    <div class="bg-white p-4 rounded border border-dashed shadow-sm">
-      <div class="font-black text-slate-400 mb-2 border-b pb-1 text-xs">3. 備註 / Notes</div>
-      <textarea id="manualNotes" class="w-full h-24 text-sm outline-none bg-transparent" placeholder="輸入其他器材需求..." onblur="saveData()"></textarea>
-    </div>
-  </div>
+    
+    <button onclick="addRow()" class="admin-ctrl w-full py-5 mt-4 border-2 border-dashed border-slate-300 rounded-xl font-black text-slate-400 hover:bg-white hover:text-blue-500 transition-all">+ 新增活動流程單元</button>
 </main>
 
-<!-- ★ AI Modal (真實 Claude API) -->
-<div id="aiModal">
-  <div class="flex justify-between items-center mb-4 border-b pb-3">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm">🤖</div>
-      <div>
-        <h2 class="font-black text-slate-800 text-sm">AI 流程助理</h2>
-        <p class="text-[9px] text-slate-400">由 Claude 自動解析活動草案</p>
-      </div>
-    </div>
-    <button onclick="closeAIModal()" class="text-slate-300 hover:text-red-500 transition text-xl leading-none">✕</button>
-  </div>
-
-  <!-- 輸入區 -->
-  <div id="aiInputArea">
-    <div class="text-[10px] font-bold text-slate-400 mb-1.5">方式一：貼上文字草案</div>
-    <textarea id="aiInput" class="w-full h-36 p-3 bg-slate-50 rounded-xl text-sm outline-none border border-slate-200 focus:border-blue-400 resize-none" placeholder="例如：
-08:00 公司出發 30分鐘
-08:30 進場佈置/音響、特效、座椅 50分鐘
-09:20 主持人綵排 20分鐘"></textarea>
-
-    <div class="text-[10px] font-bold text-slate-400 mt-3 mb-1.5">方式二：上傳流程截圖</div>
-    <label class="flex items-center justify-center gap-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl py-4 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      <span id="fileLabel" class="text-sm font-bold text-slate-400">點擊選擇圖片</span>
-      <input type="file" id="aiImageInput" class="hidden" accept="image/*" onchange="handleImageUpload(this)">
-    </label>
-    <div id="imagePreview" class="hidden mt-2 rounded-lg overflow-hidden border border-slate-200"><img id="previewImg" class="w-full max-h-32 object-contain bg-slate-50"></div>
-
-    <button onclick="runAI()" id="runAIBtn" class="w-full mt-4 bg-blue-600 text-white font-black py-3 rounded-xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-      AI 自動分析並填入流程
-    </button>
-  </div>
-
-  <!-- 輸出區 -->
-  <div id="aiOutputArea" style="display:none">
-    <div class="text-[10px] font-bold text-slate-400 mb-2">AI 解析結果</div>
-    <div id="aiOutput" class="bg-slate-50 rounded-xl p-3 text-sm border border-slate-200"></div>
-    <div class="flex gap-2 mt-4">
-      <button onclick="applyAIResult()" id="applyBtn" class="flex-1 bg-green-600 text-white font-black py-3 rounded-xl hover:bg-green-700 transition">✓ 套用到流程表</button>
-      <button onclick="resetAIModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition">重新輸入</button>
-    </div>
-  </div>
-</div>
-
-<div id="personDropdown" class="dropdown-menu"></div>
-
 <script>
-const CHECKIN_URL = "https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec";
-const DEFAULT_JOBS  = ["控場","音響","服務台","儀式","攝影","機動","燈光","視訊","料理"];
-const DEFAULT_NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
-let JOBS  = [...DEFAULT_JOBS];
-let NAMES = [...DEFAULT_NAMES];
-let selectedJob = "", isMobileView = false, checkinPanelOpen = false;
-let aiParsedRundown = [];
-let uploadedImageBase64 = null;
+    const JOBS = ["控場","音響","服務台","儀式","攝影","機動","視訊"];
+    const NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
+    let selectedJob = "";
+    
+    // 初始化資料架構
+    let localData = {
+        eventDate: "2026-03-28", 
+        eventName: "2026 四月八社區慶典", 
+        staff: [],
+        rundown: [
+            {s:"09:00", e:"09:30", l:30, u:"進場與場地佈置", d:"確認音響、桌椅、VIP 簽到處器材", persons:[]}
+        ]
+    };
 
-let localData = {
-  eventDate:"2026-05-22", eventName:"專案名稱", staff:[],
-  rundown:[{s:"09:00",e:"09:10",l:10,u:"公司出發",d:"器材裝載",persons:[]}],
-  equipment:{service:[],stage:[]}, notes:""
-};
-
-/* ===== 分工看板 ===== */
-function renderStaffBoard() {
-  const cards = document.getElementById('staffBoardCards');
-  const nameEl = document.getElementById('boardEventName');
-  nameEl.textContent = localData.eventName || '';
-  if (!localData.staff.length) {
-    cards.innerHTML = '<div class="text-white/30 text-xs font-bold">尚未設定分工 — 請在下方派遣設定中指派人員</div>';
-    return;
-  }
-  cards.innerHTML = localData.staff.map(s => `
-    <div class="staff-board-card">
-      <div class="job-label">${s.j}</div>
-      <div class="name-label">${s.n}</div>
-    </div>
-  `).join('');
-}
-
-/* ===== 派遣設定 ===== */
-function toggleManualInput() {
-  const area = document.getElementById('manualInputArea');
-  const btn  = document.getElementById('manualInputToggleBtn');
-  const open = area.style.display === 'none' || area.style.display === '';
-  area.style.display = open ? 'block' : 'none';
-  btn.classList.toggle('bg-blue-50', open);
-  btn.classList.toggle('text-blue-600', open);
-  if (open) document.getElementById('newJobInput').focus();
-}
-
-function addCustomJob() {
-  const input = document.getElementById('newJobInput');
-  const val = input.value.trim();
-  if (!val || JOBS.includes(val)) { input.value=''; return; }
-  JOBS.push(val); saveCustomLists(); input.value=''; renderAll(); renderCustomTags();
-}
-function addCustomName() {
-  const input = document.getElementById('newNameInput');
-  const val = input.value.trim();
-  if (!val || NAMES.includes(val)) { input.value=''; return; }
-  NAMES.push(val); saveCustomLists(); input.value=''; renderAll(); renderCustomTags();
-}
-function removeCustomJob(j) { JOBS=JOBS.filter(x=>x!==j); if(selectedJob===j)selectedJob=''; saveCustomLists(); renderAll(); renderCustomTags(); }
-function removeCustomName(n) { NAMES=NAMES.filter(x=>x!==n); saveCustomLists(); renderAll(); renderCustomTags(); }
-
-function renderCustomTags() {
-  const jTags = document.getElementById('customJobTags');
-  const nTags = document.getElementById('customNameTags');
-  if (jTags) jTags.innerHTML = JOBS.filter(j=>!DEFAULT_JOBS.includes(j)).map(j =>
-    `<span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">${j}<span class="cursor-pointer hover:text-red-500 ml-0.5" onclick="removeCustomJob('${j}')">✕</span></span>`
-  ).join('');
-  if (nTags) nTags.innerHTML = NAMES.filter(n=>!DEFAULT_NAMES.includes(n)).map(n =>
-    `<span class="inline-flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">${n}<span class="cursor-pointer hover:text-red-500 ml-0.5" onclick="removeCustomName('${n}')">✕</span></span>`
-  ).join('');
-}
-function saveCustomLists() {
-  localStorage.setItem('v46_jobs', JSON.stringify(JOBS));
-  localStorage.setItem('v46_names', JSON.stringify(NAMES));
-}
-
-/* ===== CHECKIN ===== */
-function toggleCheckinPanel() {
-  checkinPanelOpen = !checkinPanelOpen;
-  document.getElementById('checkinPanel').style.display = checkinPanelOpen ? 'block' : 'none';
-  document.getElementById('checkinToggleBtn').classList.toggle('active', checkinPanelOpen);
-  if (checkinPanelOpen) fetchCheckin();
-}
-async function fetchCheckin() {
-  const icon = document.getElementById('refreshIcon');
-  const list = document.getElementById('checkinList');
-  icon.classList.add('spin');
-  document.getElementById('refreshBtn').disabled = true;
-  list.innerHTML = '<div class="text-center text-slate-300 text-sm py-6">載入中...</div>';
-  try {
-    const res = await fetch(CHECKIN_URL + "?action=getList", {mode:'cors'});
-    renderCheckinList(await res.json());
-  } catch(e) {
-    list.innerHTML = `<div class="text-center py-6"><div class="text-slate-400 text-sm font-bold mb-2">⚠️ 無法直接讀取資料</div><div class="text-slate-300 text-xs mb-4">需在 Google Apps Script 加入 CORS 支援</div><a href="${CHECKIN_URL}" target="_blank" class="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-lg inline-block">前往簽到頁面查看 ↗</a></div>`;
-    document.getElementById('checkinMeta').innerText = '連線失敗';
-  } finally { icon.classList.remove('spin'); document.getElementById('refreshBtn').disabled=false; }
-}
-function renderCheckinList(data) {
-  const records = Array.isArray(data)?data:(data.records||data.data||[]);
-  const list = document.getElementById('checkinList');
-  if (!records.length) { list.innerHTML='<div class="text-center text-slate-300 text-sm py-6">目前尚無簽到記錄</div>'; return; }
-  const signedIn = records.filter(r=>r.signed||r.checkin||r.status==='in'||r.time||r.簽到時間);
-  document.getElementById('countTotal').innerText=records.length;
-  document.getElementById('countIn').innerText=signedIn.length;
-  document.getElementById('countOut').innerText=records.length-signedIn.length;
-  const now=new Date();
-  document.getElementById('checkinMeta').innerText=`更新：${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-  list.innerHTML=records.map(r=>{
-    const name=r.name||r.姓名||r.Name||'未知';
-    const time=r.time||r.簽到時間||r.Time||'';
-    const isIn=r.signed||r.checkin||r.status==='in'||!!time;
-    return `<div class="checkin-card"><div><div class="font-black text-slate-800">${name}</div>${time?`<div class="text-[11px] text-slate-400">⏰ ${time}</div>`:'<div class="text-[11px] text-slate-200">尚未簽到</div>'}</div><span class="${isIn?'badge-in':'badge-out'}">${isIn?'✓ 已簽到':'未到'}</span></div>`;
-  }).join('');
-}
-
-/* ===== VIEW TOGGLE ===== */
-function toggleMobileView() {
-  isMobileView=!isMobileView;
-  document.getElementById('desktopView').style.display=isMobileView?'none':'block';
-  document.getElementById('mobileView').style.display=isMobileView?'block':'none';
-  const btn=document.getElementById('mobileToggleBtn');
-  btn.innerText=isMobileView?'桌面版':'手機版';
-  btn.classList.toggle('active',isMobileView);
-  renderAll();
-}
-function toggleAdmin(checked) { document.body.classList.toggle('admin-mode',checked); renderAll(); }
-
-/* ===== RENDER ===== */
-function renderAll() {
-  const isAdmin = document.body.classList.contains('admin-mode');
-  document.getElementById('eventDate').value = localData.eventDate;
-  document.getElementById('eventName').value = localData.eventName;
-  const d = new Date(localData.eventDate);
-  document.getElementById('displayWeek').innerText = isNaN(d.getTime())?"---":['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][d.getDay()];
-
-  document.getElementById('jobOptions').innerHTML = JOBS.map(j=>
-    `<button class="px-2 py-1 border text-[10px] rounded transition ${selectedJob===j?'bg-blue-600 text-white border-blue-600':'bg-white hover:bg-blue-50'}" onclick="selectedJob='${j}';renderAll()">${j}</button>`
-  ).join('');
-  document.getElementById('nameOptions').innerHTML = NAMES.map(n=>
-    `<button class="px-2 py-1 border text-[10px] rounded bg-white hover:bg-slate-50 transition" onclick="addStaff('${n}')">${n}</button>`
-  ).join('');
-  document.getElementById('staffList').innerHTML = localData.staff.map((s,i)=>
-    `<div class="bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1.5">${s.n}<span class="text-blue-400">(${s.j})</span>${isAdmin?`<span class="cursor-pointer text-red-300 hover:text-red-500 ml-1" onclick="localData.staff.splice(${i},1);renderAll();saveData();renderStaffBoard()">✕</span>`:''}</div>`
-  ).join('');
-
-  renderStaffBoard();
-
-  // ★ 流程表：執行單元 / 說明 分兩欄
-  document.getElementById('rundownBody').innerHTML = localData.rundown.map((row,i)=>{
-    const u = row.u||''; const d2 = row.d||'';
-    return `
-    <tr class="hover:bg-slate-50 transition">
-      <td class="text-center"><input class="w-full text-center text-sm font-bold bg-transparent outline-none" value="${row.s}" ${!isAdmin?'disabled':''} onchange="updateTime(${i},'s',this.value)"></td>
-      <td class="text-center"><input class="w-full text-center text-sm font-bold bg-transparent outline-none" value="${row.e}" ${!isAdmin?'disabled':''} onchange="updateTime(${i},'e',this.value)"></td>
-      <td class="text-center"><input class="w-full text-center bg-blue-50 rounded text-blue-600 font-bold outline-none text-sm" type="number" value="${row.l}" ${!isAdmin?'disabled':''} onchange="updateTime(${i},'l',this.value)"></td>
-      <td><input class="w-full outline-none font-black bg-transparent text-slate-800 text-sm" value="${u}" ${!isAdmin?'disabled':''} placeholder="執行單元" onblur="updateField(${i},'u',this.value)"></td>
-      <td><input class="w-full outline-none bg-transparent text-slate-500 text-sm" value="${d2}" ${!isAdmin?'disabled':''} placeholder="說明..." onblur="updateField(${i},'d',this.value)"></td>
-      <td class="text-right">
-        <div class="flex flex-wrap justify-end gap-1 min-h-[20px] ${isAdmin?'cursor-pointer':''}" onclick="${isAdmin?`showPersonDropdown(event,${i})`:''}">
-          ${(row.persons||[]).map((p,pi)=>`<span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded flex items-center gap-0.5">${p}${isAdmin?`<i onclick="event.stopPropagation();localData.rundown[${i}].persons.splice(${pi},1);renderAll();saveData()" style="cursor:pointer;margin-left:2px;font-style:normal">✕</i>`:''}</span>`).join('')||'<span class="text-slate-200 text-xs">+ 指派</span>'}
-        </div>
-      </td>
-      <td class="admin-ctrl text-center"><button class="text-red-200 hover:text-red-500 text-base" onclick="localData.rundown.splice(${i},1);renderAll();saveData()">✕</button></td>
-    </tr>`;
-  }).join('');
-
-  // Mobile
-  const nowMin = new Date().getHours()*60+new Date().getMinutes();
-  document.getElementById('mobileRundown').innerHTML = localData.rundown.map((row,i)=>{
-    const [sh,sm]=row.s.split(':').map(Number);
-    const [eh,em]=row.e.split(':').map(Number);
-    const isCurrent=nowMin>=sh*60+sm&&nowMin<eh*60+em;
-    return `
-    <div class="mobile-row${isCurrent?' is-current':''}">
-      <div class="flex justify-between items-center mb-2">
-        <span class="time-pill">${row.s} → ${row.e} (${row.l}m)</span>
-        ${isCurrent?'<span class="text-[10px] text-green-600 font-black">● 進行中</span>':''}
-      </div>
-      <div class="font-black text-slate-800 text-base mb-0.5">${row.u||''}</div>
-      ${row.d?`<div class="text-slate-400 text-sm mb-2">${row.d}</div>`:''}
-      <div class="flex flex-wrap gap-1">${(row.persons||[]).map(p=>`<span class="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full">${p}</span>`).join('')}</div>
-      ${isAdmin?`<button class="absolute top-2 right-2 text-red-200 p-2 text-lg" onclick="localData.rundown.splice(${i},1);renderAll();saveData()">✕</button>`:''}
-    </div>`;
-  }).join('');
-
-  ['service','stage'].forEach(t=>{
-    document.getElementById(`list-${t}`).innerHTML=localData.equipment[t].map((item,idx)=>`
-      <div class="flex items-center gap-2 text-sm py-1 group border-b border-slate-50">
-        <input type="checkbox" class="w-4 h-4 accent-blue-600">
-        <input class="flex-1 bg-transparent outline-none" value="${item}" ${!isAdmin?'disabled':''} onblur="localData.equipment['${t}'][${idx}]=this.value;saveData()">
-        ${isAdmin?`<span class="text-red-100 group-hover:text-red-300 cursor-pointer" onclick="localData.equipment['${t}'].splice(${idx},1);renderAll()">✕</span>`:''}
-      </div>
-    `).join('');
-  });
-  document.getElementById('manualNotes').value=localData.notes;
-}
-
-/* ===== TIME & FIELD LOGIC ===== */
-function updateField(idx, field, val) {
-  localData.rundown[idx][field]=val; saveData();
-}
-function updateTime(idx,field,val) {
-  let row=localData.rundown[idx];
-  if(field==='l'){row.l=parseInt(val)||0;row.e=addMinutes(row.s,row.l);}
-  else if(field==='e'){row.e=val;row.l=diffMinutes(row.s,row.e);}
-  else if(field==='s'){row.s=val;row.e=addMinutes(row.s,row.l);}
-  else row[field]=val;
-  for(let j=idx+1;j<localData.rundown.length;j++){
-    localData.rundown[j].s=localData.rundown[j-1].e;
-    localData.rundown[j].e=addMinutes(localData.rundown[j].s,localData.rundown[j].l);
-  }
-  renderAll();saveData();
-}
-function addMinutes(t,m){let [hh,mm]=t.split(':').map(Number);let d=new Date();d.setHours(hh);d.setMinutes(mm+parseInt(m));return`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
-function diffMinutes(s,e){let [h1,m1]=s.split(':').map(Number);let [h2,m2]=e.split(':').map(Number);let diff=(h2*60+m2)-(h1*60+m1);return diff<0?diff+1440:diff;}
-
-/* ===== STAFF & PERSONS ===== */
-function addStaff(n) {
-  if(!selectedJob)return alert("請先點選職稱");
-  localData.staff.push({n,j:selectedJob});renderAll();saveData();renderStaffBoard();
-}
-function addRow() {
-  let last=localData.rundown[localData.rundown.length-1];
-  let start=last?last.e:"09:00";
-  localData.rundown.push({s:start,e:addMinutes(start,10),l:10,u:"",d:"",persons:[]});
-  renderAll();saveData();
-}
-function addItem(t){localData.equipment[t].push("新器材項目");renderAll();saveData();}
-function showPersonDropdown(e,ri){
-  const menu=document.getElementById('personDropdown');
-  menu.style.display='block';
-  menu.style.top=`${e.clientY+8}px`;
-  menu.style.left=`${Math.min(e.clientX,window.innerWidth-190)}px`;
-  menu.innerHTML=localData.staff.map(s=>`<div class="dropdown-item" onclick="addPersonToRow(${ri},'${s.n}(${s.j})')">${s.n}(${s.j})</div>`).join('')+
-    `<div class="dropdown-item text-red-500 font-bold" onclick="document.getElementById('personDropdown').style.display='none'">[ 取消 ]</div>`;
-  e.stopPropagation();
-}
-function addPersonToRow(ri,lbl){
-  if(!localData.rundown[ri].persons)localData.rundown[ri].persons=[];
-  if(!localData.rundown[ri].persons.includes(lbl))localData.rundown[ri].persons.push(lbl);
-  renderAll();saveData();
-  document.getElementById('personDropdown').style.display='none';
-}
-document.addEventListener('click',()=>document.getElementById('personDropdown').style.display='none');
-
-/* ===== ★ AI MODAL (真實 Claude API) ===== */
-function openAIModal(){document.getElementById('aiModal').style.display='block';resetAIModal();}
-function closeAIModal(){document.getElementById('aiModal').style.display='none';}
-function resetAIModal(){
-  document.getElementById('aiInputArea').style.display='block';
-  document.getElementById('aiOutputArea').style.display='none';
-  document.getElementById('aiInput').value='';
-  document.getElementById('fileLabel').textContent='點擊選擇圖片';
-  document.getElementById('imagePreview').classList.add('hidden');
-  uploadedImageBase64=null;
-  aiParsedRundown=[];
-}
-
-function handleImageUpload(input) {
-  if(!input.files||!input.files[0])return;
-  const file=input.files[0];
-  document.getElementById('fileLabel').textContent=file.name;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    uploadedImageBase64=e.target.result.split(',')[1];
-    document.getElementById('previewImg').src=e.target.result;
-    document.getElementById('imagePreview').classList.remove('hidden');
-  };
-  reader.readAsDataURL(file);
-}
-
-async function runAI() {
-  const text=document.getElementById('aiInput').value.trim();
-  if(!text&&!uploadedImageBase64){alert("請輸入文字或上傳圖片");return;}
-
-  document.getElementById('runAIBtn').disabled=true;
-  document.getElementById('runAIBtn').innerHTML='<span class="ai-thinking"><span></span><span></span><span></span></span> AI 分析中...';
-  document.getElementById('aiInputArea').style.display='block';
-  document.getElementById('aiOutputArea').style.display='block';
-  document.getElementById('aiOutput').innerHTML='<div class="ai-thinking"><span></span><span></span><span></span></div>';
-  document.getElementById('applyBtn').disabled=true;
-
-  const prompt = `你是活動流程表助手。請從以下內容解析出活動流程，並回傳 **純 JSON 陣列**，不要任何其他文字。
-
-格式如下（每個物件必須包含這四個欄位）：
-[
-  {"s":"08:00","l":30,"u":"執行單元名稱","d":"說明內容"},
-  ...
-]
-
-規則：
-- s = 開始時間 HH:MM
-- l = 長度（分鐘，數字）
-- u = 執行單元（/前的部分，若無/則整段）
-- d = 說明（/後的部分，若無/則空字串）
-- 若原文有 / 分隔，u 取 / 前，d 取 / 後
-- 時間若看不出來，依序接續前一個單元
-
-${text?`活動草案文字：\n${text}`:'（請依圖片內容解析）'}`;
-
-  try {
-    const messages = uploadedImageBase64
-      ? [{role:"user",content:[
-          {type:"image",source:{type:"base64",media_type:"image/jpeg",data:uploadedImageBase64}},
-          {type:"text",text:prompt}
-        ]}]
-      : [{role:"user",content:prompt}];
-
-    const res = await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages})
-    });
-    const data=await res.json();
-    const raw=data.content?.map(c=>c.text||'').join('');
-
-    // 解析 JSON
-    const jsonMatch=raw.match(/\[[\s\S]*\]/);
-    if(!jsonMatch)throw new Error("無法解析回傳的 JSON");
-    aiParsedRundown=JSON.parse(jsonMatch[0]);
-
-    // 顯示預覽
-    let startTime=aiParsedRundown[0]?.s||"09:00";
-    let preview='';
-    aiParsedRundown.forEach((r,i)=>{
-      const e=addMinutes(r.s||startTime,r.l||10);
-      preview+=`<div class="flex gap-2 py-1.5 border-b border-slate-100 last:border-0"><span class="text-blue-600 font-black text-xs shrink-0 w-24">${r.s} → ${e}</span><div><div class="font-bold text-slate-800 text-xs">${r.u}</div>${r.d?`<div class="text-slate-400 text-xs">${r.d}</div>`:''}</div></div>`;
-    });
-    document.getElementById('aiOutput').innerHTML=preview||'<div class="text-slate-300">無法解析內容</div>';
-    document.getElementById('applyBtn').disabled=aiParsedRundown.length===0;
-
-  } catch(err) {
-    document.getElementById('aiOutput').innerHTML=`<div class="text-red-400 text-sm font-bold">⚠️ 解析失敗：${err.message}</div><div class="text-slate-400 text-xs mt-2">請確認輸入格式是否正確</div>`;
-  } finally {
-    document.getElementById('runAIBtn').disabled=false;
-    document.getElementById('runAIBtn').innerHTML='⚡ 重新分析';
-  }
-}
-
-function applyAIResult() {
-  if(!aiParsedRundown.length)return;
-  let cursor=aiParsedRundown[0].s||"09:00";
-  localData.rundown=aiParsedRundown.map(r=>{
-    const s=r.s||cursor;
-    const l=parseInt(r.l)||10;
-    const e=addMinutes(s,l);
-    cursor=e;
-    return{s,e,l,u:r.u||'',d:r.d||'',persons:[]};
-  });
-  saveData();renderAll();closeAIModal();
-}
-
-/* ===== SAVE ===== */
-function saveData() {
-  localData.eventDate=document.getElementById('eventDate').value;
-  localData.eventName=document.getElementById('eventName').value;
-  localData.notes=document.getElementById('manualNotes').value;
-  localStorage.setItem('v46_data',JSON.stringify(localData));
-}
-
-window.onload=()=>{
-  const s=localStorage.getItem('v46_data');
-  if(s){
-    const parsed=JSON.parse(s);
-    // 向下相容：舊資料若沒有 d 欄位，自動從 u 的 / 拆分
-    if(parsed.rundown){
-      parsed.rundown=parsed.rundown.map(row=>{
-        if(row.d===undefined){
-          const parts=(row.u||'').split('/');
-          row.u=parts[0].trim();
-          row.d=parts.slice(1).join('/').trim();
-        }
-        return row;
-      });
+    function toggleAdmin(c) { 
+        document.body.classList.toggle('admin-mode', c); 
+        renderAll(); 
     }
-    localData=parsed;
-  }
-  const sj=localStorage.getItem('v46_jobs');
-  const sn=localStorage.getItem('v46_names');
-  if(sj)JOBS=JSON.parse(sj);
-  if(sn)NAMES=JSON.parse(sn);
-  if(window.innerWidth<=600){
-    isMobileView=true;
-    document.getElementById('desktopView').style.display='none';
-    document.getElementById('mobileView').style.display='block';
-    document.getElementById('mobileToggleBtn').innerText='桌面版';
-    document.getElementById('mobileToggleBtn').classList.add('active');
-  }
-  renderAll();
-};
+
+    function renderAll() {
+        const isAdmin = document.body.classList.contains('admin-mode');
+        document.getElementById('eventDate').value = localData.eventDate;
+        document.getElementById('eventName').value = localData.eventName;
+        
+        // 看板渲染
+        document.getElementById('staffBoardCards').innerHTML = localData.staff.length > 0 
+            ? localData.staff.map(s => `
+                <div class="staff-board-card p-3 rounded-lg border border-white/20 bg-white/5">
+                    <div class="job-label text-white/50">${s.j}</div>
+                    <div class="name-label font-bold text-xl">${s.n}</div>
+                </div>`).join('')
+            : '<div class="text-white/20 italic text-sm">尚未指派工作人員...</div>';
+
+        // 派遣區
+        document.getElementById('jobOptions').innerHTML = JOBS.map(j => `
+            <button class="px-3 py-1.5 border-2 rounded-lg text-xs font-bold transition ${selectedJob===j?'bg-blue-600 text-white border-blue-600':'bg-white text-slate-600 border-slate-200'}" 
+            onclick="selectedJob='${j}';renderAll()">${j}</button>`).join('');
+        
+        document.getElementById('nameOptions').innerHTML = NAMES.map(n => `
+            <button class="px-3 py-1.5 border-2 border-slate-200 rounded-lg text-xs font-bold bg-white hover:border-green-500 transition" 
+            onclick="addStaff('${n}')">${n}</button>`).join('');
+
+        document.getElementById('staffList').innerHTML = localData.staff.map((s,i) => `
+            <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-black flex items-center gap-2">
+                ${s.n} <span class="opacity-50">${s.j}</span>
+                ${isAdmin ? `<span class="cursor-pointer text-red-400 hover:text-red-600" onclick="removeStaff(${i})">✕</span>` : ''}
+            </div>`).join('');
+
+        // 流程表渲染
+        document.getElementById('rundownBody').innerHTML = localData.rundown.map((row, i) => `
+            <tr class="group">
+                <td class="text-center font-black text-slate-800">${row.s}</td>
+                <td class="text-center text-sm text-blue-600 font-black bg-blue-50/30">${row.l}m</td>
+                <td><input class="w-full font-black text-slate-900 outline-none bg-transparent" value="${row.u}" placeholder="單元名稱" onblur="updateRow(${i}, 'u', this.value)"></td>
+                <td><input class="w-full text-slate-500 outline-none bg-transparent" value="${row.d||''}" placeholder="細節說明..." onblur="updateRow(${i}, 'd', this.value)"></td>
+                <td class="text-right">
+                    <div class="text-xs font-bold text-slate-400 mb-1 no-print">負責人</div>
+                    <div class="font-black text-blue-600 text-base">${row.persons.join(', ') || '-'}</div>
+                </td>
+            </tr>`).join('');
+    }
+
+    // 資料處理函數
+    function addStaff(n) {
+        if(!selectedJob) return alert("請先選擇上方的一個【職稱】再點姓名！");
+        localData.staff.push({n, j:selectedJob});
+        saveAll();
+    }
+
+    function removeStaff(i) {
+        localData.staff.splice(i, 1);
+        saveAll();
+    }
+
+    function updateRow(i, field, val) {
+        localData.rundown[i][field] = val;
+        saveAll();
+    }
+
+    function addRow() {
+        localData.rundown.push({s:"--:--", e:"--:--", l:10, u:"", d:"", persons:[]});
+        saveAll();
+    }
+
+    // 💾 自動儲存與載入
+    function saveAll() {
+        localData.eventDate = document.getElementById('eventDate').value;
+        localData.eventName = document.getElementById('eventName').value;
+        localStorage.setItem('v46_final_save', JSON.stringify(localData));
+        renderAll();
+    }
+
+    window.onload = () => {
+        const saved = localStorage.getItem('v46_final_save');
+        if (saved) localData = JSON.parse(saved);
+        renderAll();
+    };
 </script>
 </body>
 </html>
