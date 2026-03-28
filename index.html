@@ -3,70 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>執行製作控管台 v46.3 - 大字列印版</title>
+<title>執行製作控管台 v46.4</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
     :root { --win-blue: #0078D4; --win-border: #D1D1D1; }
-    * { box-sizing: border-box; }
     body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; padding-bottom: 80px; }
 
-    /* UI 介面樣式 */
+    /* 左右滑動開關 CSS */
+    .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.3); transition: .4s; border-radius: 20px; border: 1px solid rgba(255,255,255,0.4); }
+    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #4ade80; border-color: #22c55e; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* UI 核心樣式 */
     .app-header { background: var(--win-blue); color: #FFF; height: 60px; display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 1000; }
-    .header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 2px; font-size: 18px !important; font-weight: 700; color: #FFF; outline: none; }
+    .header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 2px 6px; border-radius: 2px; font-size: 16px !important; font-weight: 700; color: #FFF; outline: none; }
+    
+    /* 分工看板 */
+    #staffBoard { background: linear-gradient(90deg, #1e3a5f 0%, #0078D4 100%); }
+    .staff-board-card { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 12px; min-width: 100px; text-align: center; }
+
+    /* 表格樣式 */
     .pro-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--win-border); }
-    .pro-table th { background: #F3F3F3; padding: 10px; font-size: 14px; border: 1px solid var(--win-border); font-weight: 900; }
+    .pro-table th { background: #F3F3F3; padding: 10px; font-size: 12px; border: 1px solid var(--win-border); font-weight: 800; text-align: left; }
     .pro-table td { border: 1px solid var(--win-border); padding: 10px; }
 
-    /* 隱藏邏輯 */
     .admin-ctrl { display: none !important; }
     .admin-mode .admin-ctrl { display: block !important; }
 
+    /* 簽到面板 */
+    #checkinPanel { display: none; }
+    .hdr-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; color: white; cursor: pointer; }
+    .hdr-btn.active { background: white; color: var(--win-blue); }
+
+    /* 手機視圖卡片 */
+    .mobile-row { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+
     /* ==========================================
-       🖨️ 列印優化系統 (大字體 + 窄邊界)
+       🖨️ 列印優化系統 (最大化字體 + 最小邊界)
        ========================================== */
     @media print {
-        /* 設定 A4 最小邊界 */
         @page { size: A4 landscape; margin: 0.5cm; }
-        
         body { background: white; padding: 0; margin: 0; }
-        
-        /* 頁首美化 */
-        .app-header { 
-            background: white !important; 
-            color: black !important; 
-            position: static; 
-            border-bottom: 3px solid black;
-            height: auto;
-            padding: 10px 0;
-            margin-bottom: 10px;
-        }
-        .header-input { 
-            color: black !important; 
-            border: none !important; 
-            background: transparent !important; 
-            font-size: 28px !important; /* 標題超大字 */
-            font-weight: 900 !important;
-        }
-        
-        /* 分工看板轉為簡潔列印模式 */
-        #staffBoard { background: #f9f9f9 !important; border: 1px solid black !important; color: black !important; padding: 10px !important; }
-        .staff-board-card { border: 1px solid black !important; color: black !important; background: white !important; min-width: 120px !important; }
-        .staff-board-card .job-label { color: black !important; font-weight: bold !important; font-size: 11px !important; }
-        .staff-board-card .name-label { color: black !important; font-size: 18px !important; }
-
-        /* 隱藏所有按鈕與 UI 元件 */
-        .admin-ctrl, button, .hdr-btn, .switch, #checkinPanel, .checkin-btn, .no-print { display: none !important; }
-        
-        /* 表格字體極大化 */
-        .pro-table { border: 2px solid black !important; width: 100% !important; }
-        .pro-table th { background: #eee !important; color: black !important; border: 1px solid black !important; font-size: 16px !important; }
-        .pro-table td { border: 1px solid black !important; color: black !important; font-size: 18px !important; line-height: 1.4; }
-        
-        /* 輸入框內容強制顯示 */
+        .no-print, .admin-ctrl, button, .hdr-btn, .switch, #checkinPanel { display: none !important; }
+        .app-header { background: white !important; color: black !important; position: static; border-bottom: 3px solid black; height: auto; padding: 10px 0; }
+        .header-input { color: black !important; border: none !important; background: transparent !important; font-size: 28px !important; font-weight: 900 !important; }
+        #staffBoard { background: #eee !important; border: 1px solid #000 !important; color: black !important; padding: 15px !important; }
+        .staff-board-card { border: 1px solid black !important; background: white !important; }
+        .staff-board-card .job-label { color: #444 !important; font-size: 11px !important; }
+        .staff-board-card .name-label { color: black !important; font-size: 18px !important; font-weight: 900 !important; }
+        .pro-table { border: 2px solid black !important; }
+        .pro-table th { background: #eee !important; border: 1px solid black !important; font-size: 16px !important; }
+        .pro-table td { border: 1px solid black !important; font-size: 18px !important; font-weight: 700 !important; padding: 12px !important; }
         input { border: none !important; background: transparent !important; color: black !important; font-size: inherit !important; font-weight: inherit !important; }
-        
-        /* 分頁處理 */
         tr { page-break-inside: avoid; }
     }
 </style>
@@ -74,53 +66,82 @@
 <body class="admin-mode">
 
 <header class="app-header shadow-xl">
-  <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
-    <div class="flex items-center gap-4 flex-1">
-      <input type="date" id="eventDate" class="header-input text-sm" onchange="saveAll()">
-      <input type="text" id="eventName" class="header-input border-none bg-transparent flex-1" placeholder="請輸入專案名稱..." onblur="saveAll()">
+  <div class="max-w-7xl mx-auto w-full flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2 flex-1 min-w-0">
+      <input type="date" id="eventDate" class="header-input text-xs shrink-0" onchange="saveData()">
+      <input type="text" id="eventName" class="header-input border-none bg-transparent flex-1 truncate" placeholder="專案名稱..." onblur="saveData()">
     </div>
-    <div class="flex items-center gap-3 admin-ctrl">
-        <button onclick="window.print()" class="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded-lg text-sm font-black text-white shadow-lg transition">🖨️ 轉存 PDF / 列印</button>
-        <div class="h-6 w-px bg-white/30"></div>
-        <label class="font-bold text-[10px] text-white/50">編輯開關</label>
-        <input type="checkbox" id="adminToggle" checked onchange="toggleAdmin(this.checked)" class="w-5 h-5">
+    
+    <div class="flex items-center gap-3 shrink-0 no-print">
+      <button id="checkinToggleBtn" onclick="toggleCheckinPanel()" class="hdr-btn">長官簽到</button>
+      
+      <div class="flex items-center gap-1">
+        <span class="text-[9px] font-bold opacity-70">手機</span>
+        <label class="switch">
+          <input type="checkbox" id="mobileToggle" onchange="toggleMobileView(this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <span class="text-[9px] font-bold opacity-70">編輯</span>
+        <label class="switch">
+          <input type="checkbox" id="adminToggle" checked onchange="toggleAdmin(this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <button onclick="window.print()" class="bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded text-[10px] font-black text-white shadow-lg transition no-print">🖨️ PDF</button>
     </div>
   </div>
 </header>
 
-<div id="staffBoard" class="px-4 py-4 bg-slate-900 text-white">
+<div id="staffBoard" class="px-4 py-3">
   <div class="max-w-7xl mx-auto">
-    <div class="text-[10px] font-black opacity-50 uppercase tracking-widest mb-2">Personnel Allocation / 當日分工看板</div>
-    <div id="staffBoardCards" class="flex flex-wrap gap-3">
-      </div>
+    <div id="staffBoardCards" class="flex flex-wrap gap-2"></div>
   </div>
 </div>
 
-<main class="max-w-7xl mx-auto p-4">
-    <section class="admin-ctrl mb-6 bg-white p-5 border-2 border-blue-100 rounded-xl shadow-sm no-print">
-        <div class="text-xs font-black text-blue-500 mb-3">1. 選擇職稱 > 2. 點擊人員姓名進行指派</div>
-        <div id="jobOptions" class="flex flex-wrap gap-2 mb-3"></div>
-        <div id="nameOptions" class="flex flex-wrap gap-2 mb-4"></div>
-        <div class="text-[10px] text-slate-400 mb-1">已指派清單：</div>
-        <div id="staffList" class="flex flex-wrap gap-2"></div>
-    </section>
-
-    <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-slate-200">
-        <table class="pro-table">
-            <thead>
-                <tr>
-                    <th class="w-24">時間</th>
-                    <th class="w-20">長度</th>
-                    <th class="w-1/3">執行單元</th>
-                    <th>詳細說明與備註</th>
-                    <th class="w-48 text-right">負責人</th>
-                </tr>
-            </thead>
-            <tbody id="rundownBody"></tbody>
-        </table>
+<div id="checkinPanel" class="max-w-7xl mx-auto px-4 mt-4 no-print">
+    <div class="bg-white rounded-xl border border-orange-200 shadow-lg p-4">
+        <div class="flex justify-between items-center border-b pb-2 mb-2">
+            <span class="font-black text-orange-700 text-sm">📋 長官簽到名單</span>
+            <a href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" target="_blank" class="text-[10px] text-orange-600 underline">原始表單</a>
+        </div>
+        <div id="checkinList" class="text-sm text-slate-500">載入中...</div>
     </div>
-    
-    <button onclick="addRow()" class="admin-ctrl w-full py-5 mt-4 border-2 border-dashed border-slate-300 rounded-xl font-black text-slate-400 hover:bg-white hover:text-blue-500 transition-all">+ 新增活動流程單元</button>
+</div>
+
+<main class="max-w-7xl mx-auto p-4">
+    <div id="desktopView">
+        <section class="admin-ctrl bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 no-print">
+            <div id="jobOptions" class="flex flex-wrap gap-1 mb-2"></div>
+            <div id="nameOptions" class="flex flex-wrap gap-1 mb-3 border-b pb-3"></div>
+            <div id="staffList" class="flex flex-wrap gap-2"></div>
+        </section>
+
+        <div class="bg-white shadow-sm rounded-xl border overflow-hidden">
+            <table class="pro-table">
+                <thead>
+                    <tr>
+                        <th class="w-24 text-center">開始</th>
+                        <th class="w-16 text-center">長度</th>
+                        <th class="w-1/3">執行單元</th>
+                        <th>詳細說明</th>
+                        <th class="w-40 text-right">負責人</th>
+                        <th class="w-8 admin-ctrl no-print"></th>
+                    </tr>
+                </thead>
+                <tbody id="rundownBody"></tbody>
+            </table>
+        </div>
+        <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 border-2 border-dashed border-slate-300 rounded-xl font-bold text-slate-400 hover:text-blue-500 transition">+ 增加新單元</button>
+    </div>
+
+    <div id="mobileView" class="hidden">
+        <div id="mobileRundown" class="space-y-3"></div>
+        <button onclick="addRow()" class="admin-ctrl w-full py-4 border-2 border-dashed rounded-xl mt-4 text-slate-400">+ 增加單元</button>
+    </div>
 </main>
 
 <script>
@@ -128,19 +149,30 @@
     const NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
     let selectedJob = "";
     
-    // 初始化資料架構
     let localData = {
-        eventDate: "2026-03-28", 
-        eventName: "2026 四月八社區慶典", 
+        eventDate: "2026-03-28",
+        eventName: "2026 社區慶典",
         staff: [],
-        rundown: [
-            {s:"09:00", e:"09:30", l:30, u:"進場與場地佈置", d:"確認音響、桌椅、VIP 簽到處器材", persons:[]}
-        ]
+        rundown: [{s:"09:00", e:"09:10", l:10, u:"進場準備", d:"音響桌椅確認", persons:[]}],
+        equipment: {service:[], stage:[]}
     };
 
     function toggleAdmin(c) { 
         document.body.classList.toggle('admin-mode', c); 
         renderAll(); 
+    }
+    
+    function toggleMobileView(c) {
+        document.getElementById('desktopView').classList.toggle('hidden', c);
+        document.getElementById('mobileView').classList.toggle('hidden', !c);
+        renderAll();
+    }
+
+    function toggleCheckinPanel() {
+        const p = document.getElementById('checkinPanel');
+        const isHidden = (p.style.display === 'none' || p.style.display === '');
+        p.style.display = isHidden ? 'block' : 'none';
+        document.getElementById('checkinToggleBtn').classList.toggle('active', isHidden);
     }
 
     function renderAll() {
@@ -148,76 +180,59 @@
         document.getElementById('eventDate').value = localData.eventDate;
         document.getElementById('eventName').value = localData.eventName;
         
-        // 看板渲染
-        document.getElementById('staffBoardCards').innerHTML = localData.staff.length > 0 
-            ? localData.staff.map(s => `
-                <div class="staff-board-card p-3 rounded-lg border border-white/20 bg-white/5">
-                    <div class="job-label text-white/50">${s.j}</div>
-                    <div class="name-label font-bold text-xl">${s.n}</div>
-                </div>`).join('')
-            : '<div class="text-white/20 italic text-sm">尚未指派工作人員...</div>';
-
-        // 派遣區
-        document.getElementById('jobOptions').innerHTML = JOBS.map(j => `
-            <button class="px-3 py-1.5 border-2 rounded-lg text-xs font-bold transition ${selectedJob===j?'bg-blue-600 text-white border-blue-600':'bg-white text-slate-600 border-slate-200'}" 
-            onclick="selectedJob='${j}';renderAll()">${j}</button>`).join('');
-        
-        document.getElementById('nameOptions').innerHTML = NAMES.map(n => `
-            <button class="px-3 py-1.5 border-2 border-slate-200 rounded-lg text-xs font-bold bg-white hover:border-green-500 transition" 
-            onclick="addStaff('${n}')">${n}</button>`).join('');
-
-        document.getElementById('staffList').innerHTML = localData.staff.map((s,i) => `
-            <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-black flex items-center gap-2">
-                ${s.n} <span class="opacity-50">${s.j}</span>
-                ${isAdmin ? `<span class="cursor-pointer text-red-400 hover:text-red-600" onclick="removeStaff(${i})">✕</span>` : ''}
+        // 分工看板
+        document.getElementById('staffBoardCards').innerHTML = localData.staff.map(s => `
+            <div class="staff-board-card">
+                <div class="job-label text-[9px] text-white/50">${s.j}</div>
+                <div class="name-label font-bold text-white">${s.n}</div>
             </div>`).join('');
 
-        // 流程表渲染
+        // 派遣按鈕
+        document.getElementById('jobOptions').innerHTML = JOBS.map(j => `<button class="px-2 py-1 border text-[10px] rounded ${selectedJob===j?'bg-blue-600 text-white':'bg-white'}" onclick="selectedJob='${j}';renderAll()">${j}</button>`).join('');
+        document.getElementById('nameOptions').innerHTML = NAMES.map(n => `<button class="px-2 py-1 border text-[10px] rounded bg-white" onclick="addStaff('${n}')">${n}</button>`).join('');
+        document.getElementById('staffList').innerHTML = localData.staff.map((s,i) => `
+            <div class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1">
+                ${s.n}(${s.j}) ${isAdmin?`<span class="cursor-pointer text-red-300" onclick="localData.staff.splice(${i},1);saveData();renderAll()">✕</span>`:''}
+            </div>`).join('');
+
+        // 桌面流程
         document.getElementById('rundownBody').innerHTML = localData.rundown.map((row, i) => `
-            <tr class="group">
-                <td class="text-center font-black text-slate-800">${row.s}</td>
-                <td class="text-center text-sm text-blue-600 font-black bg-blue-50/30">${row.l}m</td>
-                <td><input class="w-full font-black text-slate-900 outline-none bg-transparent" value="${row.u}" placeholder="單元名稱" onblur="updateRow(${i}, 'u', this.value)"></td>
-                <td><input class="w-full text-slate-500 outline-none bg-transparent" value="${row.d||''}" placeholder="細節說明..." onblur="updateRow(${i}, 'd', this.value)"></td>
-                <td class="text-right">
-                    <div class="text-xs font-bold text-slate-400 mb-1 no-print">負責人</div>
-                    <div class="font-black text-blue-600 text-base">${row.persons.join(', ') || '-'}</div>
-                </td>
+            <tr>
+                <td class="text-center font-black text-sm"><input class="w-full text-center bg-transparent" value="${row.s}" onchange="updateRow(${i},'s',this.value)"></td>
+                <td class="text-center text-xs text-blue-600 font-black"><input class="w-full text-center bg-transparent" value="${row.l}" onchange="updateRow(${i},'l',this.value)"></td>
+                <td><input class="w-full font-black text-sm outline-none bg-transparent" value="${row.u}" onblur="updateRow(${i},'u',this.value)"></td>
+                <td><input class="w-full text-slate-500 text-sm outline-none bg-transparent" value="${row.d||''}" onblur="updateRow(${i},'d',this.value)"></td>
+                <td class="text-right text-[10px] font-black text-blue-600">${row.persons.join(', ')}</td>
+                <td class="admin-ctrl no-print"><button onclick="localData.rundown.splice(${i},1);saveData();renderAll()">✕</button></td>
             </tr>`).join('');
+
+        // 手機流程
+        document.getElementById('mobileRundown').innerHTML = localData.rundown.map(row => `
+            <div class="mobile-row">
+                <div class="flex justify-between text-[10px] mb-1">
+                    <span class="font-bold text-blue-600">${row.s} (${row.l}m)</span>
+                    <span class="text-slate-400">${row.persons.join(', ')}</span>
+                </div>
+                <div class="font-black text-sm">${row.u}</div>
+                <div class="text-[10px] text-slate-400">${row.d||''}</div>
+            </div>`).join('');
     }
 
-    // 資料處理函數
     function addStaff(n) {
-        if(!selectedJob) return alert("請先選擇上方的一個【職稱】再點姓名！");
+        if(!selectedJob) return alert("先選職稱");
         localData.staff.push({n, j:selectedJob});
-        saveAll();
+        saveData(); renderAll();
     }
-
-    function removeStaff(i) {
-        localData.staff.splice(i, 1);
-        saveAll();
-    }
-
-    function updateRow(i, field, val) {
-        localData.rundown[i][field] = val;
-        saveAll();
-    }
-
-    function addRow() {
-        localData.rundown.push({s:"--:--", e:"--:--", l:10, u:"", d:"", persons:[]});
-        saveAll();
-    }
-
-    // 💾 自動儲存與載入
-    function saveAll() {
+    function updateRow(i, f, v) { localData.rundown[i][f] = v; saveData(); }
+    function addRow() { localData.rundown.push({s:"09:00", l:10, u:"", d:"", persons:[]}); renderAll(); }
+    function saveData() {
         localData.eventDate = document.getElementById('eventDate').value;
         localData.eventName = document.getElementById('eventName').value;
-        localStorage.setItem('v46_final_save', JSON.stringify(localData));
-        renderAll();
+        localStorage.setItem('v46_save_final', JSON.stringify(localData));
     }
 
     window.onload = () => {
-        const saved = localStorage.getItem('v46_final_save');
+        const saved = localStorage.getItem('v46_save_final');
         if (saved) localData = JSON.parse(saved);
         renderAll();
     };
