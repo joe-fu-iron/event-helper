@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>執行製作控管台 v46.7 - 最終整合版</title>
+<title>執行製作控管台 v46.8</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
     :root { --win-blue: #0078D4; --win-border: #D1D1D1; }
     body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; padding-bottom: 60px; }
 
-    /* 左右滑動開關 CSS */
+    /* 左右滑動開關 */
     .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .4s; border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); }
@@ -18,45 +18,32 @@
     input:checked + .slider { background-color: #4ade80; border-color: #22c55e; }
     input:checked + .slider:before { transform: translateX(16px); }
 
-    /* UI 核心樣式 */
+    /* UI 樣式 */
     .app-header { background: var(--win-blue); color: #FFF; height: 60px; display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 1000; }
     .header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #FFF; outline: none; }
-    #staffBoard { background: linear-gradient(135deg, #1e3a5f 0%, #0078D4 100%); border-bottom: 2px solid #005fa3; }
-    .staff-board-card { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 4px 10px; min-width: 90px; text-align: center; }
+    #staffBoard { background: linear-gradient(135deg, #1e3a5f 0%, #0078D4 100%); }
 
-    /* 表格與列表 */
-    .pro-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--win-border); }
-    .pro-table th { background: #F3F3F3; padding: 12px 10px; font-size: 13px; border: 1px solid var(--win-border); font-weight: 900; color: #334155; }
-    .pro-table td { border: 1px solid var(--win-border); padding: 10px; vertical-align: middle; }
+    /* 表格樣式 */
+    .pro-table { width: 100%; border-collapse: collapse; background: white; border: 1.5px solid #000; }
+    .pro-table th { background: #F3F3F3; padding: 12px 10px; border: 1px solid #000; font-weight: 900; }
+    .pro-table td { border: 1px solid #000; padding: 10px; }
 
     .admin-ctrl { display: none !important; }
     .admin-mode .admin-ctrl { display: block !important; }
-    #checkinPanel { display: none; }
-    .hdr-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; color: white; cursor: pointer; transition: 0.2s; }
-    .hdr-btn.active { background: white; color: var(--win-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    
+    /* 器材區格位優化 */
+    .equip-grid { border: 2px solid #000; background: #fff; width: 100%; margin-top: 15px; }
+    .equip-label { background: #f8fafc; border-right: 2px solid #000; width: 100px; text-align: center; font-weight: 900; vertical-align: middle; }
+    .equip-content { padding: 10px; }
 
-    /* 手機視圖卡片 */
-    .mobile-row { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-
-    /* ==========================================
-       🖨️ 列印優化系統 (最大化字體 + 最小邊界)
-       ========================================== */
+    /* 列印優化 */
     @media print {
         @page { size: A4 landscape; margin: 0.5cm; }
-        body { background: white; padding: 0; margin: 0; }
-        .no-print, .admin-ctrl, button, .hdr-btn, .switch, #checkinPanel { display: none !important; }
-        .app-header { background: white !important; color: black !important; position: static; border-bottom: 3px solid black; height: auto; padding: 10px 0; }
-        .header-input { color: black !important; border: none !important; background: transparent !important; font-size: 28px !important; font-weight: 900 !important; }
-        #staffBoard { background: #f8fafc !important; border: 1.5px solid black !important; padding: 15px !important; border-radius: 0; }
-        .staff-board-card { border: 1px solid black !important; background: white !important; color: black !important; }
-        .staff-board-card .job-label { color: #444 !important; font-size: 11px !important; font-weight: bold !important; }
-        .staff-board-card .name-label { color: black !important; font-size: 18px !important; font-weight: 900 !important; }
-        .pro-table { border: 2.5px solid black !important; }
-        .pro-table th { background: #f1f5f9 !important; border: 1px solid black !important; font-size: 16px !important; color: black !important; }
-        .pro-table td { border: 1px solid black !important; font-size: 18px !important; font-weight: 700 !important; padding: 14px 10px !important; color: black !important; }
-        input, textarea { border: none !important; background: transparent !important; color: black !important; font-size: inherit !important; font-weight: inherit !important; }
-        tr { page-break-inside: avoid; }
-        .equip-card { border: 2px solid black !important; margin-top: 15px !important; }
+        .no-print, .admin-ctrl, button, .switch { display: none !important; }
+        .app-header { background: white !important; color: black !important; position: static; border-bottom: 3px solid black; }
+        .header-input { color: black !important; border: none !important; font-size: 28px !important; }
+        .pro-table td, .equip-content { font-size: 18px !important; font-weight: 700 !important; }
+        input, textarea { border: none !important; }
     }
 </style>
 </head>
@@ -65,101 +52,70 @@
 <header class="app-header shadow-xl no-print">
   <div class="max-w-7xl mx-auto w-full flex items-center justify-between gap-2">
     <div class="flex items-center gap-2 flex-1 min-w-0">
-      <input type="date" id="eventDate" class="header-input text-xs shrink-0" onchange="saveData()">
-      <input type="text" id="eventName" class="header-input border-none bg-transparent flex-1 truncate font-black" placeholder="專案名稱..." onblur="saveData()">
+      <input type="date" id="eventDate" class="header-input text-xs" onchange="saveData()">
+      <input type="text" id="eventName" class="header-input border-none bg-transparent flex-1 font-black" onblur="saveData()">
     </div>
-    
     <div class="flex items-center gap-4 shrink-0">
-      <button id="checkinToggleBtn" onclick="toggleCheckinPanel()" class="hdr-btn">簽到</button>
-      
-      <div class="flex items-center gap-1.5">
-        <span class="text-[10px] font-bold opacity-60">手機</span>
-        <label class="switch">
-          <input type="checkbox" id="mobileToggle" onchange="toggleMobileView(this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="flex items-center gap-1.5">
-        <span class="text-[10px] font-bold opacity-60">編輯</span>
-        <label class="switch">
-          <input type="checkbox" id="adminToggle" checked onchange="toggleAdmin(this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <button onclick="window.print()" class="bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded text-[11px] font-black text-white shadow-lg transition">🖨️ 列印 PDF</button>
+      <button onclick="toggleCheckinPanel()" id="checkinToggleBtn" class="hdr-btn bg-white/10 px-3 py-1 rounded text-[11px] font-bold">簽到</button>
+      <div class="flex items-center gap-1"><span class="text-[9px] font-bold opacity-60">手機</span><label class="switch"><input type="checkbox" onchange="toggleMobileView(this.checked)"><span class="slider"></span></label></div>
+      <div class="flex items-center gap-1"><span class="text-[9px] font-bold opacity-60">編輯</span><label class="switch"><input type="checkbox" checked onchange="toggleAdmin(this.checked)"><span class="slider"></span></label></div>
+      <button onclick="window.print()" class="bg-orange-500 px-3 py-1.5 rounded text-[11px] font-black text-white">🖨️ PDF</button>
     </div>
   </div>
 </header>
 
-<div id="staffBoard" class="px-4 py-4 shadow-inner">
-  <div class="max-w-7xl mx-auto">
-    <div class="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] mb-3 no-print">Team Allocation / 當日分工看板</div>
-    <div id="staffBoardCards" class="flex flex-wrap gap-2"></div>
-  </div>
-</div>
-
-<div id="checkinPanel" class="max-w-7xl mx-auto px-4 mt-4 no-print">
-    <div class="bg-white rounded-xl border border-orange-200 shadow-xl p-4">
-        <div id="checkinList" class="text-xs text-slate-400 italic">載入雲端名單中...</div>
-    </div>
-</div>
+<div id="staffBoard" class="px-4 py-4"><div id="staffBoardCards" class="max-w-7xl mx-auto flex flex-wrap gap-2"></div></div>
 
 <main class="max-w-7xl mx-auto p-4">
     <div id="desktopView">
-        <section class="admin-ctrl bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 no-print">
-            <div id="jobOptions" class="flex flex-wrap gap-1.5 mb-3"></div>
-            <div id="nameOptions" class="flex flex-wrap gap-1.5 mb-4 border-b pb-4"></div>
+        <section class="admin-ctrl bg-white p-4 rounded-xl border mb-6 no-print">
+            <div id="jobOptions" class="flex flex-wrap gap-1 mb-2"></div>
+            <div id="nameOptions" class="flex flex-wrap gap-1 mb-4 border-b pb-4"></div>
             <div id="staffList" class="flex flex-wrap gap-2"></div>
         </section>
-
-        <div class="bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden">
-            <table class="pro-table">
-                <thead>
-                    <tr>
-                        <th class="w-24 text-center">開始</th>
-                        <th class="w-16 text-center">分</th>
-                        <th class="w-1/3">執行單元</th>
-                        <th>執行詳細說明</th>
-                        <th class="w-40 text-right">負責人</th>
-                        <th class="w-10 admin-ctrl no-print"></th>
-                    </tr>
-                </thead>
-                <tbody id="rundownBody"></tbody>
-            </table>
-        </div>
-        <button onclick="addRow()" class="admin-ctrl w-full py-5 mt-4 border-2 border-dashed border-slate-300 rounded-2xl font-black text-slate-400 hover:text-blue-500 transition-all bg-white/50">+ 增加新流程單元</button>
+        <table class="pro-table">
+            <thead><tr><th class="w-24">開始</th><th class="w-16">分</th><th class="w-1/3">執行單元</th><th>詳細說明</th><th class="w-40 text-right">負責人</th><th class="w-10 admin-ctrl"></th></tr></thead>
+            <tbody id="rundownBody"></tbody>
+        </table>
+        <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 border-2 border-dashed rounded-xl font-black text-slate-400">+ 增加新單元</button>
     </div>
 
-    <div id="mobileView" class="hidden">
-        <div id="mobileRundown" class="space-y-3"></div>
-        <button onclick="addRow()" class="admin-ctrl w-full py-5 border-2 border-dashed rounded-2xl mt-4 text-slate-400 font-bold bg-white">+ 增加單元</button>
-    </div>
+    <div id="mobileView" class="hidden"><div id="mobileRundown" class="space-y-3"></div></div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm equip-card">
-            <div class="font-black text-blue-600 border-b pb-1 mb-2 text-xs flex justify-between uppercase">器材清單 / Equipment <button onclick="addEquip()" class="admin-ctrl text-blue-400 text-lg">+</button></div>
-            <div id="equipItems" class="space-y-1"></div>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm equip-card">
-            <div class="font-black text-orange-600 border-b pb-1 mb-2 text-xs uppercase">備註與提醒 / Notes</div>
-            <textarea id="eventNotes" class="w-full h-24 text-sm outline-none bg-transparent resize-none leading-relaxed" placeholder="在此輸入其他重要交代事項..." onblur="saveData()"></textarea>
-        </div>
+    <table class="equip-grid">
+        <tr>
+            <td class="equip-label">服務台</td>
+            <td class="equip-content">
+                <div id="list-service" class="flex flex-wrap gap-x-4 gap-y-2"></div>
+                <button onclick="addItem('service')" class="admin-ctrl text-blue-500 text-xs mt-2 font-bold">+ 增加服務台項目</button>
+            </td>
+        </tr>
+        <tr>
+            <td class="equip-label">舞 台</td>
+            <td class="equip-content">
+                <div id="list-stage" class="flex flex-wrap gap-x-4 gap-y-2"></div>
+                <button onclick="addItem('stage')" class="admin-ctrl text-orange-500 text-xs mt-2 font-bold">+ 增加舞台項目</button>
+            </td>
+        </tr>
+    </table>
+
+    <div class="mt-4 bg-white p-4 border-2 border-black">
+        <div class="text-[10px] font-black uppercase mb-2">備註事項 / Notes</div>
+        <textarea id="eventNotes" class="w-full h-24 text-sm outline-none bg-transparent resize-none leading-relaxed" placeholder="輸入其他重要交代事項..." onblur="saveData()"></textarea>
     </div>
 </main>
 
 <script>
-    const JOBS = ["控場","音響","服務台","儀式","攝影","機動","視訊","料理"];
+    const JOBS = ["控場","音響","服務台","儀式","攝影","機動","視訊"];
     const NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
     let selectedJob = "";
-    
     let localData = {
-        eventDate: "2026-03-28",
-        eventName: "2026 社區慶典",
-        staff: [],
-        rundown: [{s:"09:00", l:10, u:"進場準備", d:"音響、桌椅確認", persons:[]}],
-        equipment: ["對講機 x6", "無線麥克風 x4"],
+        eventDate: "2026-03-28", eventName: "2026 社區遺產節", staff: [],
+        rundown: [{s:"09:00", l:10, u:"進場準備", d:"物資就位", persons:[]}],
+        equip: {
+            service: ["簽到表+勾選表 1 式", "新聞資料 10 份", "餐盒 50", "瓶水 2 箱", "扇子？"],
+            stage: ["Truss6*3(2m*10、1m*4、骰*8、活頁片*4、斜撐*4)", "鐵板*4", "斜撐*4", "沙袋*8", "繩子*all", "帆布 630*300", "豆扣*3 大把", "音響 1 式", "長桌*4 椅子 40 張(用公所的)", "延長線*1 大捲", "紅地毯*2 捲", "紅地膠*4 大捲", "畫架*1", "手拿牌*10", "短桌*2(音響及聽團包用)"]
+        },
         notes: ""
     };
 
@@ -169,11 +125,6 @@
         document.getElementById('mobileView').classList.toggle('hidden', !c);
         renderAll();
     }
-    function toggleCheckinPanel() {
-        const p = document.getElementById('checkinPanel');
-        p.style.display = (p.style.display==='none'||p.style.display==='')?'block':'none';
-        document.getElementById('checkinToggleBtn').classList.toggle('active', p.style.display==='block');
-    }
 
     function renderAll() {
         const isAdmin = document.body.classList.contains('admin-mode');
@@ -181,68 +132,39 @@
         document.getElementById('eventName').value = localData.eventName;
         
         // 看板
-        document.getElementById('staffBoardCards').innerHTML = localData.staff.map(s => `
-            <div class="staff-board-card">
-                <div class="job-label text-[9px] text-white/50">${s.j}</div>
-                <div class="name-label font-black text-white">${s.n}</div>
-            </div>`).join('');
-
-        // 指派按鈕
+        document.getElementById('staffBoardCards').innerHTML = localData.staff.map(s => `<div class="bg-white/10 border border-white/20 rounded px-3 py-1 text-center min-w-[80px]"><div class="text-[9px] text-white/50">${s.j}</div><div class="font-black text-white text-sm">${s.n}</div></div>`).join('');
         document.getElementById('jobOptions').innerHTML = JOBS.map(j => `<button class="px-2 py-1 border text-[10px] rounded ${selectedJob===j?'bg-blue-600 text-white':'bg-white'}" onclick="selectedJob='${j}';renderAll()">${j}</button>`).join('');
         document.getElementById('nameOptions').innerHTML = NAMES.map(n => `<button class="px-2 py-1 border text-[10px] rounded bg-white" onclick="addStaff('${n}')">${n}</button>`).join('');
-        document.getElementById('staffList').innerHTML = localData.staff.map((s,i) => `
-            <div class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1">
-                ${s.n}(${s.j}) ${isAdmin?`<span class="cursor-pointer text-red-300" onclick="localData.staff.splice(${i},1);saveData();renderAll()">✕</span>`:''}
-            </div>`).join('');
+        document.getElementById('staffList').innerHTML = localData.staff.map((s,i) => `<div class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] font-bold">${s.n}(${s.j}) ${isAdmin?`<span onclick="localData.staff.splice(${i},1);saveData();renderAll()">✕</span>`:''}</div>`).join('');
 
-        // 桌面流程
-        document.getElementById('rundownBody').innerHTML = localData.rundown.map((row, i) => `
-            <tr>
-                <td class="text-center font-black text-sm"><input class="w-full text-center bg-transparent" value="${row.s}" onchange="updateRow(${i},'s',this.value)"></td>
-                <td class="text-center text-xs text-blue-600 font-black"><input class="w-full text-center bg-transparent" value="${row.l}" onchange="updateRow(${i},'l',this.value)"></td>
-                <td><input class="w-full font-black text-sm outline-none bg-transparent" value="${row.u}" onblur="updateRow(${i},'u',this.value)"></td>
-                <td><input class="w-full text-slate-500 text-sm outline-none bg-transparent" value="${row.d||''}" onblur="updateRow(${i},'d',this.value)"></td>
-                <td class="text-right text-[10px] font-black text-blue-600">${row.persons.join(', ') || '-'}</td>
-                <td class="admin-ctrl no-print text-center"><button onclick="localData.rundown.splice(${i},1);saveData();renderAll()">✕</button></td>
-            </tr>`).join('');
+        // 流程
+        document.getElementById('rundownBody').innerHTML = localData.rundown.map((row, i) => `<tr><td class="text-center font-black"><input class="w-full text-center" value="${row.s}" onchange="updateRow(${i},'s',this.value)"></td><td class="text-center text-blue-600 font-black bg-blue-50/20"><input class="w-full text-center" value="${row.l}" onchange="updateRow(${i},'l',this.value)"></td><td><input class="w-full font-black outline-none" value="${row.u}" onblur="updateRow(${i},'u',this.value)"></td><td><input class="w-full text-slate-500 outline-none" value="${row.d||''}" onblur="updateRow(${i},'d',this.value)"></td><td class="text-right text-[10px] font-black text-blue-600">${row.persons.join(', ')}</td><td class="admin-ctrl"><button onclick="localData.rundown.splice(${i},1);saveData();renderAll()">✕</button></td></tr>`).join('');
 
-        // 手機流程
-        document.getElementById('mobileRundown').innerHTML = localData.rundown.map(row => `
-            <div class="mobile-row">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full">${row.s} (${row.l}m)</span>
-                    <span class="text-[10px] font-black text-blue-600">${row.persons.join(', ')}</span>
-                </div>
-                <div class="font-black text-sm text-slate-800">${row.u}</div>
-                <div class="text-[10px] text-slate-400 mt-1">${row.d||''}</div>
-            </div>`).join('');
-
-        // 器材
-        document.getElementById('equipItems').innerHTML = (localData.equipment || []).map((item, idx) => `
-            <div class="flex items-center gap-2 border-b border-slate-50 py-1">
-                <input class="flex-1 text-sm bg-transparent outline-none" value="${item}" onblur="localData.equipment[${idx}]=this.value;saveData()">
-                ${isAdmin?`<span class="text-red-100 cursor-pointer admin-ctrl" onclick="localData.equipment.splice(${idx},1);renderAll();saveData()">✕</span>`:''}
-            </div>`).join('');
+        // 器材 (行列式呈現)
+        ['service', 'stage'].forEach(type => {
+            document.getElementById(`list-${type}`).innerHTML = localData.equip[type].map((item, idx) => `
+                <div class="flex items-center gap-1 border border-slate-100 px-2 py-1 rounded bg-slate-50">
+                    <span class="text-slate-300">□</span>
+                    <input class="text-sm bg-transparent outline-none w-auto min-w-[50px]" value="${item}" onblur="localData.equip['${type}'][${idx}]=this.value;saveData()" size="${item.length + 2}">
+                    ${isAdmin?`<span class="text-red-200 cursor-pointer admin-ctrl" onclick="localData.equip['${type}'].splice(${idx},1);renderAll()">✕</span>`:''}
+                </div>`).join('');
+        });
     }
 
-    function addStaff(n) {
-        if(!selectedJob) return alert("先選職稱");
-        localData.staff.push({n, j:selectedJob});
-        saveData(); renderAll();
-    }
+    function addStaff(n) { if(!selectedJob) return alert("先選職稱"); localData.staff.push({n, j:selectedJob}); saveData(); renderAll(); }
     function updateRow(i, f, v) { localData.rundown[i][f] = v; saveData(); }
     function addRow() { localData.rundown.push({s:"09:00", l:10, u:"", d:"", persons:[]}); renderAll(); }
-    function addEquip() { if(!localData.equipment) localData.equipment=[]; localData.equipment.push("新器材"); renderAll(); }
+    function addItem(type) { localData.equip[type].push("新項目"); renderAll(); }
     
     function saveData() {
         localData.eventDate = document.getElementById('eventDate').value;
         localData.eventName = document.getElementById('eventName').value;
         localData.notes = document.getElementById('eventNotes').value;
-        localStorage.setItem('v46_save_mega', JSON.stringify(localData));
+        localStorage.setItem('v46_8_save', JSON.stringify(localData));
     }
 
     window.onload = () => {
-        const saved = localStorage.getItem('v46_save_mega');
+        const saved = localStorage.getItem('v46_8_save');
         if (saved) {
             localData = JSON.parse(saved);
             document.getElementById('eventNotes').value = localData.notes || "";
