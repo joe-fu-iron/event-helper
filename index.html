@@ -3,14 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>2026 執行製作旗艦控管台 v50</title>
+<title>2026 執行製作旗艦控管台 v50.1</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
     :root { --win-blue: #0078D4; }
     body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bottom: 80px; }
 
-    /* 滑動開關 */
     .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.3); transition: .4s; border-radius: 20px; }
@@ -21,7 +20,6 @@
     .app-header { background: var(--win-blue); color: #FFF; padding: 12px 16px; position: sticky; top: 0; z-index: 1000; }
     .header-input { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 4px; font-weight: 700; color: #FFF; outline: none; }
     
-    /* 專業表格 */
     .pro-table { width: 100%; border-collapse: collapse; background: white; border: 2.5px solid #000; }
     .pro-table th { background: #f8fafc; padding: 12px; border: 1.5px solid #000; font-weight: 900; font-size: 14px; }
     .pro-table td { border: 1.5px solid #000; padding: 12px; vertical-align: middle; }
@@ -33,18 +31,10 @@
     .section-title { background: #000; color: #fff; padding: 8px 15px; font-size: 13px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
     .equip-label { background: #f1f5f9; width: 90px; text-align: center; font-weight: 900; border-right: 1.5px solid #000; }
 
-    /* 器材長條自適應方塊 */
-    .equip-tag { 
-        display: inline-flex; align-items: center; 
-        background: #fff; border: 2px solid #000; 
-        padding: 4px 10px; border-radius: 4px; 
-        font-size: 15px; font-weight: 900; gap: 8px;
-        box-shadow: 2px 2px 0px #000; margin: 4px;
-    }
+    .equip-tag { display: inline-flex; align-items: center; background: #fff; border: 2px solid #000; padding: 4px 10px; border-radius: 4px; font-size: 15px; font-weight: 900; gap: 8px; box-shadow: 2px 2px 0px #000; margin: 4px; }
     .equip-name-input { background: transparent; border: none; outline: none; color: #000; min-width: 20px; }
     .qty-input { width: 50px; background: #000; border: none; border-radius: 2px; text-align: center; color: #FFF; font-weight: 900; }
 
-    /* 照片藝廊 */
     .img-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
     .img-box { width: 150px; height: 150px; position: relative; border: 2.5px solid #000; background: #eee; overflow: hidden; }
     .img-box img { width: 100%; height: 100%; object-fit: cover; }
@@ -57,7 +47,7 @@
     @media print {
         @page { size: A4 landscape; margin: 0.5cm; }
         .no-print, .admin-ctrl, button, .switch { display: none !important; }
-        .pro-table td, .equip-tag, textarea { font-size: 22px !important; font-weight: 900 !important; border: 2.5px solid #000 !important; }
+        .pro-table td, .equip-tag, textarea { font-size: 20px !important; font-weight: 900 !important; border: 2.5px solid #000 !important; }
     }
 </style>
 </head>
@@ -75,7 +65,7 @@
     <div class="header-ops flex items-center gap-4">
       <div class="flex items-center gap-1.5"><span class="text-[9px] font-bold opacity-80 uppercase">Mobile</span><label class="switch"><input type="checkbox" onchange="toggleMobileView(this.checked)"><span class="slider"></span></label></div>
       <div class="flex items-center gap-1.5"><span class="text-[9px] font-bold opacity-80 uppercase">Edit</span><label class="switch"><input type="checkbox" checked onchange="toggleAdmin(this.checked)"><span class="slider"></span></label></div>
-      <button onclick="window.print()" class="bg-red-600 px-5 py-2 rounded font-black text-xs text-white shadow-lg">匯出 PDF</button>
+      <button onclick="window.print()" class="bg-red-600 px-5 py-2 rounded font-black text-xs text-white">匯出 PDF</button>
     </div>
   </div>
 </header>
@@ -95,7 +85,7 @@
             <div id="nameOptions" class="flex flex-wrap gap-1.5 mb-3 border-b pb-3"></div>
             <div class="flex gap-2 mb-3">
                 <input type="text" id="customName" class="border-2 border-slate-200 px-3 py-1 rounded-lg text-xs w-1/3" placeholder="手動姓名...">
-                <button onclick="addStaff(document.getElementById('customName').value)" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-black">+ 加入人員</button>
+                <button onclick="addStaff(document.getElementById('customName').value)" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-black">+ 加入</button>
             </div>
             <div id="staffList" class="flex flex-wrap gap-2 mt-4"></div>
         </section>
@@ -112,7 +102,7 @@
             </thead>
             <tbody id="rundownBody"></tbody>
         </table>
-        <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 border-4 border-dashed border-slate-300 rounded-xl font-black text-slate-400 hover:text-blue-500">+ 增加流程</button>
+        <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 border-4 border-dashed border-slate-300 rounded-xl font-black text-slate-400">+ 增加流程</button>
     </div>
     
     <div id="mobileView" class="hidden space-y-4"></div>
@@ -120,14 +110,8 @@
     <div class="section-box shadow-xl">
         <div class="section-title">器材及物資派工 / EQUIPMENT</div>
         <table class="w-full">
-            <tr>
-                <td class="equip-label">服務台</td>
-                <td class="p-4"><div id="list-service" class="flex flex-wrap"></div><button onclick="addItem('service')" class="admin-ctrl text-blue-600 text-[11px] mt-4 font-black border-2 border-blue-600 px-3 py-1 rounded">+ 增加</button></td>
-            </tr>
-            <tr>
-                <td class="equip-label">舞 台</td>
-                <td class="p-4"><div id="list-stage" class="flex flex-wrap"></div><button onclick="addItem('stage')" class="admin-ctrl text-orange-600 text-[11px] mt-4 font-black border-2 border-orange-600 px-3 py-1 rounded">+ 增加</button></td>
-            </tr>
+            <tr><td class="equip-label">服務台</td><td class="p-4"><div id="list-service" class="flex flex-wrap"></div><button onclick="addItem('service')" class="admin-ctrl text-blue-600 text-[11px] mt-4 font-black">+ 增加</button></td></tr>
+            <tr><td class="equip-label">舞 台</td><td class="p-4"><div id="list-stage" class="flex flex-wrap"></div><button onclick="addItem('stage')" class="admin-ctrl text-orange-600 text-[11px] mt-4 font-black">+ 增加</button></td></tr>
         </table>
     </div>
 
@@ -142,19 +126,21 @@
     const NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
     let selectedJob = "";
     
-    // v50 恢復 v46 的初始預設資料
+    // v50.1 預設 5 行資料
     let localData = { 
-        eventDate: "2026-03-28", 
-        eventTime: "09:00", 
-        eventName: "2026 四月八社區節執行製作控管", 
-        staff: [], 
-        rundown: [{s:"09:00", l:30, u:"人員進場與物資清點", d:"清點物資、測試電力、確認麥克風", persons:[]}], 
-        equip: { service: [{n:"簽到表", q:1}], stage: [{n:"無線麥克風", q:4}] }, 
-        images: [], notes: "預留 v46 備註空間..." 
+        eventDate: "2026-03-28", eventTime: "09:00", eventName: "2026 四月八社區節執行製作控管", staff: [], 
+        rundown: [
+            {s:"09:00", l:30, u:"人員進場與物資清點", d:"清點物資、測試電力、確認麥克風", persons:[]},
+            {s:"09:30", l:15, u:"場地佈置確認", d:"舞台背景、輸出物位置確認", persons:[]},
+            {s:"09:45", l:15, u:"音響設備測試", d:"無線麥克風、背景音樂測試", persons:[]},
+            {s:"10:00", l:60, u:"正式活動開始", d:"開場儀式與流程進行", persons:[]},
+            {s:"11:00", l:30, u:"第一階段檢討", d:"確認現場服務台狀況", persons:[]}
+        ], 
+        equip: { service: [{n:"簽到表", q:1}], stage: [{n:"無線麥克風", q:4}] }, images: [], notes: "" 
     };
 
     function calculateEndTime(startTime, duration) {
-        if(!startTime || !duration) return "00:00 - 00:00 (0)";
+        if(!startTime || duration === undefined || duration === "") return "00:00 - 00:00 (0)";
         let [h, m] = startTime.split(':').map(Number);
         let endTotal = h * 60 + m + Number(duration);
         let endH = Math.floor(endTotal / 60).toString().padStart(2, '0');
@@ -164,11 +150,7 @@
 
     function adjustWidth(el) { el.style.width = (el.value.length + 1.5) + "ch"; }
     function toggleAdmin(c) { document.body.classList.toggle('admin-mode', c); renderAll(); }
-    function toggleMobileView(c) { 
-        document.getElementById('desktopView').classList.toggle('hidden', c); 
-        document.getElementById('mobileView').classList.toggle('hidden', !c); 
-        renderAll(); 
-    }
+    function toggleMobileView(c) { document.getElementById('desktopView').classList.toggle('hidden', c); document.getElementById('mobileView').classList.toggle('hidden', !c); renderAll(); }
     
     function handleImgs(e) {
         const files = e.target.files;
@@ -197,21 +179,21 @@
                 <td class="text-center font-black">
                     <div class="text-[13px] text-blue-600 mb-1">${calculateEndTime(row.s, row.l)}</div>
                     <div class="flex gap-1 admin-ctrl">
-                        <input type="time" class="w-1/2 text-[10px] border p-1" value="${row.s}" onchange="updateRow(${i},'s',this.value)">
-                        <input type="number" class="w-1/2 text-[10px] border p-1" value="${row.l}" onchange="updateRow(${i},'l',this.value)">
+                        <input type="time" class="w-1/2 text-[10px] border p-1" value="${row.s}" oninput="updateRow(${i},'s',this.value)">
+                        <input type="number" class="w-1/2 text-[10px] border p-1" value="${row.l}" oninput="updateRow(${i},'l',this.value)">
                     </div>
                 </td>
                 <td><input class="w-full font-black text-lg outline-none bg-transparent" value="${row.u}" onblur="updateRow(${i},'u',this.value)"></td>
                 <td><input class="w-full text-slate-500 text-sm font-bold outline-none bg-transparent" value="${row.d||''}" onblur="updateRow(${i},'d',this.value)"></td>
-                <td class="text-right text-[12px] font-black text-blue-700">${row.persons.join(', ')}</td>
-                <td class="admin-ctrl text-center"><button class="text-red-400 font-bold" onclick="localData.rundown.splice(${i},1);saveData();renderAll()">✕</button></td>
+                <td class="text-right text-[12px] font-black text-blue-700">${row.persons.join(', ') || '未指派'}</td>
+                <td class="admin-ctrl text-center"><button class="text-red-400" onclick="localData.rundown.splice(${i},1);saveData();renderAll()">✕</button></td>
             </tr>`).join('');
         
         document.getElementById('mobileView').innerHTML = localData.rundown.map((row, i) => `
             <div class="bg-white p-5 rounded-2xl border-l-8 border-blue-600 shadow-md">
                 <div class="text-[12px] font-black text-blue-600 mb-2 bg-blue-50 px-3 py-1 rounded-full inline-block">${calculateEndTime(row.s, row.l)}</div>
                 <input class="w-full font-black text-xl mb-1 bg-transparent" value="${row.u}" onblur="updateRow(${i},'u',this.value)">
-                <div class="text-xs text-slate-400 font-bold mt-2">負責人員：${row.persons.join(', ') || '全體人員'}</div>
+                <div class="text-xs text-slate-400 font-bold mt-2">負責人員：${row.persons.join(', ') || '全體'}</div>
             </div>`).join('');
 
         ['service', 'stage'].forEach(type => {
@@ -223,34 +205,34 @@
                 </div>`).join('');
         });
 
-        document.getElementById('imgGallery').innerHTML = localData.images.map((img, i) => `<div class="img-box"><img src="${img}">${isAdmin?`<div class="img-del" style="position:absolute;top:0;right:0;background:red;color:white;width:20px;text-align:center;cursor:pointer" onclick="localData.images.splice(${i},1);saveData();renderAll()">✕</div>`:''}</div>`).join('');
+        document.getElementById('imgGallery').innerHTML = localData.images.map((img, i) => `<div class="img-box"><img src="${img}">${isAdmin?`<div style="position:absolute;top:0;right:0;background:red;color:white;width:20px;text-align:center;cursor:pointer" onclick="localData.images.splice(${i},1);saveData();renderAll()">✕</div>`:''}</div>`).join('');
         document.getElementById('jobOptions').innerHTML = JOBS.map(j => `<button class="px-3 py-1.5 border-2 text-[11px] font-black rounded-lg ${selectedJob===j?'bg-blue-600 text-white shadow-md':'bg-white text-slate-500'}" onclick="selectedJob='${j}';renderAll()">${j}</button>`).join('');
         document.getElementById('nameOptions').innerHTML = NAMES.map(n => `<button class="px-3 py-1.5 border-2 text-[11px] font-black rounded-lg bg-white text-slate-500" onclick="addStaff('${n}')">${n}</button>`).join('');
         document.getElementById('staffList').innerHTML = localData.staff.map((s,i) => `<div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-[11px] font-black">${s.n}(${s.j}) ${isAdmin?`<span class="ml-1 cursor-pointer text-blue-400" onclick="localData.staff.splice(${i},1);saveData();renderAll()">✕</span>`:''}</div>`).join('');
     }
 
-    function addStaff(n) { if(!selectedJob || !n) return alert("請選取職稱並輸入姓名"); localData.staff.push({n, j:selectedJob}); saveData(); renderAll(); }
+    function addStaff(n) { if(!selectedJob || !n) return alert("請先選取職稱"); localData.staff.push({n, j:selectedJob}); saveData(); renderAll(); }
     
-    // 時間連動修復：updateRow 必須立即 renderAll 刷新頁面上的時間顯示文字
+    // 重大修正：改為 oninput 立即同步，不再等待失去焦點
     function updateRow(i, f, v) { 
         localData.rundown[i][f] = v; 
         saveData(); 
         renderAll(); 
     }
 
-    function addRow() { localData.rundown.push({s:"09:00", l:15, u:"新流程單元", d:"", persons:[]}); renderAll(); }
-    function addItem(type) { localData.equip[type].push({n:"新器材", q:1}); renderAll(); }
+    function addRow() { localData.rundown.push({s:"09:00", l:15, u:"新流程項目", d:"", persons:[]}); renderAll(); }
+    function addItem(type) { localData.equip[type].push({n:"新項目", q:1}); renderAll(); }
     
     function saveData() {
         localData.eventDate = document.getElementById('eventDate').value;
         localData.eventTime = document.getElementById('eventTime').value;
         localData.eventName = document.getElementById('eventName').value;
         localData.notes = document.getElementById('eventNotes').value;
-        localStorage.setItem('v50_final_master', JSON.stringify(localData));
+        localStorage.setItem('v50_1_master', JSON.stringify(localData));
     }
 
     window.onload = () => {
-        const saved = localStorage.getItem('v50_final_master');
+        const saved = localStorage.getItem('v50_1_master');
         if (saved) localData = JSON.parse(saved);
         renderAll();
     };
