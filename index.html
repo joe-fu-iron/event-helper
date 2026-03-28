@@ -1,229 +1,287 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作控管台 v40 - 專業對標版</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root { --win-blue: #0078D4; --win-border: #D1D1D1; }
-        body { font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; background: #f3f4f6; padding-bottom: 50px; }
-        .app-header { background: var(--win-blue); color: white; padding: 12px 20px; position: sticky; top: 0; z-index: 100; }
-        .header-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; font-weight: bold; padding: 4px 8px; border-radius: 4px; outline: none; }
-        .pro-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--win-border); }
-        .pro-table th { background: #f8fafc; color: #64748b; font-size: 12px; padding: 10px; border: 1px solid var(--win-border); text-align: left; }
-        .pro-table td { border: 1px solid var(--win-border); padding: 8px; vertical-align: middle; }
-        .time-input { width: 70px; font-weight: bold; border: none; background: transparent; text-align: center; }
-        .len-input { width: 45px; background: #f1f5f9; border-radius: 4px; text-align: center; font-weight: bold; color: var(--win-blue); }
-        .section-title { font-size: 14px; font-weight: 900; color: #1e293b; border-left: 4px solid var(--win-blue); padding-left: 8px; margin: 20px 0 10px 0; }
-        .item-card { background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 8px; }
-        .upload-btn { border: 2px dashed #cbd5e1; padding: 10px; text-align: center; color: #64748b; cursor: pointer; border-radius: 8px; transition: 0.3s; }
-        .upload-btn:hover { background: #f1f5f9; border-color: var(--win-blue); }
-    </style>
-</head>
-<body>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>2026 執行製作旗艦控管台 v48.2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+    :root { --win-blue: #0078D4; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bottom: 80px; }
 
-<header class="app-header shadow-lg flex justify-between items-center">
-    <div class="flex items-center gap-4">
-        <input type="date" id="eventDate" class="header-input" onchange="saveData()">
-        <input type="text" id="eventName" value="2026 專案執行單" class="header-input text-lg w-64">
+    /* --- 滑動開關復原與視覺強化 --- */
+    .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { 
+        position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; 
+        background-color: rgba(255,255,255,0.3); transition: .4s; border-radius: 20px; 
+        border: 1.5px solid rgba(255,255,255,0.4); 
+    }
+    .slider:before { 
+        position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 1.5px; 
+        background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    input:checked + .slider { background-color: #22c55e; border-color: #16a34a; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* UI 核心元件 */
+    .app-header { background: var(--win-blue); color: #FFF; height: 60px; display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 1000; }
+    .header-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #FFF; outline: none; }
+    #staffBoard { background: linear-gradient(135deg, #1e3a5f 0%, #0078D4 100%); border-bottom: 2px solid #005fa3; }
+    
+    /* 專業表格結構 */
+    .pro-table { width: 100%; border-collapse: collapse; background: white; border: 2.5px solid #000; }
+    .pro-table th { background: #f8fafc; padding: 10px; border: 1.5px solid #000; font-weight: 900; font-size: 13px; color: #334155; }
+    .pro-table td { border: 1.5px solid #000; padding: 10px; vertical-align: middle; }
+
+    .admin-ctrl { display: none !important; }
+    .admin-mode .admin-ctrl { display: block !important; }
+    
+    .section-box { background: #fff; border: 2.5px solid #000; margin-top: 15px; overflow: hidden; }
+    .section-title { background: #000; color: #fff; padding: 6px 12px; font-size: 12px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
+    .equip-label { background: #f1f5f9; width: 100px; text-align: center; font-weight: 900; border-right: 1.5px solid #000; }
+
+    /* 器材派工卡片 (v48 關鍵需求) */
+    .equip-tag { 
+        display: flex; align-items: center; gap: 6px; background: #fff; 
+        border: 2px solid #e2e8f0; padding: 5px 10px; border-radius: 8px; 
+        font-size: 14px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .qty-input { 
+        width: 50px; background: #f1f5f9; border: 1px solid #cbd5e1; 
+        border-radius: 4px; text-align: center; color: #0078D4; font-weight: 900; 
+        -moz-appearance: textfield;
+    }
+    .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    /* 驗收圖片藝廊 (v47 關鍵需求) */
+    .img-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+    .img-box { width: 150px; height: 150px; position: relative; border: 2.5px solid #000; background: #eee; border-radius: 4px; overflow: hidden; }
+    .img-box img { width: 100%; height: 100%; object-fit: cover; }
+    .img-del { position: absolute; top: 4px; right: 4px; background: rgba(255,0,0,0.8); color: white; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
+    /* 列印優化 (核心特大字) */
+    @media print {
+        @page { size: A4 landscape; margin: 0.5cm; }
+        .no-print, .admin-ctrl, button, .switch, #checkinPanel { display: none !important; }
+        body { background: white; padding: 0; }
+        .app-header { background: white !important; color: black !important; position: static; border-bottom: 4px solid black; }
+        .header-input { color: black !important; border: none !important; font-size: 28px !important; width: auto !important; }
+        .pro-table td, .equip-tag, textarea { font-size: 20px !important; font-weight: 700 !important; color: black !important; border: 2px solid black !important; }
+        .qty-input { border: none !important; background: transparent !important; width: auto !important; font-size: 24px !important; }
+        .section-box { border: 3px solid black !important; page-break-inside: avoid; }
+        .img-box { width: 250px; height: 250px; border: 2px solid #000; }
+    }
+</style>
+</head>
+<body class="admin-mode">
+
+<header class="app-header shadow-xl no-print">
+  <div class="max-w-7xl mx-auto w-full flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2 flex-1 min-w-0">
+      <input type="date" id="eventDate" class="header-input text-xs" onchange="saveData()">
+      <input type="text" id="eventName" class="header-input border-none bg-transparent flex-1 font-black truncate" placeholder="輸入活動專案名稱..." onblur="saveData()">
     </div>
-    <div class="flex gap-2">
-        <label class="upload-btn py-1 px-4 text-xs bg-white text-blue-600 border-none font-bold">
-            上傳圖檔/文件
-            <input type="file" class="hidden" accept="image/*,.pdf,.doc" onchange="handleUpload(this)">
-        </label>
-        <button onclick="toggleAdmin()" class="bg-white/10 p-1.5 rounded">🔒</button>
+    
+    <div class="flex items-center gap-4 shrink-0">
+      <button onclick="togglePanel('checkinPanel')" class="bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-[10px] font-bold border border-white/20 transition">簽到面板</button>
+      
+      <div class="flex items-center gap-1.5"><span class="text-[9px] font-bold opacity-70">手機</span><label class="switch"><input type="checkbox" onchange="toggleMobileView(this.checked)"><span class="slider"></span></label></div>
+      <div class="flex items-center gap-1.5"><span class="text-[9px] font-bold opacity-70">編輯</span><label class="switch"><input type="checkbox" checked onchange="toggleAdmin(this.checked)"><span class="slider"></span></label></div>
+      
+      <button onclick="window.print()" class="bg-orange-600 hover:bg-orange-700 px-4 py-1.5 rounded text-[11px] font-black text-white shadow-lg transition">🖨️ 列印控管表</button>
     </div>
+  </div>
 </header>
 
-<main class="max-w-5xl mx-auto p-4">
+<div id="staffBoard" class="px-4 py-4 shadow-inner">
+  <div class="max-w-7xl mx-auto flex flex-wrap gap-2" id="staffBoardCards"></div>
+</div>
 
-    <div class="section-title">EVENT RUNDOWN / 流程時間對標</div>
-    <div class="overflow-x-auto shadow-sm rounded-lg">
-        <table class="pro-table">
+<div id="checkinPanel" class="max-w-7xl mx-auto px-4 mt-4 no-print hidden">
+    <div class="bg-white rounded-xl border-2 border-orange-400 p-5 shadow-2xl">
+        <div id="checkinStatus" class="text-slate-400 italic text-[11px]">長官與貴賓簽到狀態連線中...</div>
+    </div>
+</div>
+
+<main class="max-w-7xl mx-auto p-4">
+    <div id="desktopView">
+        <section class="admin-ctrl bg-white p-5 rounded-2xl border-2 border-slate-200 mb-6 no-print shadow-sm">
+            <div id="jobOptions" class="flex flex-wrap gap-1.5 mb-2"></div>
+            <div id="nameOptions" class="flex flex-wrap gap-1.5 mb-3 border-b pb-3"></div>
+            <div id="staffList" class="flex flex-wrap gap-2"></div>
+        </section>
+
+        <table class="pro-table shadow-lg">
             <thead>
                 <tr>
-                    <th class="w-24 text-center">開始</th>
-                    <th class="w-24 text-center">結束</th>
-                    <th class="w-20 text-center">長度(m)</th>
-                    <th>執行單元與內容說明</th>
-                    <th class="w-32 text-right">負責人員</th>
-                    <th class="w-12"></th>
+                    <th class="w-28 text-center">開始時間</th>
+                    <th class="w-20 text-center">分鐘</th>
+                    <th class="w-1/3">執行單元</th>
+                    <th>詳細執行說明</th>
+                    <th class="w-40 text-right">負責人</th>
+                    <th class="w-10 admin-ctrl no-print"></th>
                 </tr>
             </thead>
-            <tbody id="rundownBody">
-                </tbody>
+            <tbody id="rundownBody"></tbody>
+        </table>
+        <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 border-2 border-dashed border-slate-300 rounded-xl font-black text-slate-400 hover:text-blue-500 hover:border-blue-500 transition-all bg-white/50">+ 增加流程執行單元</button>
+    </div>
+
+    <div id="mobileView" class="hidden space-y-4"></div>
+
+    <div class="section-box shadow-lg">
+        <div class="section-title">
+            <span>器材派工清單 / EQUIPMENT ALLOCATION</span>
+        </div>
+        <table class="w-full">
+            <tr>
+                <td class="equip-label">服務台</td>
+                <td class="p-4">
+                    <div id="list-service" class="flex flex-wrap gap-3"></div>
+                    <button onclick="addItem('service')" class="admin-ctrl text-blue-600 text-[11px] mt-3 font-black border-b border-blue-100">+ 增加服務台器材</button>
+                </td>
+            </tr>
+            <tr>
+                <td class="equip-label">舞 台</td>
+                <td class="p-4">
+                    <div id="list-stage" class="flex flex-wrap gap-3"></div>
+                    <button onclick="addItem('stage')" class="admin-ctrl text-orange-600 text-[11px] mt-3 font-black border-b border-orange-100">+ 增加舞台器材</button>
+                </td>
+            </tr>
         </table>
     </div>
-    <button onclick="addRow()" class="w-full py-3 mt-2 text-slate-400 border-2 border-dashed rounded font-bold hover:bg-white text-sm">+ 增加後續單元</button>
 
-    <div class="section-title">EQUIPMENT LIST / 器材準備清單</div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded shadow-sm border">
-            <div class="font-bold text-blue-600 mb-3 border-b pb-2 flex justify-between">
-                <span>1. 服務台區</span>
-                <button onclick="addItem('service')" class="text-xs bg-slate-100 px-2 rounded">+</button>
+    <div class="section-box shadow-lg">
+        <div class="section-title">
+            <span>備註及驗收項目 / NOTES & VALIDATION</span>
+            <div class="flex gap-2">
+                <button onclick="document.getElementById('imgInput').click()" class="admin-ctrl bg-white text-black px-3 py-1 rounded text-[10px] font-black hover:bg-slate-100">📷 拍照驗收</button>
+                <input type="file" id="imgInput" class="hidden" accept="image/*" multiple onchange="handleImgs(event)">
             </div>
-            <div id="list-service" class="space-y-2"></div>
         </div>
-        <div class="bg-white p-4 rounded shadow-sm border">
-            <div class="font-bold text-orange-600 mb-3 border-b pb-2 flex justify-between">
-                <span>2. 舞台區</span>
-                <button onclick="addItem('stage')" class="text-xs bg-slate-100 px-2 rounded">+</button>
-            </div>
-            <div id="list-stage" class="space-y-2"></div>
-        </div>
-        <div class="bg-white p-4 rounded shadow-sm border border-dashed border-slate-300">
-            <div class="font-bold text-slate-500 mb-3 border-b pb-2">3. 手動輸入/備註</div>
-            <textarea id="manualNotes" class="w-full h-32 p-2 text-sm bg-slate-50 outline-none" placeholder="輸入其他特殊器材或需求..." onblur="saveData()"></textarea>
+        <div class="p-5">
+            <textarea id="eventNotes" class="w-full min-h-[120px] text-base outline-none bg-transparent resize-none leading-relaxed mb-4 border-b border-slate-100" placeholder="在此輸入執行備註或驗收說明..." onblur="saveData()"></textarea>
+            <div id="imgGallery" class="img-grid"></div>
         </div>
     </div>
-
 </main>
 
 <script>
-    // 初始化預設資料
+    const JOBS = ["控場","音響","服務台","儀式","攝影","機動","視訊","料理"];
+    const NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
+    let selectedJob = "";
+    
     let localData = {
-        eventDate: "2026-05-22",
-        eventName: "專案執行流程表",
-        rundown: [
-            { s: "08:00", e: "08:30", l: 30, u: "公司出發/器材裝載", p: "全體" },
-            { s: "08:30", e: "09:30", l: 60, u: "進場佈置/電力負載測試", p: "" }
-        ],
-        equipment: {
-            service: ["簽到表", "文具組", "QR Code 立牌", "對講機"],
-            stage: ["主音響系統", "無線麥克風*4", "譜架", "筆電/視訊切換器"]
+        eventDate: "2026-03-28",
+        eventName: "2026 四月八社區遺產節",
+        staff: [],
+        rundown: [{s:"09:00", l:10, u:"進場準備", d:"物資就位與測試", persons:[]}],
+        equip: {
+            service: [{n:"簽到表", q:1}, {n:"餐盒", q:50}, {n:"瓶水", q:2}],
+            stage: [{n:"音響系統", q:1}, {n:"紅地毯", q:2}, {n:"Truss 結構", q:1}]
         },
+        images: [], 
         notes: ""
     };
 
-    // 自動補足後五行 (10分鐘間隔)
-    if (localData.rundown.length === 2) {
-        let lastEndTime = "09:30";
-        for (let i = 0; i < 5; i++) {
-            let start = lastEndTime;
-            let end = addMinutes(start, 10);
-            localData.rundown.push({ s: start, e: end, l: 10, u: "", p: "" });
-            lastEndTime = end;
+    function toggleAdmin(c) { document.body.classList.toggle('admin-mode', c); renderAll(); }
+    function toggleMobileView(c) { 
+        document.getElementById('desktopView').classList.toggle('hidden', c);
+        document.getElementById('mobileView').classList.toggle('hidden', !c);
+        renderAll();
+    }
+    function togglePanel(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+    function handleImgs(e) {
+        const files = e.target.files;
+        for (let f of files) {
+            const reader = new FileReader();
+            reader.onload = (event) => { 
+                localData.images.push(event.target.result); 
+                saveData(); 
+                renderAll(); 
+            };
+            reader.readAsDataURL(f);
         }
     }
 
-    function renderRundown() {
-        const body = document.getElementById('rundownBody');
-        body.innerHTML = "";
-        localData.rundown.forEach((row, i) => {
-            body.innerHTML += `
-                <tr class="hover:bg-blue-50/30 transition">
-                    <td class="text-center"><input class="time-input" value="${row.s}" onchange="updateRow(${i}, 's', this.value)"></td>
-                    <td class="text-center"><input class="time-input" value="${row.e}" onchange="updateRow(${i}, 'e', this.value)"></td>
-                    <td class="text-center"><input class="len-input" type="number" value="${row.l}" onchange="updateRow(${i}, 'l', this.value)"></td>
-                    <td><input class="w-full bg-transparent outline-none font-medium" value="${row.u}" placeholder="請輸入單元說明..." onblur="updateRow(${i}, 'u', this.value)"></td>
-                    <td><input class="w-full text-right bg-transparent outline-none text-xs text-blue-600 font-bold" value="${row.p}" placeholder="指派" onblur="updateRow(${i}, 'p', this.value)"></td>
-                    <td class="text-center"><button onclick="deleteRow(${i})" class="text-slate-300 hover:text-red-500">✕</button></td>
-                </tr>
-            `;
-        });
-        renderEquipment();
-    }
+    function renderAll() {
+        const isAdmin = document.body.classList.contains('admin-mode');
+        document.getElementById('eventDate').value = localData.eventDate;
+        document.getElementById('eventName').value = localData.eventName;
+        document.getElementById('eventNotes').value = localData.notes || "";
 
-    function updateRow(index, field, value) {
-        let row = localData.rundown[index];
-        if (field === 'l') {
-            row.l = parseInt(value);
-            row.e = addMinutes(row.s, row.l);
-        } else if (field === 'e') {
-            row.e = value;
-            row.l = diffMinutes(row.s, row.e);
-        } else if (field === 's') {
-            row.s = value;
-            row.e = addMinutes(row.s, row.l);
-        } else {
-            row[field] = value;
-        }
+        // 人員看板
+        document.getElementById('staffBoardCards').innerHTML = localData.staff.map(s => `
+            <div class="bg-white/10 border border-white/20 rounded-lg px-4 py-1.5 text-center min-w-[100px]">
+                <div class="text-[9px] text-white/50 font-bold uppercase">${s.j}</div>
+                <div class="font-black text-white text-base">${s.n}</div>
+            </div>`).join('');
 
-        // 骨牌連動：更新後續所有行的時間
-        for (let j = index + 1; j < localData.rundown.length; j++) {
-            localData.rundown[j].s = localData.rundown[j-1].e;
-            localData.rundown[j].e = addMinutes(localData.rundown[j].s, localData.rundown[j].l);
-        }
-        renderRundown();
-        saveData();
-    }
-
-    function addRow() {
-        let last = localData.rundown[localData.rundown.length - 1];
-        let start = last ? last.e : "08:00";
-        localData.rundown.push({ s: start, e: addMinutes(start, 10), l: 10, u: "", p: "" });
-        renderRundown();
-        saveData();
-    }
-
-    function deleteRow(i) {
-        localData.rundown.splice(i, 1);
-        if (localData.rundown[i]) { // 如果刪除的不是最後一行，重新連動時間
-            updateRow(Math.max(0, i-1), 'u', localData.rundown[Math.max(0, i-1)].u);
-        }
-        renderRundown();
-    }
-
-    // 器材邏輯
-    function renderEquipment() {
-        ['service', 'stage'].forEach(type => {
-            const container = document.getElementById(`list-${type}`);
-            container.innerHTML = localData.equipment[type].map((item, idx) => `
-                <div class="flex items-center gap-2 text-sm group">
-                    <input type="checkbox" class="w-4 h-4 rounded">
-                    <input class="flex-grow bg-transparent outline-none border-b border-transparent focus:border-slate-200" 
-                           value="${item}" onblur="localData.equipment['${type}'][${idx}]=this.value;saveData()">
-                    <button onclick="localData.equipment['${type}'].splice(${idx},1);renderEquipment();saveData()" class="opacity-0 group-hover:opacity-100 text-red-300">✕</button>
+        // 流程表 (桌面)
+        document.getElementById('rundownBody').innerHTML = localData.rundown.map((row, i) => `
+            <tr>
+                <td class="text-center font-black"><input class="w-full text-center bg-transparent" value="${row.s}" onchange="updateRow(${i},'s',this.value)"></td>
+                <td class="text-center text-blue-600 font-black bg-blue-50/20"><input class="w-full text-center bg-transparent" value="${row.l}" onchange="updateRow(${i},'l',this.value)"></td>
+                <td><input class="w-full font-black outline-none bg-transparent" value="${row.u}" onblur="updateRow(${i},'u',this.value)"></td>
+                <td><input class="w-full text-slate-500 text-sm outline-none bg-transparent" value="${row.d||''}" onblur="updateRow(${i},'d',this.value)"></td>
+                <td class="text-right text-[11px] font-black text-blue-700">${row.persons.join(', ') || '-'}</td>
+                <td class="admin-ctrl no-print text-center"><button class="text-red-200 hover:text-red-500" onclick="localData.rundown.splice(${i},1);saveData();renderAll()">✕</button></td>
+            </tr>`).join('');
+        
+        // 流程表 (手機)
+        document.getElementById('mobileView').innerHTML = localData.rundown.map(row => `
+            <div class="bg-white p-5 rounded-2xl border-l-8 border-blue-600 shadow-md">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded font-black">${row.s} (${row.l}m)</span>
+                    <span class="text-[10px] font-black text-blue-600">${row.persons.join(', ')}</span>
                 </div>
-            `).join('');
+                <div class="font-black text-base text-slate-900">${row.u}</div>
+            </div>`).join('');
+
+        // 器材派工 (標籤化 + 數量)
+        ['service', 'stage'].forEach(type => {
+            document.getElementById(`list-${type}`).innerHTML = (localData.equip[type]||[]).map((item, idx) => `
+                <div class="equip-tag">
+                    <input class="bg-transparent outline-none font-bold text-slate-700" value="${item.n}" onblur="localData.equip['${type}'][${idx}].n=this.value;saveData()" size="${item.n.length*1.5 + 2}">
+                    <span class="text-slate-300">|</span>
+                    <input type="number" class="qty-input" value="${item.q}" onchange="localData.equip['${type}'][${idx}].q=this.value;saveData()">
+                    ${isAdmin?`<span class="text-red-300 cursor-pointer ml-1 hover:text-red-600" onclick="localData.equip['${type}'].splice(${idx},1);renderAll();saveData()">✕</span>`:''}
+                </div>`).join('');
         });
-        document.getElementById('manualNotes').value = localData.notes;
+
+        // 圖片
+        document.getElementById('imgGallery').innerHTML = localData.images.map((img, i) => `
+            <div class="img-box shadow-md">
+                <img src="${img}">
+                ${isAdmin?`<div class="img-del" onclick="localData.images.splice(${i},1);renderAll();saveData()">✕</div>`:''}
+            </div>`).join('');
+
+        // 管理面板按鈕
+        document.getElementById('jobOptions').innerHTML = JOBS.map(j => `<button class="px-3 py-1.5 border-2 text-[11px] font-bold rounded-lg ${selectedJob===j?'bg-blue-600 border-blue-600 text-white shadow-md':'bg-white border-slate-200 text-slate-600'}" onclick="selectedJob='${j}';renderAll()">${j}</button>`).join('');
+        document.getElementById('nameOptions').innerHTML = NAMES.map(n => `<button class="px-3 py-1.5 border-2 text-[11px] font-bold rounded-lg bg-white border-slate-200 text-slate-600" onclick="addStaff('${n}')">${n}</button>`).join('');
+        document.getElementById('staffList').innerHTML = localData.staff.map((s,i) => `<div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-[11px] font-black flex items-center gap-2">${s.n}(${s.j}) ${isAdmin?`<span class="cursor-pointer text-blue-300 hover:text-red-500" onclick="localData.staff.splice(${i},1);saveData();renderAll()">✕</span>`:''}</div>`).join('');
     }
 
-    function addItem(type) {
-        localData.equipment[type].push("新項目");
-        renderEquipment();
-    }
-
-    // 時間工具函數
-    function addMinutes(timeStr, mins) {
-        let [h, m] = timeStr.split(':').map(Number);
-        let total = h * 60 + m + parseInt(mins);
-        return `${String(Math.floor(total/60) % 24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
-    }
-
-    function diffMinutes(start, end) {
-        let [h1, m1] = start.split(':').map(Number);
-        let [h2, m2] = end.split(':').map(Number);
-        let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-        return diff < 0 ? diff + 1440 : diff;
-    }
-
-    function handleUpload(input) {
-        if (input.files && input.files[0]) {
-            alert(`已偵測到檔案：${input.files[0].name}\n系統正在進行內容識別... (OCR功能對接預留)`);
-            // 這裡可以串接 Cloud Vision API 或其他解析邏輯
-        }
-    }
-
+    function addStaff(n) { if(!selectedJob) return alert("請先點選職稱按鈕"); localData.staff.push({n, j:selectedJob}); saveData(); renderAll(); }
+    function updateRow(i, f, v) { localData.rundown[i][f] = v; saveData(); }
+    function addRow() { localData.rundown.push({s:"09:00", l:10, u:"新單元", d:"", persons:[]}); renderAll(); }
+    function addItem(type) { localData.equip[type].push({n:"新器材", q:1}); renderAll(); }
+    
     function saveData() {
-        localData.eventName = document.getElementById('eventName').value;
         localData.eventDate = document.getElementById('eventDate').value;
-        localData.notes = document.getElementById('manualNotes').value;
-        console.log("Saving to Cloud...", localData);
-        localStorage.setItem('executionData', JSON.stringify(localData));
+        localData.eventName = document.getElementById('eventName').value;
+        localData.notes = document.getElementById('eventNotes').value;
+        localStorage.setItem('v48_2_final_prod', JSON.stringify(localData));
     }
 
-    // 啟動
     window.onload = () => {
-        const saved = localStorage.getItem('executionData');
+        const saved = localStorage.getItem('v48_2_final_prod');
         if (saved) localData = JSON.parse(saved);
-        renderRundown();
+        renderAll();
     };
 </script>
-
 </body>
 </html>
