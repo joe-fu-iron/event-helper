@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作控管台 v45 - AI 智能全能版</title>
+    <title>執行製作控管台 v45.1 - 完整整合版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root { --win-blue: #0078D4; --win-border: #D1D1D1; }
         * { box-sizing: border-box; }
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; padding-bottom: 80px; transition: all 0.3s; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; padding-bottom: 80px; }
 
         /* ===== HEADER ===== */
         .app-header { background: var(--win-blue); color: #FFF; height: 60px; display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 1000; }
@@ -23,8 +23,12 @@
         input:checked + .slider { background-color: #22c55e; border-color: #16a34a; }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        /* ===== AI ASSISTANT STYLES ===== */
-        @keyframes ai-glow { 0%, 100% { box-shadow: 0 0 5px rgba(0, 120, 212, 0.2); border-color: rgba(0, 120, 212, 0.3); } 50% { box-shadow: 0 0 15px rgba(0, 120, 212, 0.5); border-color: rgba(0, 120, 212, 0.6); } }
+        /* ===== 簽到按鈕脈衝動畫 ===== */
+        @keyframes pulse-orange { 0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,0.5);} 50%{box-shadow:0 0 0 8px rgba(249,115,22,0);} }
+        .checkin-btn { animation: pulse-orange 2s infinite; }
+
+        /* ===== AI ASSISTANT ===== */
+        @keyframes ai-glow { 0%, 100% { box-shadow: 0 0 5px rgba(0, 120, 212, 0.2); } 50% { box-shadow: 0 0 15px rgba(0, 120, 212, 0.5); } }
         .ai-bot-card { background: linear-gradient(145deg, #ffffff, #f0f7ff); border: 1px solid #bae6fd; animation: ai-glow 3s infinite; }
         #aiModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:5000; width:95%; max-width:500px; background: white; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); }
 
@@ -36,7 +40,7 @@
         .admin-mode .admin-ctrl { display: block !important; }
         .admin-mode .pro-table input { background: #fffdf0; }
         
-        /* ===== MOBILE VIEW STYLES ===== */
+        /* ===== MOBILE VIEW ===== */
         #mobileView { display: none; }
         .mobile-row { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 12px; margin-bottom: 10px; position: relative; }
         .mobile-row.is-current { border-left: 4px solid #22c55e; background: #f0fdf4; }
@@ -50,15 +54,19 @@
 
 <header class="app-header shadow-xl">
     <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
-        <div class="flex items-center gap-3 flex-1">
-            <input type="date" id="eventDate" class="header-input text-sm" onchange="saveData()">
-            <span id="displayWeek" class="opacity-70 text-xs hidden sm:inline">---</span>
-            <input type="text" id="eventName" class="header-input border-none bg-transparent flex-1 text-sm" placeholder="專案名稱" onblur="saveData()">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+            <input type="date" id="eventDate" class="header-input text-sm shrink-0" onchange="saveData()">
+            <span id="displayWeek" class="opacity-70 text-xs hidden sm:inline shrink-0">---</span>
+            <input type="text" id="eventName" class="header-input border-none bg-transparent flex-1 text-sm truncate" placeholder="專案名稱" onblur="saveData()">
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" 
+               target="_blank" class="checkin-btn bg-orange-500 text-white px-3 py-1.5 rounded text-[11px] font-bold hidden md:block">長官簽到</a>
+            
             <button id="mobileToggleBtn" onclick="toggleMobileView()" class="bg-white/10 px-3 py-1.5 rounded text-[11px] font-bold text-white border border-white/20">手機版</button>
+            
             <div class="flex items-center gap-2">
-                <span class="text-[10px] font-bold text-white/60">編輯模式</span>
+                <span class="text-[10px] font-bold text-white/60 hidden sm:block">編輯</span>
                 <label class="switch">
                     <input type="checkbox" id="adminToggle" checked onchange="toggleAdmin(this.checked)">
                     <span class="slider"></span>
@@ -72,77 +80,80 @@
     
     <section class="admin-ctrl ai-bot-card rounded-xl p-4 mb-6 flex items-center justify-between">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl">🤖</div>
+            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl shadow-inner">🤖</div>
             <div>
-                <h3 class="text-xs font-black text-blue-900">AI 流程調度助理</h3>
-                <p class="text-[9px] text-blue-500 font-bold uppercase tracking-tighter">Support OCR & Auto-Scheduling</p>
+                <h3 class="text-xs font-black text-blue-900">AI 流程助理</h3>
+                <p class="text-[9px] text-blue-500 font-bold uppercase">自動對應流程與圖檔辨識</p>
             </div>
         </div>
-        <div class="flex gap-2">
-            <button onclick="openAIModal()" class="bg-blue-600 text-white text-[10px] font-bold px-3 py-2 rounded-lg shadow-md">貼上文字/分析圖檔</button>
-        </div>
+        <button onclick="openAIModal()" class="bg-blue-600 text-white text-[10px] font-bold px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition">開始自動輸入</button>
     </section>
 
     <div id="desktopView">
         <section class="admin-ctrl bg-white p-4 rounded border border-slate-200 shadow-sm mb-6">
-            <div class="flex flex-wrap gap-4 items-center text-[10px] font-bold text-slate-400 mb-2">派遣設定區</div>
+            <div class="text-[10px] font-bold text-slate-400 mb-2 uppercase">派遣設定 / Personnel Selection</div>
             <div id="jobOptions" class="flex flex-wrap gap-1 mb-2"></div>
             <div id="nameOptions" class="flex flex-wrap gap-1 mb-3"></div>
-            <div id="staffList" class="flex flex-wrap gap-2"></div>
+            <div id="staffList" class="flex flex-wrap gap-2 border-t pt-3"></div>
         </section>
 
-        <div class="overflow-x-auto shadow-sm rounded border border-slate-200">
+        <div class="overflow-x-auto shadow-sm rounded border border-slate-200 bg-white">
             <table class="pro-table">
                 <thead>
                     <tr>
-                        <th class="w-24 text-center">開始</th>
-                        <th class="w-24 text-center">結束</th>
-                        <th class="w-20 text-center">長度</th>
-                        <th>流程單元說明</th>
-                        <th class="w-48 text-right">負責人</th>
+                        <th class="w-24 text-center">開始時間</th>
+                        <th class="w-24 text-center">結束時間</th>
+                        <th class="w-20 text-center">長度(m)</th>
+                        <th>執行單元說明</th>
+                        <th class="w-48 text-right">負責人員</th>
                         <th class="w-10 admin-ctrl"></th>
                     </tr>
                 </thead>
                 <tbody id="rundownBody"></tbody>
             </table>
         </div>
-        <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 text-slate-400 border-2 border-dashed rounded font-bold">+ 增加單元 (Add Row)</button>
+        <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 text-slate-400 border-2 border-dashed rounded font-bold hover:bg-white transition">+ 增加後續單元</button>
     </div>
 
     <div id="mobileView">
         <div id="mobileRundown"></div>
-        <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 text-slate-400 border-2 border-dashed rounded font-bold">+ 增加單元</button>
+        <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 text-slate-400 border-2 border-dashed rounded font-bold mb-4">+ 增加單元</button>
+        
+        <a href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" 
+           target="_blank" class="checkin-btn flex items-center justify-center gap-2 bg-orange-500 text-white font-bold py-4 rounded-xl text-base shadow-lg mb-6">
+            📱 長官簽到即時平台
+        </a>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <div class="bg-white p-4 rounded border shadow-sm"><div class="font-black text-blue-600 mb-2 border-b text-xs flex justify-between">服務台 <button onclick="addItem('service')" class="admin-ctrl">+</button></div><div id="list-service"></div></div>
-        <div class="bg-white p-4 rounded border shadow-sm"><div class="font-black text-orange-600 mb-2 border-b text-xs flex justify-between">舞台/硬體 <button onclick="addItem('stage')" class="admin-ctrl">+</button></div><div id="list-stage"></div></div>
-        <div class="bg-white p-4 rounded border border-dashed shadow-sm"><div class="font-black text-slate-400 mb-2 border-b text-xs">備註</div><textarea id="manualNotes" class="w-full h-24 text-sm outline-none bg-transparent" onblur="saveData()"></textarea></div>
+        <div class="bg-white p-4 rounded border shadow-sm"><div class="font-black text-blue-600 mb-2 border-b pb-1 text-xs flex justify-between">1. 服務台 <button onclick="addItem('service')" class="admin-ctrl text-blue-400 font-bold">+</button></div><div id="list-service" class="space-y-1"></div></div>
+        <div class="bg-white p-4 rounded border shadow-sm"><div class="font-black text-orange-600 mb-2 border-b pb-1 text-xs flex justify-between">2. 舞台硬體 <button onclick="addItem('stage')" class="admin-ctrl text-orange-400 font-bold">+</button></div><div id="list-stage" class="space-y-1"></div></div>
+        <div class="bg-white p-4 rounded border border-dashed shadow-sm"><div class="font-black text-slate-400 mb-2 border-b pb-1 text-xs">3. 備註 / Notes</div><textarea id="manualNotes" class="w-full h-24 text-sm outline-none bg-transparent" placeholder="輸入其他器材需求..." onblur="saveData()"></textarea></div>
     </div>
 </main>
 
 <div id="aiModal" class="p-6">
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="font-black text-slate-800 flex items-center gap-2">🤖 AI 智慧輸入 <span id="aiLoading" class="hidden text-blue-500 text-[10px] animate-pulse">分析中...</span></h2>
-        <button onclick="closeAIModal()" class="text-slate-300">✕</button>
+    <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h2 class="font-black text-slate-800 flex items-center gap-2">🤖 智慧排程系統 <span id="aiLoading" class="hidden text-blue-500 text-[10px] animate-pulse">正在精算...</span></h2>
+        <button onclick="closeAIModal()" class="text-slate-300 hover:text-red-500 transition">✕</button>
     </div>
-    <textarea id="aiInput" class="w-full h-40 p-3 bg-slate-50 rounded-xl text-sm outline-none border focus:border-blue-400" placeholder="範例：09:00 開場 10分鐘"></textarea>
+    <textarea id="aiInput" class="w-full h-40 p-3 bg-slate-50 rounded-xl text-sm outline-none border focus:border-blue-400" placeholder="請貼上活動草案..."></textarea>
     <div class="flex gap-2 mt-4">
-        <label class="flex-1 bg-slate-100 text-slate-600 text-[11px] font-bold py-3 rounded-xl cursor-pointer text-center">上傳圖片分析 <input type="file" class="hidden" accept="image/*" onchange="simulateAI()"></label>
-        <button onclick="runAI()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg">執行自動對應</button>
+        <label class="flex-1 bg-slate-100 text-slate-600 text-[11px] font-bold py-3 rounded-xl cursor-pointer text-center hover:bg-slate-200">圖檔辨識<input type="file" class="hidden" accept="image/*" onchange="simulateAI()"></label>
+        <button onclick="runAI()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition">自動分析並填入</button>
     </div>
 </div>
 
 <div id="personDropdown" class="dropdown-menu"></div>
 
 <script>
-    const JOBS = ["控場","音響","服務台","儀式","攝影","機動","燈光","視訊"];
+    const JOBS = ["控場","音響","服務台","儀式","攝影","機動","燈光","視訊","料理"];
     const NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
     let selectedJob = "";
     let isMobileView = false;
     let localData = {
         eventDate: "2026-05-22", eventName: "專案名稱", staff: [], 
-        rundown: [{s:"09:00",e:"09:10",l:10,u:"新單元",persons:[]}], 
+        rundown: [{s:"09:00",e:"09:10",l:10,u:"公司出發/器材裝載",persons:[]}], 
         equipment: {service:[], stage:[]}, notes: ""
     };
 
@@ -152,6 +163,7 @@
         document.getElementById('desktopView').style.display = isMobileView ? 'none' : 'block';
         document.getElementById('mobileView').style.display = isMobileView ? 'block' : 'none';
         document.getElementById('mobileToggleBtn').innerText = isMobileView ? '桌面版' : '手機版';
+        document.getElementById('mobileToggleBtn').classList.toggle('bg-blue-600', isMobileView);
     }
 
     function renderAll() {
@@ -161,44 +173,44 @@
         const d = new Date(localData.eventDate);
         document.getElementById('displayWeek').innerText = isNaN(d.getTime()) ? "---" : ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][d.getDay()];
 
-        // 派遣區
-        document.getElementById('jobOptions').innerHTML = JOBS.map(j => `<button class="px-2 py-1 border text-[10px] rounded ${selectedJob===j?'bg-blue-600 text-white':'bg-white'}" onclick="selectedJob='${j}';renderAll()">${j}</button>`).join('');
-        document.getElementById('nameOptions').innerHTML = NAMES.map(n => `<button class="px-2 py-1 border text-[10px] rounded bg-white" onclick="addStaff('${n}')">${n}</button>`).join('');
-        document.getElementById('staffList').innerHTML = localData.staff.map((s,i) => `<div class="bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">${s.n}(${s.j}) ${isAdmin?`<span class="cursor-pointer" onclick="localData.staff.splice(${i},1);renderAll()">✕</span>`:''}</div>`).join('');
+        document.getElementById('jobOptions').innerHTML = JOBS.map(j => `<button class="px-2 py-1 border text-[10px] rounded ${selectedJob===j?'bg-blue-600 text-white':'bg-white hover:bg-blue-50'}" onclick="selectedJob='${j}';renderAll()">${j}</button>`).join('');
+        document.getElementById('nameOptions').innerHTML = NAMES.map(n => `<button class="px-2 py-1 border text-[10px] rounded bg-white hover:bg-slate-50" onclick="addStaff('${n}')">${n}</button>`).join('');
+        document.getElementById('staffList').innerHTML = localData.staff.map((s,i) => `<div class="bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-2">${s.n}(${s.j}) ${isAdmin?`<span class="cursor-pointer text-red-400" onclick="localData.staff.splice(${i},1);renderAll()">✕</span>`:''}</div>`).join('');
 
-        // 桌面流程
         document.getElementById('rundownBody').innerHTML = localData.rundown.map((row,i) => `
-            <tr>
-                <td class="text-center"><input class="w-full text-center text-sm font-bold" value="${row.s}" ${!isAdmin?'disabled':''} onchange="updateTime(${i},'s',this.value)"></td>
-                <td class="text-center"><input class="w-full text-center text-sm font-bold" value="${row.e}" ${!isAdmin?'disabled':''} onchange="updateTime(${i},'e',this.value)"></td>
-                <td class="text-center"><input class="w-12 text-center bg-blue-50 rounded" type="number" value="${row.l}" ${!isAdmin?'disabled':''} onchange="updateTime(${i},'l',this.value)"></td>
-                <td><input class="w-full outline-none font-bold" value="${row.u}" ${!isAdmin?'disabled':''} onblur="updateTime(${i},'u',this.value)"></td>
+            <tr class="hover:bg-slate-50 transition">
+                <td class="text-center"><input class="w-full text-center text-sm font-bold bg-transparent" value="${row.s}" ${!isAdmin?'disabled':''} onchange="updateTime(${i},'s',this.value)"></td>
+                <td class="text-center"><input class="w-full text-center text-sm font-bold bg-transparent" value="${row.e}" ${!isAdmin?'disabled':''} onchange="updateTime(${i},'e',this.value)"></td>
+                <td class="text-center"><input class="w-12 text-center bg-blue-50 rounded text-blue-600 font-bold" type="number" value="${row.l}" ${!isAdmin?'disabled':''} onchange="updateTime(${i},'l',this.value)"></td>
+                <td><input class="w-full outline-none font-bold bg-transparent" value="${row.u}" ${!isAdmin?'disabled':''} onblur="updateTime(${i},'u',this.value)"></td>
                 <td class="text-right">
-                    <div class="flex flex-wrap justify-end gap-1" onclick="${isAdmin?`showPersonDropdown(event,${i})`:''}">
-                        ${(row.persons||[]).map(p => `<span class="bg-blue-600 text-white text-[9px] px-1 rounded">${p}</span>`).join('') || '<span class="text-slate-300">+</span>'}
+                    <div class="flex flex-wrap justify-end gap-1 min-h-[20px]" onclick="${isAdmin?`showPersonDropdown(event,${i})`:''}">
+                        ${(row.persons||[]).map(p => `<span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded">${p}</span>`).join('') || '<span class="text-slate-200 text-xs">+ 指派</span>'}
                     </div>
                 </td>
-                <td class="admin-ctrl"><button onclick="localData.rundown.splice(${i},1);renderAll()">✕</button></td>
+                <td class="admin-ctrl text-center"><button class="text-red-200 hover:text-red-500" onclick="localData.rundown.splice(${i},1);renderAll()">✕</button></td>
             </tr>
         `).join('');
 
-        // 手機流程
         document.getElementById('mobileRundown').innerHTML = localData.rundown.map((row,i) => `
-            <div class="mobile-row shadow-sm">
-                <div class="flex justify-between mb-2">
-                    <span class="time-pill">${row.s} - ${row.e} (${row.l}m)</span>
-                    <span class="text-[9px] text-slate-300">#${i+1}</span>
+            <div class="mobile-row shadow-sm border border-slate-100">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="time-pill shadow-sm">${row.s} - ${row.e} (${row.l}m)</span>
+                    <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">Unit #${i+1}</span>
                 </div>
-                <input class="w-full font-black text-slate-800 mb-2" value="${row.u}" ${!isAdmin?'disabled':''} onblur="updateTime(${i},'u',this.value)">
-                <div class="flex flex-wrap gap-1">${(row.persons||[]).map(p => `<span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-full">${p}</span>`).join('')}</div>
-                ${isAdmin?`<button class="absolute top-2 right-2 text-red-200" onclick="localData.rundown.splice(${i},1);renderAll()">✕</button>`:''}
+                <input class="w-full font-black text-slate-800 mb-2 text-base bg-transparent" value="${row.u}" ${!isAdmin?'disabled':''} onblur="updateTime(${i},'u',this.value)">
+                <div class="flex flex-wrap gap-1">${(row.persons||[]).map(p => `<span class="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full">${p}</span>`).join('')}</div>
+                ${isAdmin?`<button class="absolute top-2 right-2 text-red-200 p-2" onclick="localData.rundown.splice(${i},1);renderAll()">✕</button>`:''}
             </div>
         `).join('');
 
-        // 器材
         ['service','stage'].forEach(t => {
             document.getElementById(`list-${t}`).innerHTML = localData.equipment[t].map((item,idx) => `
-                <div class="flex items-center gap-2 text-sm py-1"><input type="checkbox" class="w-4 h-4"><input class="flex-1 bg-transparent" value="${item}" ${!isAdmin?'disabled':''} onblur="localData.equipment['${t}'][${idx}]=this.value;saveData()"></div>
+                <div class="flex items-center gap-2 text-sm py-1 group border-b border-slate-50">
+                    <input type="checkbox" class="w-4 h-4 accent-blue-600">
+                    <input class="flex-1 bg-transparent outline-none" value="${item}" ${!isAdmin?'disabled':''} onblur="localData.equipment['${t}'][${idx}]=this.value;saveData()">
+                    ${isAdmin?`<span class="text-red-100 group-hover:text-red-300 cursor-pointer" onclick="localData.equipment['${t}'].splice(${idx},1);renderAll()">✕</span>`:''}
+                </div>
             `).join('');
         });
         document.getElementById('manualNotes').value = localData.notes;
@@ -218,13 +230,12 @@
     }
 
     function addMinutes(t,m) {
-        let [hh,mm]=t.split(':').map(Number);
-        let d=new Date(); d.setHours(hh); d.setMinutes(mm+m);
+        let [hh,mm]=t.split(':').map(Number); let d=new Date(); d.setHours(hh); d.setMinutes(mm+m);
         return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
     function diffMinutes(s,e) {
         let [h1,m1]=s.split(':').map(Number); let [h2,m2]=e.split(':').map(Number);
-        return (h2*60+m2)-(h1*60+m1);
+        let diff = (h2*60+m2)-(h1*60+m1); return diff < 0 ? diff + 1440 : diff;
     }
 
     function openAIModal() { document.getElementById('aiModal').style.display='block'; }
@@ -232,15 +243,15 @@
     function simulateAI() {
         document.getElementById('aiLoading').classList.remove('hidden');
         setTimeout(() => {
-            document.getElementById('aiInput').value = "09:00 貴賓集合 20分鐘\n09:20 活動開始 10分鐘";
+            document.getElementById('aiInput').value = "09:00 貴賓集合 20分鐘\n09:20 活動正式開始 負責人：江哥";
             document.getElementById('aiLoading').classList.add('hidden');
-        }, 1500);
+        }, 1200);
     }
     function runAI() {
         const text = document.getElementById('aiInput').value.split('\n');
         let newRundown = [];
         text.forEach(line => {
-            if(!line) return;
+            if(!line.trim()) return;
             let timeMatch = line.match(/\d{2}:\d{2}/);
             let durMatch = line.match(/\d+/g);
             let startTime = timeMatch ? timeMatch[0] : (newRundown.length ? newRundown[newRundown.length-1].e : "09:00");
@@ -250,29 +261,29 @@
         localData.rundown = newRundown; renderAll(); saveData(); closeAIModal();
     }
 
-    function addStaff(n) { if(!selectedJob) return alert("選職稱"); localData.staff.push({n,j:selectedJob}); renderAll(); saveData(); }
+    function addStaff(n) { if(!selectedJob) return alert("請先選擇職稱"); localData.staff.push({n,j:selectedJob}); renderAll(); saveData(); }
     function addRow() {
         let last=localData.rundown[localData.rundown.length-1];
         let start=last?last.e:"09:00";
         localData.rundown.push({s:start,e:addMinutes(start,10),l:10,u:"",persons:[]});
-        renderAll();
+        renderAll(); saveData();
     }
-    function addItem(t) { localData.equipment[t].push("新器材"); renderAll(); }
+    function addItem(t) { localData.equipment[t].push("新器材項目"); renderAll(); saveData(); }
     function showPersonDropdown(e,ri) {
         const menu=document.getElementById('personDropdown');
-        menu.style.display='block'; menu.style.top=`${e.clientY}px`; menu.style.left=`${e.clientX-100}px`;
-        menu.innerHTML=localData.staff.map(s=>`<div class="dropdown-item" onclick="addPersonToRow(${ri},'${s.n}(${s.j})')">${s.n}(${s.j})</div>`).join('')+`<div class="dropdown-item text-red-500" onclick="document.getElementById('personDropdown').style.display='none'">取消</div>`;
+        menu.style.display='block'; menu.style.top=`${e.clientY}px`; menu.style.left=`${Math.min(e.clientX, window.innerWidth-190)}px`;
+        menu.innerHTML=localData.staff.map(s=>`<div class="dropdown-item" onclick="addPersonToRow(${ri},'${s.n}(${s.j})')">${s.n}(${s.j})</div>`).join('')+`<div class="dropdown-item text-red-500 font-bold" onclick="document.getElementById('personDropdown').style.display='none'">[ 取消 ]</div>`;
         e.stopPropagation();
     }
-    function addPersonToRow(ri,lbl) { localData.rundown[ri].persons.push(lbl); renderAll(); saveData(); }
+    function addPersonToRow(ri,lbl) { if(!localData.rundown[ri].persons.includes(lbl)) localData.rundown[ri].persons.push(lbl); renderAll(); saveData(); }
     document.addEventListener('click',()=>document.getElementById('personDropdown').style.display='none');
     function saveData() { 
         localData.eventDate=document.getElementById('eventDate').value;
         localData.eventName=document.getElementById('eventName').value;
         localData.notes=document.getElementById('manualNotes').value;
-        localStorage.setItem('v45_data', JSON.stringify(localData)); 
+        localStorage.setItem('v45_1_data', JSON.stringify(localData)); 
     }
-    window.onload=()=>{ let s=localStorage.getItem('v45_data'); if(s) localData=JSON.parse(s); renderAll(); }
+    window.onload=()=>{ let s=localStorage.getItem('v45_1_data'); if(s) localData=JSON.parse(s); renderAll(); }
 </script>
 </body>
 </html>
