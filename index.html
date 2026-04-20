@@ -21,7 +21,6 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bot
 .password-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 12px; }
 .password-error.show { display: block; }
 
-/* [其餘原有的 CSS 樣式已簡略，請保留你原有的樣式...] */
 .app-header { background: var(--blue); color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 1000; }
 .header-input { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #fff; outline: none; }
 .hidden { display: none !important; }
@@ -48,6 +47,7 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bot
                     <input type="date" id="eventDate" class="header-input text-xs" onchange="saveData()">
                     <input type="time" id="eventTime" class="header-input text-xs" onchange="saveData()">
                     <span id="displayWeek" class="text-white/60 text-xs font-bold self-center">系統已連線</span>
+                    <span id="lastSync" class="text-white/80 text-xs font-bold self-center ml-2">最後同步：尚未</span>
                 </div>
                 <input type="text" id="eventName" class="header-input border-none bg-transparent w-full font-black text-lg p-0 placeholder-white/40" placeholder="載入專案中..." onblur="saveData()">
             </div>
@@ -60,16 +60,16 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bot
     <main class="max-w-7xl mx-auto p-4">
         <div class="bg-white p-5 rounded-xl border-2 border-slate-200">
             <p class="text-slate-400 font-bold text-center">資料同步中心已就緒</p>
-            </div>
+        </div>
     </main>
 </div>
 
 <script>
-// ⚠️ 這是你提供的 GAS 網址
 const DB_URL = "https://script.google.com/macros/s/AKfycbyA4CAwOIQljBWzVQlVhDpQloBW6oo7DGKAU6O70C-BQ2SzSKQ73O4h6eGwFz7Q3DY5uQ/exec";
 let AUTH_PWD = "";
+let saveTimer;
 
-// 1. 登入並同步資料
+// 登入並同步資料
 async function verifyAndSync() {
     const pwd = document.getElementById('passwordInput').value;
     const btn = document.getElementById('loginBtn');
@@ -90,11 +90,10 @@ async function verifyAndSync() {
         const result = await response.json();
 
         if (result.success) {
-            AUTH_PWD = pwd; // 暫存密碼供存檔使用
+            AUTH_PWD = pwd;
             document.getElementById('passwordGate').classList.add('hidden');
             document.getElementById('appMain').classList.remove('hidden');
             
-            // 如果雲端有資料則載入
             if (result.data) {
                 applyDataToUI(result.data);
             }
@@ -108,30 +107,47 @@ async function verifyAndSync() {
     }
 }
 
-// 2. 替代原本的 saveData 邏輯
-async function saveData() {
+// 儲存資料 (Debounce)
+function saveData() {
     if (!AUTH_PWD) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+        const currentPayload = {
+            name: document.getElementById('eventName').value,
+            date: document.getElementById('eventDate').value,
+            time: document.getElementById('eventTime').value,
+        };
 
-    const currentPayload = {
-        name: document.getElementById('eventName').value,
-        date: document.getElementById('eventDate').value,
-        time: document.getElementById('eventTime').value,
-        // 其他欄位如 rundown, staff 等可在此擴充
-    };
-
-    // 發送到雲端存檔
-    fetch(DB_URL, {
-        method: "POST",
-        body: JSON.stringify({
-            action: "save",
-            password: AUTH_PWD,
-            payload: currentPayload
-        })
-    });
-    console.log("已自動同步至 Google 雲端");
+        try {
+            const res = await fetch(DB_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "save",
+                    password: AUTH_PWD,
+                    payload: currentPayload
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                updateLastSync();
+                console.log("✅ 已同步至雲端");
+            } else {
+                console.error("❌ 同步失敗", result.message);
+            }
+        } catch (e) {
+            console.error("❌ 網路錯誤", e);
+        }
+    }, 500);
 }
 
-// 3. 輔助函式：將資料填回 UI
+// 更新最後同步時間
+function updateLastSync() {
+    const now = new Date();
+    const formatted = now.toLocaleString("zh-TW", { hour12: false });
+    document.getElementById('lastSync').innerText = "最後同步：" + formatted;
+}
+
+// 將資料填回 UI
 function applyDataToUI(data) {
     if (data.name) document.getElementById('eventName').value = data.name;
     if (data.date) document.getElementById('eventDate').value = data.date;
@@ -141,8 +157,6 @@ function applyDataToUI(data) {
 function logout() {
     location.reload();
 }
-
-// [其餘你原本控制表格新增、刪除、手機版切換的 JavaScript 函式貼在此處]
 </script>
 </body>
 </html>
