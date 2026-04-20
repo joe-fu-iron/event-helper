@@ -3,20 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>執行製作旗艦控管台 v53 </title>
+<title>執行製作旗艦控管台 v53</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root { --blue: #0078D4; }
 body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bottom: 80px; }
-
-/* 驗證門樣式 */
 #passwordGate { display: flex; position: fixed; inset: 0; z-index: 9999; background: linear-gradient(135deg, #0078D4 0%, #1e3a5f 100%); align-items: center; justify-content: center; }
 #passwordGate.hidden { display: none; }
 .password-container { background: white; border-radius: 24px; padding: 48px 40px; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 40px 80px rgba(0,0,0,0.25); }
 .password-input { width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 900; text-align: center; letter-spacing: 4px; outline: none; margin-bottom: 20px; }
-
-/* 其他原本的 CSS 樣式請保留（此處略過以節省篇幅，建議直接貼在你的 style 標籤內） */
 .app-header { background: var(--blue); color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 1000; }
 .hidden { display: none !important; }
 </style>
@@ -53,11 +49,9 @@ body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bot
 </div>
 
 <script>
-// 配置區
-const DB_URL = "https://script.google.com/macros/s/AKfycbzs1EucGn6DTcJ4xLtiyYu7rmih0ufAP6uiKewHelGt4yhW0X6X_bdGnpAMubqzWQcwSg/exec";
+const DB_URL = "https://script.google.com/macros/s/AKfycbzODk4NGMizDqOi313ttnj_gz-u01yxZEMnUJ0wySHcz0p3Ir1s6WDXhMlWIadlechyDA/exec";
 let AUTH_PWD = "";
 
-// 驗證並同步
 async function verifyAndSync() {
     const pwd = document.getElementById('passwordInput').value;
     const btn = document.getElementById('loginBtn');
@@ -78,9 +72,7 @@ async function verifyAndSync() {
             AUTH_PWD = pwd; 
             document.getElementById('passwordGate').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
-            
             if (result.data) {
-                // 載入資料回填 UI
                 document.getElementById('eventName').value = result.data.eventName || "";
             }
         } else {
@@ -93,22 +85,14 @@ async function verifyAndSync() {
     }
 }
 
-// 儲存資料到雲端
 async function saveData() {
     if (!AUTH_PWD) return;
-    
-    const data = {
-        eventName: document.getElementById('eventName').value,
-        // 其他欄位...
-    };
-
+    const data = { eventName: document.getElementById('eventName').value };
     fetch(DB_URL, {
         method: "POST",
         body: JSON.stringify({ action: "save", password: AUTH_PWD, payload: data })
     });
 }
-
-// [其餘你原本所有的 JS 邏輯請貼在下方...]
 </script>
 </body>
 </html>
