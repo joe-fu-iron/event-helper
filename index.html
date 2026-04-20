@@ -11,6 +11,30 @@
 *, *::before, *::after { box-sizing: border-box; }
 body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bottom: 80px; }
 
+/* ===== PASSWORD GATE ===== */
+#passwordGate { display: flex; position: fixed; inset: 0; z-index: 9999; background: linear-gradient(135deg, #0078D4 0%, #1e3a5f 100%); align-items: center; justify-content: center; }
+#passwordGate.hidden { display: none; }
+.password-container { background: white; border-radius: 24px; padding: 48px 40px; max-width: 420px; width: 90%; box-shadow: 0 40px 80px rgba(0,0,0,0.25); text-align: center; animation: slideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.password-icon { font-size: 56px; margin-bottom: 16px; display: block; animation: bounce 2s infinite; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.password-title { font-size: 28px; font-weight: 900; color: #1e293b; margin-bottom: 8px; letter-spacing: -0.5px; }
+.password-subtitle { font-size: 14px; color: #64748b; margin-bottom: 32px; font-weight: 500; }
+.password-input-wrap { margin-bottom: 20px; position: relative; }
+.password-input { width: 100%; padding: 14px 16px; font-size: 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 600; outline: none; transition: all 0.3s; font-family: 'Courier New', monospace; letter-spacing: 2px; }
+.password-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1); }
+.password-input.error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1); animation: shake 0.4s; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.password-btn { width: 100%; padding: 14px 20px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; transition: all 0.3s; }
+.password-btn:hover { background: #0066b8; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0, 120, 212, 0.3); }
+.password-btn:active { transform: translateY(0); }
+.password-btn.loading { opacity: 0.6; cursor: not-allowed; }
+.password-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 12px; padding: 10px 12px; background: #fee2e2; border-radius: 8px; animation: slideDown 0.3s; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.password-error.show { display: block; }
+.password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 20px; padding: 4px; transition: color 0.2s; }
+.password-toggle:hover { color: var(--blue); }
+
 /* HEADER */
 .app-header { background: var(--blue); color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 1000; }
 .header-input { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #fff; outline: none; }
@@ -43,37 +67,45 @@ input:checked + .slider:before { transform: translateX(22px); }
 .pro-table { width: 100%; border-collapse: collapse; background: white; border: 2.5px solid #000; }
 .pro-table th { background: #f8fafc; padding: 11px 12px; border: 1.5px solid #000; font-weight: 900; font-size: 13px; }
 .pro-table td { border: 1.5px solid #000; padding: 10px 12px; vertical-align: middle; }
+.pro-table tbody tr { transition: all 0.3s ease; }
 .pro-table tbody tr:hover { background: #fafafa; }
-.pro-table tbody tr.is-current { background: #f0fdf4 !important; border-left: 4px solid #22c55e; }
-.pro-table tbody tr.is-past { opacity: 0.45; }
-.time-display { font-size: 13px; font-weight: 900; color: var(--blue); }
+.pro-table tbody tr.is-current { background: white !important; }
+.pro-table tbody tr.is-future { background: white; }
+.pro-table tbody tr.is-past { background: #d1d5db; }
+.time-display { font-size: 13px; font-weight: 900; color: #0078D4; }
 .time-edit { display: none; gap: 4px; margin-top: 4px; }
 .admin-mode:not(.locked-mode) .time-edit { display: flex; }
 .t-input { border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 2px 4px; font-size: 11px; outline: none; }
-.unit-input { width: 100%; font-weight: 900; font-size: 15px; outline: none; background: transparent; }
-.desc-input { width: 100%; font-size: 13px; color: #64748b; outline: none; background: transparent; }
-.len-badge { display: inline-block; background: #eff6ff; border: 1px solid #bfdbfe; color: var(--blue); border-radius: 12px; padding: 1px 8px; font-size: 11px; font-weight: 900; }
+.unit-input { width: 100%; font-weight: 900; font-size: 15px; outline: none; background: transparent; color: #111827; }
+.desc-input { width: 100%; font-size: 13px; color: #111827; outline: none; background: transparent; font-weight: 500; }
+.len-badge { display: inline-block; background: #ffffff; border: 1.5px solid #0078D4; color: #0078D4; border-radius: 12px; padding: 1px 8px; font-size: 11px; font-weight: 900; }
 .drag-handle { cursor: grab; color: #cbd5e1; font-size: 16px; user-select: none; padding: 0 4px; }
 .drag-handle:active { cursor: grabbing; }
 tr.dragging { opacity: 0.4; background: #e0f2fe !important; }
 tr.drag-over { border-top: 3px solid var(--blue); }
 
 /* PERSON CHIP */
-.person-chip { display: inline-flex; align-items: center; gap: 3px; background: var(--blue); color: #fff; font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 12px; }
-.person-chip i { cursor: pointer; font-style: normal; opacity: 0.7; }
+.person-chip { display: inline-flex; align-items: center; gap: 3px; background: #0078D4; color: #ffffff; font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 12px; }
+.person-chip i { cursor: pointer; font-style: normal; opacity: 0.8; }
 .person-chip i:hover { opacity: 1; }
-.standby-chip { background: #16a34a; }
+.standby-chip { background: #16a34a; color: #ffffff; }
 
 /* DROPDOWN */
-.dropdown-menu { display: none; position: fixed; background: white; border: 1px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 3000; width: 190px; border-radius: 8px; overflow: hidden; }
-.dropdown-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.dropdown-menu { display: none; position: fixed; background: white; border: 1px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 3000; width: 220px; border-radius: 8px; overflow: hidden; max-height: 320px; display: flex; flex-direction: column; }
+.dropdown-scroll { overflow-y: auto; flex: 1; }
+.dropdown-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; white-space: nowrap; }
 .dropdown-item:hover { background: #f0f7ff; color: var(--blue); }
+.dropdown-item.cancel { padding: 10px 14px; cursor: pointer; border-top: 1px solid #f0f0f0; font-size: 13px; font-weight: bold; text-align: center; background: #f8f8f8; }
 
 /* EQUIP */
 .section-box { background: #fff; border: 2.5px solid #000; margin-top: 16px; overflow: hidden; box-shadow: 4px 4px 0 rgba(0,0,0,0.08); }
 .section-title { background: #000; color: #fff; padding: 8px 15px; font-size: 13px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
 .equip-label { background: #f8fafc; width: 90px; text-align: center; font-weight: 900; font-size: 13px; border-right: 1.5px solid #000; vertical-align: top; padding-top: 16px; }
-.equip-tag { display: inline-flex; align-items: center; background: #fff; border: 2px solid #000; padding: 3px 8px; border-radius: 4px; font-size: 14px; font-weight: 900; gap: 4px; box-shadow: 2px 2px 0 #000; margin: 3px; }
+.equip-tag { display: inline-flex; align-items: center; background: #fff; border: 2px solid #000; padding: 3px 8px; border-radius: 4px; font-size: 14px; font-weight: 900; gap: 4px; box-shadow: 2px 2px 0 #000; margin: 3px; cursor: grab; user-select: none; transition: all 0.2s; }
+.equip-tag:active { cursor: grabbing; box-shadow: 4px 4px 0 #000; transform: scale(1.02); }
+.equip-tag.dragging { opacity: 0.5; background: #f0f0f0; }
+.equip-tag.drag-over-left { border-left: 4px solid #0078D4; }
+.equip-tag.drag-over-right { border-right: 4px solid #0078D4; }
 .equip-name-input { background: transparent; border: none; outline: none; font-weight: 900; min-width: 2ch; max-width: 20ch; }
 .qty-input { width: 36px; background: #000; border: none; border-radius: 2px; text-align: center; color: #fff; font-weight: 900; font-size: 12px; padding: 1px 2px; }
 
@@ -87,11 +119,11 @@ tr.drag-over { border-top: 3px solid var(--blue); }
 #mobileView { display: none; }
 .m-card { background: white; border-radius: 14px; border-left: 6px solid var(--blue); padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); position: relative; }
 .m-card.is-current { border-left-color: #22c55e; background: #f0fdf4; }
-.m-card.is-past { opacity: 0.45; }
+.m-card.is-past { background: #d1d5db; }
 .m-time-badge { display: inline-block; background: var(--blue); color: #fff; border-radius: 20px; padding: 3px 12px; font-size: 12px; font-weight: 900; margin-bottom: 8px; }
 .m-card.is-current .m-time-badge { background: #22c55e; }
-.m-unit { font-size: 20px; font-weight: 900; color: #1e293b; margin-bottom: 2px; }
-.m-desc { font-size: 14px; color: #64748b; margin-bottom: 8px; }
+.m-unit { font-size: 20px; font-weight: 900; color: #111827; margin-bottom: 2px; }
+.m-desc { font-size: 14px; color: #111827; margin-bottom: 8px; font-weight: 500; }
 
 /* CHECKIN */
 #checkinPanel { display: none; }
@@ -142,6 +174,21 @@ tr.drag-over { border-top: 3px solid var(--blue); }
 </head>
 <body class="admin-mode">
 
+<!-- ===== PASSWORD GATE ===== -->
+<div id="passwordGate">
+  <div class="password-container">
+    <span class="password-icon">🔐</span>
+    <div class="password-title">執行製作控管台</div>
+    <div class="password-subtitle">輸入密碼以進入系統</div>
+    <div class="password-input-wrap">
+      <input type="password" id="passwordInput" class="password-input" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')verifyPassword()">
+      <button class="password-toggle" onclick="togglePasswordVisibility()" title="顯示/隱藏密碼">👁️</button>
+    </div>
+    <button onclick="verifyPassword()" class="password-btn">進入系統</button>
+    <div class="password-error" id="passwordError">❌ 密碼錯誤，請重試</div>
+  </div>
+</div>
+
 <!-- MODAL OVERLAY -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()"></div>
 
@@ -176,6 +223,7 @@ tr.drag-over { border-top: 3px solid var(--blue); }
         <label class="switch"><input type="checkbox" id="adminToggle" checked onchange="toggleAdmin(this.checked)"><span class="slider"></span></label>
       </div>
       <button onclick="window.print()" class="hdr-btn no-print" style="background:rgba(239,68,68,0.8);border-color:rgba(239,68,68,0.5)">匯出 PDF</button>
+      <button onclick="logout()" class="hdr-btn no-print" style="background:rgba(107,114,128,0.8);border-color:rgba(107,114,128,0.5)" title="登出系統">登出</button>
     </div>
   </div>
   <!-- 活動進度條 -->
@@ -306,8 +354,8 @@ tr.drag-over { border-top: 3px solid var(--blue); }
   <div class="section-box">
     <div class="section-title"><span>器材清單 / EQUIPMENT CHECKLIST</span></div>
     <table class="w-full">
-      <tr><td class="equip-label">服務台</td><td class="p-4"><div id="list-service" class="flex flex-wrap"></div><button onclick="addItem('service')" class="admin-ctrl text-blue-600 text-[11px] mt-3 font-black no-print">+ 增加</button></td></tr>
-      <tr style="border-top:1.5px solid #000"><td class="equip-label">舞　台</td><td class="p-4"><div id="list-stage" class="flex flex-wrap"></div><button onclick="addItem('stage')" class="admin-ctrl text-orange-600 text-[11px] mt-3 font-black no-print">+ 增加</button></td></tr>
+      <tr><td class="equip-label">服務台</td><td class="p-4"><div id="list-service" class="flex flex-wrap equip-container" data-type="service"></div><button onclick="addItem('service')" class="admin-ctrl text-blue-600 text-[11px] mt-3 font-black no-print">+ 增加</button></td></tr>
+      <tr style="border-top:1.5px solid #000"><td class="equip-label">舞　台</td><td class="p-4"><div id="list-stage" class="flex flex-wrap equip-container" data-type="stage"></div><button onclick="addItem('stage')" class="admin-ctrl text-orange-600 text-[11px] mt-3 font-black no-print">+ 增加</button></td></tr>
     </table>
   </div>
 
@@ -397,9 +445,48 @@ tr.drag-over { border-top: 3px solid var(--blue); }
   </div>
 </div>
 
-<div id="personDropdown" class="dropdown-menu"></div>
+<div id="personDropdown" class="dropdown-menu"><div class="dropdown-scroll"></div><div class="dropdown-item cancel" onclick="document.getElementById('personDropdown').style.display='none'">[ 取消 ]</div></div>
 
 <script>
+/* ===== PASSWORD CONFIGURATION ===== */
+const CORRECT_PASSWORD = "12345"; // 🔐 修改此處設定密碼
+
+/* ===== PASSWORD GATE ===== */
+function togglePasswordVisibility() {
+  const input = document.getElementById('passwordInput');
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+}
+
+function verifyPassword() {
+  const input = document.getElementById('passwordInput').value;
+  const errorEl = document.getElementById('passwordError');
+  
+  if (input === CORRECT_PASSWORD) {
+    localStorage.setItem('v52_authenticated', 'true');
+    document.getElementById('passwordGate').classList.add('hidden');
+    renderAll();
+  } else {
+    errorEl.classList.add('show');
+    document.getElementById('passwordInput').classList.add('error');
+    document.getElementById('passwordInput').value = '';
+    setTimeout(() => {
+      errorEl.classList.remove('show');
+      document.getElementById('passwordInput').classList.remove('error');
+    }, 3000);
+  }
+}
+
+function logout() {
+  if (confirm('確定要登出系統嗎？')) {
+    localStorage.removeItem('v52_authenticated');
+    document.getElementById('passwordGate').classList.remove('hidden');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
+  }
+}
+
+/* ===== CHECKIN CONFIG ===== */
 const CHECKIN_URL = "https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec";
 const DEFAULT_JOBS  = ["控場","音響","服務台","儀式","攝影","機動","視訊","料理"];
 const DEFAULT_NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
@@ -630,11 +717,12 @@ function renderAll() {
     const startMin=sh*60+sm, endMin=eh*60+em;
     const isCur=nowMin>=startMin&&nowMin<endMin;
     const isPast=nowMin>=endMin;
+    const isFuture=nowMin<startMin;
     const standbys=localData.staff.filter(s=>s.standby);
-    return `<tr data-idx="${i}" class="${isCur?'is-current':isPast?'is-past':''}" draggable="${isAdmin?'true':'false'}">
+    return `<tr data-idx="${i}" class="${isCur?'is-current':isPast?'is-past':'is-future'}" draggable="${isAdmin?'true':'false'}">
       <td class="admin-ctrl text-center w-8"><span class="drag-handle" title="拖曳排序">⠿</span></td>
       <td class="text-center">
-        <div class="time-display">${row.s} → ${row.e||'?'} <span class="len-badge">${row.l}m</span>${isCur?' <span style="color:#16a34a;font-size:11px">●進行中</span>':''}</div>
+        <div class="time-display">${row.s} → ${row.e||'?'} <span class="len-badge">${row.l}m</span></div>
         <div class="time-edit">
           <input type="time" class="t-input w-24" value="${row.s}" oninput="updateRow(${i},'s',this.value)">
           <input type="number" class="t-input w-14" value="${row.l}" placeholder="分" oninput="updateRow(${i},'l',this.value)">
@@ -662,7 +750,7 @@ function renderAll() {
     const isPast=nowMin>=eh*60+em;
     const standbys=localData.staff.filter(s=>s.standby);
     return `<div class="m-card${isCur?' is-current':isPast?' is-past':''}">
-      <span class="m-time-badge">${row.s} → ${row.e} (${row.l}m)${isCur?' ● 進行中':''}</span>
+      <span class="m-time-badge">${row.s} → ${row.e} (${row.l}m)</span>
       <div class="m-unit">${row.u||''}</div>
       ${row.d?`<div class="m-desc">${row.d}</div>`:''}
       <div class="flex flex-wrap gap-1">
@@ -676,12 +764,13 @@ function renderAll() {
   // 器材
   ['service','stage'].forEach(type=>{
     document.getElementById(`list-${type}`).innerHTML=(localData.equip[type]||[]).map((item,idx)=>`
-      <div class="equip-tag">
+      <div class="equip-tag" draggable="true" data-type="${type}" data-idx="${idx}">
         <input class="equip-name-input" value="${item.n}" size="${item.n.length+1}" oninput="this.size=Math.max(2,this.value.length+1)" onblur="this.size=Math.max(2,this.value.length+1);localData.equip['${type}'][${idx}].n=this.value;saveData()">
         <span class="text-slate-300 font-bold text-xs">×</span>
         <input type="number" class="qty-input" value="${item.q}" onchange="localData.equip['${type}'][${idx}].q=this.value;saveData()">
         ${isAdmin?`<span class="text-red-400 cursor-pointer font-black" onclick="localData.equip['${type}'].splice(${idx},1);renderAll();saveData()">✕</span>`:''}
       </div>`).join('');
+    initEquipDragSort(type);
   });
 
   document.getElementById('imgGallery').innerHTML=localData.images.map((img,i)=>`
@@ -709,6 +798,59 @@ function initDragSort() {
         localData.rundown[j].e=addMinutes(localData.rundown[j].s,localData.rundown[j].l);
       }
       dragSrcIdx=null; renderAll(); saveData();
+    });
+  });
+}
+
+/* ===== EQUIP DRAG & DROP SORT ===== */
+let equipDragSrc = null;
+function initEquipDragSort(type) {
+  const tags = document.querySelectorAll(`.equip-tag[data-type="${type}"]`);
+  tags.forEach(tag => {
+    tag.addEventListener('dragstart', e => {
+      equipDragSrc = { type, idx: parseInt(tag.dataset.idx) };
+      tag.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    tag.addEventListener('dragend', () => {
+      tag.classList.remove('dragging');
+      document.querySelectorAll(`.equip-tag[data-type="${type}"]`).forEach(t => {
+        t.classList.remove('drag-over-left', 'drag-over-right');
+      });
+    });
+    tag.addEventListener('dragover', e => {
+      e.preventDefault();
+      const rect = tag.getBoundingClientRect();
+      const midpoint = rect.left + rect.width / 2;
+      if (e.clientX < midpoint) {
+        tag.classList.remove('drag-over-right');
+        tag.classList.add('drag-over-left');
+      } else {
+        tag.classList.remove('drag-over-left');
+        tag.classList.add('drag-over-right');
+      }
+    });
+    tag.addEventListener('dragleave', () => {
+      tag.classList.remove('drag-over-left', 'drag-over-right');
+    });
+    tag.addEventListener('drop', e => {
+      e.preventDefault();
+      tag.classList.remove('drag-over-left', 'drag-over-right');
+      if (!equipDragSrc || equipDragSrc.type !== type) return;
+      
+      const srcIdx = equipDragSrc.idx;
+      const targetIdx = parseInt(tag.dataset.idx);
+      
+      if (srcIdx === targetIdx) {
+        equipDragSrc = null;
+        return;
+      }
+      
+      const moved = localData.equip[type].splice(srcIdx, 1)[0];
+      localData.equip[type].splice(targetIdx, 0, moved);
+      equipDragSrc = null;
+      renderAll();
+      saveData();
     });
   });
 }
@@ -742,14 +884,14 @@ function addItem(type){localData.equip[type].push({n:"新項目",q:1});renderAll
 
 function showPersonDrop(e,ri){
   const m=document.getElementById('personDropdown');
-  m.style.display='block';
+  const scrollDiv = m.querySelector('.dropdown-scroll');
+  m.style.display='flex';
   m.style.top=`${e.clientY+8}px`;
-  m.style.left=`${Math.min(e.clientX,window.innerWidth-200)}px`;
+  m.style.left=`${Math.min(e.clientX,window.innerWidth-230)}px`;
   const nonStandby=localData.staff.filter(s=>!s.standby);
-  m.innerHTML=(nonStandby.length
+  scrollDiv.innerHTML=(nonStandby.length
     ? nonStandby.map(s=>`<div class="dropdown-item" onclick="addPersonToRow(${ri},'${s.n}(${s.j})')">${s.n}(${s.j})</div>`).join('')
-    : '<div class="dropdown-item text-slate-300">派遣庫為空</div>')
-    +`<div class="dropdown-item text-red-500 font-bold" onclick="document.getElementById('personDropdown').style.display='none'">[ 取消 ]</div>`;
+    : '<div class="dropdown-item text-slate-300">派遣庫為空</div>');
   e.stopPropagation();
 }
 function addPersonToRow(ri,lbl){
@@ -931,6 +1073,15 @@ function saveData(){
 }
 
 window.onload=()=>{
+  // 檢查密碼認證
+  const isAuth = localStorage.getItem('v52_authenticated');
+  if (!isAuth) {
+    document.getElementById('passwordGate').classList.remove('hidden');
+    document.getElementById('passwordInput').focus();
+    return;
+  }
+  document.getElementById('passwordGate').classList.add('hidden');
+
   // 還原專案
   const lastProjId=localStorage.getItem('v52_currentProject');
   const projects=getProjects();
