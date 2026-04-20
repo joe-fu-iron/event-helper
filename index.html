@@ -3,96 +3,146 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>執行製作旗艦控管台 v53</title>
+<title>執行製作旗艦控管台 v53 - 安全雲端版</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root { --blue: #0078D4; }
+*, *::before, *::after { box-sizing: border-box; }
 body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bottom: 80px; }
-#passwordGate { display: flex; position: fixed; inset: 0; z-index: 9999; background: linear-gradient(135deg, #0078D4 0%, #1e3a5f 100%); align-items: center; justify-content: center; }
-#passwordGate.hidden { display: none; }
-.password-container { background: white; border-radius: 24px; padding: 48px 40px; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 40px 80px rgba(0,0,0,0.25); }
-.password-input { width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 900; text-align: center; letter-spacing: 4px; outline: none; margin-bottom: 20px; }
+
+/* ===== PASSWORD GATE ===== */
+#passwordGate { display: flex; position: fixed; inset: 0; z-index: 9999; background: linear-gradient(135deg, #0078D4 0%, #1e3a5f 100%); align-items: center; justify-content: center; transition: opacity 0.4s; }
+#passwordGate.hidden { opacity: 0; pointer-events: none; }
+.password-container { background: white; border-radius: 24px; padding: 48px 40px; max-width: 420px; width: 90%; box-shadow: 0 40px 80px rgba(0,0,0,0.25); text-align: center; }
+.password-title { font-size: 28px; font-weight: 900; color: #1e293b; margin-bottom: 8px; }
+.password-input { width: 100%; padding: 14px 16px; font-size: 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 600; outline: none; text-align: center; letter-spacing: 4px; }
+.password-btn { width: 100%; padding: 14px 20px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; margin-top: 20px; }
+.password-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 12px; }
+.password-error.show { display: block; }
+
+/* [其餘原有的 CSS 樣式已簡略，請保留你原有的樣式...] */
 .app-header { background: var(--blue); color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 1000; }
+.header-input { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #fff; outline: none; }
 .hidden { display: none !important; }
 </style>
 </head>
-
 <body class="admin-mode">
 
 <div id="passwordGate">
   <div class="password-container">
     <span class="text-5xl mb-4 block">🛡️</span>
-    <h2 class="text-2xl font-black mb-2">執行製作控管台</h2>
-    <p class="text-slate-500 mb-6 text-sm">請輸入系統密碼以同步雲端資料</p>
-    <input type="password" id="passwordInput" class="password-input" placeholder="預設 12345" onkeydown="if(event.key==='Enter')verifyAndSync()">
-    <button onclick="verifyAndSync()" id="loginBtn" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-700 shadow-lg transition">驗證並啟動</button>
-    <p id="errorMsg" class="hidden text-red-500 mt-4 font-bold">❌ 密碼錯誤或網路問題</p>
+    <div class="password-title">執行製作控管台</div>
+    <div class="text-slate-500 mb-6 font-bold">請輸入雲端資料庫密碼</div>
+    <input type="password" id="passwordInput" class="password-input" placeholder="******" onkeydown="if(event.key==='Enter')verifyAndSync()">
+    <button onclick="verifyAndSync()" id="loginBtn" class="password-btn">同步資料並啟動</button>
+    <div class="password-error" id="passwordError">❌ 密碼錯誤或資料庫連線失敗</div>
   </div>
 </div>
 
-<div id="mainApp" class="hidden">
-  <header class="app-header shadow-2xl no-print">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
-      <div>
-        <input type="text" id="eventName" class="bg-transparent border-none text-xl font-black text-white outline-none" placeholder="輸入專案名稱..." onblur="saveData()">
-      </div>
-      <button onclick="location.reload()" class="text-xs bg-white/20 px-3 py-1 rounded">登出</button>
-    </div>
-  </header>
+<div id="appMain" class="hidden">
+    <header class="app-header shadow-2xl no-print">
+        <div class="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div class="flex-1 w-full min-w-0">
+                <div class="flex gap-2 mb-1.5 flex-wrap">
+                    <input type="date" id="eventDate" class="header-input text-xs" onchange="saveData()">
+                    <input type="time" id="eventTime" class="header-input text-xs" onchange="saveData()">
+                    <span id="displayWeek" class="text-white/60 text-xs font-bold self-center">系統已連線</span>
+                </div>
+                <input type="text" id="eventName" class="header-input border-none bg-transparent w-full font-black text-lg p-0 placeholder-white/40" placeholder="載入專案中..." onblur="saveData()">
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="logout()" class="text-xs bg-white/10 px-3 py-1 rounded">登出</button>
+            </div>
+        </div>
+    </header>
 
-  <main class="max-w-7xl mx-auto p-4">
-    <div class="bg-white p-10 rounded-2xl border-2 border-dashed border-slate-200 text-center text-slate-400">
-      <p>雲端同步系統已就緒，請開始編輯你的流程。</p>
-    </div>
-  </main>
+    <main class="max-w-7xl mx-auto p-4">
+        <div class="bg-white p-5 rounded-xl border-2 border-slate-200">
+            <p class="text-slate-400 font-bold text-center">資料同步中心已就緒</p>
+            </div>
+    </main>
 </div>
 
 <script>
-const DB_URL = "https://script.google.com/macros/s/AKfycbzODk4NGMizDqOi313ttnj_gz-u01yxZEMnUJ0wySHcz0p3Ir1s6WDXhMlWIadlechyDA/exec";
+// ⚠️ 這是你提供的 GAS 網址
+const DB_URL = "https://script.google.com/macros/s/AKfycbyA4CAwOIQljBWzVQlVhDpQloBW6oo7DGKAU6O70C-BQ2SzSKQ73O4h6eGwFz7Q3DY5uQ/exec";
 let AUTH_PWD = "";
 
+// 1. 登入並同步資料
 async function verifyAndSync() {
     const pwd = document.getElementById('passwordInput').value;
     const btn = document.getElementById('loginBtn');
-    const err = document.getElementById('errorMsg');
+    const err = document.getElementById('passwordError');
+
+    if (!pwd) return;
 
     btn.innerText = "驗證中...";
     btn.disabled = true;
-    err.classList.add('hidden');
+    err.classList.remove('show');
 
     try {
         const response = await fetch(DB_URL, {
             method: "POST",
             body: JSON.stringify({ action: "load", password: pwd })
         });
+        
         const result = await response.json();
 
         if (result.success) {
-            AUTH_PWD = pwd; 
+            AUTH_PWD = pwd; // 暫存密碼供存檔使用
             document.getElementById('passwordGate').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('appMain').classList.remove('hidden');
+            
+            // 如果雲端有資料則載入
             if (result.data) {
-                document.getElementById('eventName').value = result.data.eventName || "";
+                applyDataToUI(result.data);
             }
         } else {
-            throw new Error("Wrong Password");
+            throw new Error(result.message);
         }
     } catch (e) {
-        btn.innerText = "驗證並啟動";
+        err.classList.add('show');
+        btn.innerText = "重新驗證";
         btn.disabled = false;
-        err.classList.remove('hidden');
     }
 }
 
+// 2. 替代原本的 saveData 邏輯
 async function saveData() {
     if (!AUTH_PWD) return;
-    const data = { eventName: document.getElementById('eventName').value };
+
+    const currentPayload = {
+        name: document.getElementById('eventName').value,
+        date: document.getElementById('eventDate').value,
+        time: document.getElementById('eventTime').value,
+        // 其他欄位如 rundown, staff 等可在此擴充
+    };
+
+    // 發送到雲端存檔
     fetch(DB_URL, {
         method: "POST",
-        body: JSON.stringify({ action: "save", password: AUTH_PWD, payload: data })
+        body: JSON.stringify({
+            action: "save",
+            password: AUTH_PWD,
+            payload: currentPayload
+        })
     });
+    console.log("已自動同步至 Google 雲端");
 }
+
+// 3. 輔助函式：將資料填回 UI
+function applyDataToUI(data) {
+    if (data.name) document.getElementById('eventName').value = data.name;
+    if (data.date) document.getElementById('eventDate').value = data.date;
+    if (data.time) document.getElementById('eventTime').value = data.time;
+}
+
+function logout() {
+    location.reload();
+}
+
+// [其餘你原本控制表格新增、刪除、手機版切換的 JavaScript 函式貼在此處]
 </script>
 </body>
 </html>
