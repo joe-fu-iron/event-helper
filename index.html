@@ -11,6 +11,30 @@
 *, *::before, *::after { box-sizing: border-box; }
 body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bottom: 80px; }
 
+/* ===== PASSWORD GATE ===== */
+#passwordGate { display: flex; position: fixed; inset: 0; z-index: 9999; background: linear-gradient(135deg, #0078D4 0%, #1e3a5f 100%); align-items: center; justify-content: center; }
+#passwordGate.hidden { display: none; }
+.password-container { background: white; border-radius: 24px; padding: 48px 40px; max-width: 420px; width: 90%; box-shadow: 0 40px 80px rgba(0,0,0,0.25); text-align: center; animation: slideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.password-icon { font-size: 56px; margin-bottom: 16px; display: block; animation: bounce 2s infinite; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.password-title { font-size: 28px; font-weight: 900; color: #1e293b; margin-bottom: 8px; letter-spacing: -0.5px; }
+.password-subtitle { font-size: 14px; color: #64748b; margin-bottom: 32px; font-weight: 500; }
+.password-input-wrap { margin-bottom: 20px; position: relative; }
+.password-input { width: 100%; padding: 14px 16px; font-size: 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 600; outline: none; transition: all 0.3s; font-family: 'Courier New', monospace; letter-spacing: 2px; }
+.password-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1); }
+.password-input.error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1); animation: shake 0.4s; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.password-btn { width: 100%; padding: 14px 20px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; transition: all 0.3s; }
+.password-btn:hover { background: #0066b8; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0, 120, 212, 0.3); }
+.password-btn:active { transform: translateY(0); }
+.password-btn.loading { opacity: 0.6; cursor: not-allowed; }
+.password-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 12px; padding: 10px 12px; background: #fee2e2; border-radius: 8px; animation: slideDown 0.3s; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.password-error.show { display: block; }
+.password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 20px; padding: 4px; transition: color 0.2s; }
+.password-toggle:hover { color: var(--blue); }
+
 /* HEADER */
 .app-header { background: var(--blue); color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 1000; }
 .header-input { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #fff; outline: none; }
@@ -142,6 +166,21 @@ tr.drag-over { border-top: 3px solid var(--blue); }
 </head>
 <body class="admin-mode">
 
+<!-- ===== PASSWORD GATE ===== -->
+<div id="passwordGate">
+  <div class="password-container">
+    <span class="password-icon">🔐</span>
+    <div class="password-title">執行製作控管台</div>
+    <div class="password-subtitle">輸入密碼以進入系統</div>
+    <div class="password-input-wrap">
+      <input type="password" id="passwordInput" class="password-input" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')verifyPassword()">
+      <button class="password-toggle" onclick="togglePasswordVisibility()" title="顯示/隱藏密碼">👁️</button>
+    </div>
+    <button onclick="verifyPassword()" class="password-btn">進入系統</button>
+    <div class="password-error" id="passwordError">❌ 密碼錯誤，請重試</div>
+  </div>
+</div>
+
 <!-- MODAL OVERLAY -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()"></div>
 
@@ -176,6 +215,7 @@ tr.drag-over { border-top: 3px solid var(--blue); }
         <label class="switch"><input type="checkbox" id="adminToggle" checked onchange="toggleAdmin(this.checked)"><span class="slider"></span></label>
       </div>
       <button onclick="window.print()" class="hdr-btn no-print" style="background:rgba(239,68,68,0.8);border-color:rgba(239,68,68,0.5)">匯出 PDF</button>
+      <button onclick="logout()" class="hdr-btn no-print" style="background:rgba(107,114,128,0.8);border-color:rgba(107,114,128,0.5)" title="登出系統">登出</button>
     </div>
   </div>
   <!-- 活動進度條 -->
@@ -400,6 +440,45 @@ tr.drag-over { border-top: 3px solid var(--blue); }
 <div id="personDropdown" class="dropdown-menu"></div>
 
 <script>
+/* ===== PASSWORD CONFIGURATION ===== */
+const CORRECT_PASSWORD = "12345"; // 🔐 修改此處設定密碼
+
+/* ===== PASSWORD GATE ===== */
+function togglePasswordVisibility() {
+  const input = document.getElementById('passwordInput');
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+}
+
+function verifyPassword() {
+  const input = document.getElementById('passwordInput').value;
+  const errorEl = document.getElementById('passwordError');
+  
+  if (input === CORRECT_PASSWORD) {
+    localStorage.setItem('v52_authenticated', 'true');
+    document.getElementById('passwordGate').classList.add('hidden');
+    renderAll();
+  } else {
+    errorEl.classList.add('show');
+    document.getElementById('passwordInput').classList.add('error');
+    document.getElementById('passwordInput').value = '';
+    setTimeout(() => {
+      errorEl.classList.remove('show');
+      document.getElementById('passwordInput').classList.remove('error');
+    }, 3000);
+  }
+}
+
+function logout() {
+  if (confirm('確定要登出系統嗎？')) {
+    localStorage.removeItem('v52_authenticated');
+    document.getElementById('passwordGate').classList.remove('hidden');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
+  }
+}
+
+/* ===== CHECKIN CONFIG ===== */
 const CHECKIN_URL = "https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec";
 const DEFAULT_JOBS  = ["控場","音響","服務台","儀式","攝影","機動","視訊","料理"];
 const DEFAULT_NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
@@ -931,6 +1010,15 @@ function saveData(){
 }
 
 window.onload=()=>{
+  // 檢查密碼認證
+  const isAuth = localStorage.getItem('v52_authenticated');
+  if (!isAuth) {
+    document.getElementById('passwordGate').classList.remove('hidden');
+    document.getElementById('passwordInput').focus();
+    return;
+  }
+  document.getElementById('passwordGate').classList.add('hidden');
+
   // 還原專案
   const lastProjId=localStorage.getItem('v52_currentProject');
   const projects=getProjects();
