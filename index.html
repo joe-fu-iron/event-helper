@@ -1,89 +1,148 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>執行製作旗艦控管台 v53</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    </head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>執行製作旗艦控管台 v53 - 安全雲端版</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root { --blue: #0078D4; }
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bottom: 80px; }
+
+/* ===== PASSWORD GATE ===== */
+#passwordGate { display: flex; position: fixed; inset: 0; z-index: 9999; background: linear-gradient(135deg, #0078D4 0%, #1e3a5f 100%); align-items: center; justify-content: center; transition: opacity 0.4s; }
+#passwordGate.hidden { opacity: 0; pointer-events: none; }
+.password-container { background: white; border-radius: 24px; padding: 48px 40px; max-width: 420px; width: 90%; box-shadow: 0 40px 80px rgba(0,0,0,0.25); text-align: center; }
+.password-title { font-size: 28px; font-weight: 900; color: #1e293b; margin-bottom: 8px; }
+.password-input { width: 100%; padding: 14px 16px; font-size: 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 600; outline: none; text-align: center; letter-spacing: 4px; }
+.password-btn { width: 100%; padding: 14px 20px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; margin-top: 20px; }
+.password-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 12px; }
+.password-error.show { display: block; }
+
+/* [其餘原有的 CSS 樣式已簡略，請保留你原有的樣式...] */
+.app-header { background: var(--blue); color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 1000; }
+.header-input { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #fff; outline: none; }
+.hidden { display: none !important; }
+</style>
+</head>
 <body class="admin-mode">
 
 <div id="passwordGate">
-    <div class="password-container">
-        <span class="password-icon">🔐</span>
-        <div class="password-title">執行製作控管台</div>
-        <div class="password-subtitle">此專案已與雲端資料庫連結，請驗證</div>
-        <input type="password" id="passwordInput" class="password-input" placeholder="輸入密碼">
-        <button onclick="loginAndSync()" id="loginBtn" class="password-btn">同步資料並進入</button>
-        <div id="errorMsg" class="hidden text-red-500 mt-3 font-bold">❌ 驗證失敗</div>
-    </div>
+  <div class="password-container">
+    <span class="text-5xl mb-4 block">🛡️</span>
+    <div class="password-title">執行製作控管台</div>
+    <div class="text-slate-500 mb-6 font-bold">請輸入雲端資料庫密碼</div>
+    <input type="password" id="passwordInput" class="password-input" placeholder="******" onkeydown="if(event.key==='Enter')verifyAndSync()">
+    <button onclick="verifyAndSync()" id="loginBtn" class="password-btn">同步資料並啟動</button>
+    <div class="password-error" id="passwordError">❌ 密碼錯誤或資料庫連線失敗</div>
+  </div>
 </div>
 
-<div id="appInterface" class="hidden">
-    </div>
+<div id="appMain" class="hidden">
+    <header class="app-header shadow-2xl no-print">
+        <div class="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div class="flex-1 w-full min-w-0">
+                <div class="flex gap-2 mb-1.5 flex-wrap">
+                    <input type="date" id="eventDate" class="header-input text-xs" onchange="saveData()">
+                    <input type="time" id="eventTime" class="header-input text-xs" onchange="saveData()">
+                    <span id="displayWeek" class="text-white/60 text-xs font-bold self-center">系統已連線</span>
+                </div>
+                <input type="text" id="eventName" class="header-input border-none bg-transparent w-full font-black text-lg p-0 placeholder-white/40" placeholder="載入專案中..." onblur="saveData()">
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="logout()" class="text-xs bg-white/10 px-3 py-1 rounded">登出</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4">
+        <div class="bg-white p-5 rounded-xl border-2 border-slate-200">
+            <p class="text-slate-400 font-bold text-center">資料同步中心已就緒</p>
+            </div>
+    </main>
+</div>
 
 <script>
-// ⚠️ 重要：請貼上你剛才從 GAS 獲得的 URL
-const DB_URL = "你的_GAS_網頁應用程式_URL";
+// ⚠️ 這是你提供的 GAS 網址
+const DB_URL = "https://script.google.com/macros/s/AKfycbyA4CAwOIQljBWzVQlVhDpQloBW6oo7DGKAU6O70C-BQ2SzSKQ73O4h6eGwFz7Q3DY5uQ/exec";
 let AUTH_PWD = "";
 
-// 登入並同步資料
-async function loginAndSync() {
+// 1. 登入並同步資料
+async function verifyAndSync() {
     const pwd = document.getElementById('passwordInput').value;
     const btn = document.getElementById('loginBtn');
-    
-    btn.innerText = "安全性驗證中...";
+    const err = document.getElementById('passwordError');
+
+    if (!pwd) return;
+
+    btn.innerText = "驗證中...";
     btn.disabled = true;
+    err.classList.remove('show');
 
     try {
         const response = await fetch(DB_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'load', password: pwd })
+            method: "POST",
+            body: JSON.stringify({ action: "load", password: pwd })
         });
+        
         const result = await response.json();
 
         if (result.success) {
-            AUTH_PWD = pwd; // 存入記憶體供後續存檔使用
+            AUTH_PWD = pwd; // 暫存密碼供存檔使用
             document.getElementById('passwordGate').classList.add('hidden');
-            document.getElementById('appInterface').classList.remove('hidden');
+            document.getElementById('appMain').classList.remove('hidden');
             
-            // 如果雲端有資料，則載入
-            if(result.data) {
-                loadDataIntoUI(result.data); 
+            // 如果雲端有資料則載入
+            if (result.data) {
+                applyDataToUI(result.data);
             }
         } else {
-            alert("密碼不正確，無法讀取資料庫");
-            btn.innerText = "同步資料並進入";
-            btn.disabled = false;
+            throw new Error(result.message);
         }
     } catch (e) {
-        alert("資料庫連線失敗，請檢查網路或 GAS 部署設定");
+        err.classList.add('show');
+        btn.innerText = "重新驗證";
+        btn.disabled = false;
     }
 }
 
-// 💾 修改原本的 saveData 函式，同步到雲端
+// 2. 替代原本的 saveData 邏輯
 async function saveData() {
-    if (!AUTH_PWD) return; // 未驗證不存檔
+    if (!AUTH_PWD) return;
 
-    const currentData = {
-        eventName: document.getElementById('eventName').value,
-        eventDate: document.getElementById('eventDate').value,
-        // ... 其他你想存的資料欄位
+    const currentPayload = {
+        name: document.getElementById('eventName').value,
+        date: document.getElementById('eventDate').value,
+        time: document.getElementById('eventTime').value,
+        // 其他欄位如 rundown, staff 等可在此擴充
     };
 
+    // 發送到雲端存檔
     fetch(DB_URL, {
-        method: 'POST',
-        body: JSON.stringify({ 
-            action: 'save', 
-            password: AUTH_PWD, 
-            payload: currentData 
+        method: "POST",
+        body: JSON.stringify({
+            action: "save",
+            password: AUTH_PWD,
+            payload: currentPayload
         })
     });
-    
-    console.log("資料已同步至雲端");
+    console.log("已自動同步至 Google 雲端");
 }
 
-// [其餘你原本控制表格、UI 的 JS 函式也請保留在這裡]
+// 3. 輔助函式：將資料填回 UI
+function applyDataToUI(data) {
+    if (data.name) document.getElementById('eventName').value = data.name;
+    if (data.date) document.getElementById('eventDate').value = data.date;
+    if (data.time) document.getElementById('eventTime').value = data.time;
+}
+
+function logout() {
+    location.reload();
+}
+
+// [其餘你原本控制表格新增、刪除、手機版切換的 JavaScript 函式貼在此處]
 </script>
 </body>
 </html>
