@@ -67,8 +67,10 @@ input:checked + .slider:before { transform: translateX(22px); }
 .pro-table { width: 100%; border-collapse: collapse; background: white; border: 2.5px solid #000; }
 .pro-table th { background: #f8fafc; padding: 11px 12px; border: 1.5px solid #000; font-weight: 900; font-size: 13px; }
 .pro-table td { border: 1.5px solid #000; padding: 10px 12px; vertical-align: middle; }
+.pro-table tbody tr { transition: opacity 0.3s ease; }
 .pro-table tbody tr:hover { background: #fafafa; }
-.pro-table tbody tr.is-current { background: #f0fdf4 !important; border-left: 4px solid #22c55e; }
+.pro-table tbody tr.is-current { background: white !important; opacity: 1; }
+.pro-table tbody tr.is-future { opacity: 1; }
 .pro-table tbody tr.is-past { opacity: 0.45; }
 .time-display { font-size: 13px; font-weight: 900; color: var(--blue); }
 .time-edit { display: none; gap: 4px; margin-top: 4px; }
@@ -89,9 +91,11 @@ tr.drag-over { border-top: 3px solid var(--blue); }
 .standby-chip { background: #16a34a; }
 
 /* DROPDOWN */
-.dropdown-menu { display: none; position: fixed; background: white; border: 1px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 3000; width: 190px; border-radius: 8px; overflow: hidden; }
-.dropdown-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.dropdown-menu { display: none; position: fixed; background: white; border: 1px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 3000; width: 220px; border-radius: 8px; overflow: hidden; max-height: 320px; display: flex; flex-direction: column; }
+.dropdown-scroll { overflow-y: auto; flex: 1; }
+.dropdown-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; white-space: nowrap; }
 .dropdown-item:hover { background: #f0f7ff; color: var(--blue); }
+.dropdown-item.cancel { padding: 10px 14px; cursor: pointer; border-top: 1px solid #f0f0f0; font-size: 13px; font-weight: bold; text-align: center; background: #f8f8f8; }
 
 /* EQUIP */
 .section-box { background: #fff; border: 2.5px solid #000; margin-top: 16px; overflow: hidden; box-shadow: 4px 4px 0 rgba(0,0,0,0.08); }
@@ -437,7 +441,7 @@ tr.drag-over { border-top: 3px solid var(--blue); }
   </div>
 </div>
 
-<div id="personDropdown" class="dropdown-menu"></div>
+<div id="personDropdown" class="dropdown-menu"><div class="dropdown-scroll"></div><div class="dropdown-item cancel" onclick="document.getElementById('personDropdown').style.display='none'">[ 取消 ]</div></div>
 
 <script>
 /* ===== PASSWORD CONFIGURATION ===== */
@@ -709,11 +713,12 @@ function renderAll() {
     const startMin=sh*60+sm, endMin=eh*60+em;
     const isCur=nowMin>=startMin&&nowMin<endMin;
     const isPast=nowMin>=endMin;
+    const isFuture=nowMin<startMin;
     const standbys=localData.staff.filter(s=>s.standby);
-    return `<tr data-idx="${i}" class="${isCur?'is-current':isPast?'is-past':''}" draggable="${isAdmin?'true':'false'}">
+    return `<tr data-idx="${i}" class="${isCur?'is-current':isPast?'is-past':'is-future'}" draggable="${isAdmin?'true':'false'}">
       <td class="admin-ctrl text-center w-8"><span class="drag-handle" title="拖曳排序">⠿</span></td>
       <td class="text-center">
-        <div class="time-display">${row.s} → ${row.e||'?'} <span class="len-badge">${row.l}m</span>${isCur?' <span style="color:#16a34a;font-size:11px">●進行中</span>':''}</div>
+        <div class="time-display">${row.s} → ${row.e||'?'} <span class="len-badge">${row.l}m</span></div>
         <div class="time-edit">
           <input type="time" class="t-input w-24" value="${row.s}" oninput="updateRow(${i},'s',this.value)">
           <input type="number" class="t-input w-14" value="${row.l}" placeholder="分" oninput="updateRow(${i},'l',this.value)">
@@ -741,7 +746,7 @@ function renderAll() {
     const isPast=nowMin>=eh*60+em;
     const standbys=localData.staff.filter(s=>s.standby);
     return `<div class="m-card${isCur?' is-current':isPast?' is-past':''}">
-      <span class="m-time-badge">${row.s} → ${row.e} (${row.l}m)${isCur?' ● 進行中':''}</span>
+      <span class="m-time-badge">${row.s} → ${row.e} (${row.l}m)</span>
       <div class="m-unit">${row.u||''}</div>
       ${row.d?`<div class="m-desc">${row.d}</div>`:''}
       <div class="flex flex-wrap gap-1">
@@ -821,14 +826,14 @@ function addItem(type){localData.equip[type].push({n:"新項目",q:1});renderAll
 
 function showPersonDrop(e,ri){
   const m=document.getElementById('personDropdown');
-  m.style.display='block';
+  const scrollDiv = m.querySelector('.dropdown-scroll');
+  m.style.display='flex';
   m.style.top=`${e.clientY+8}px`;
-  m.style.left=`${Math.min(e.clientX,window.innerWidth-200)}px`;
+  m.style.left=`${Math.min(e.clientX,window.innerWidth-230)}px`;
   const nonStandby=localData.staff.filter(s=>!s.standby);
-  m.innerHTML=(nonStandby.length
+  scrollDiv.innerHTML=(nonStandby.length
     ? nonStandby.map(s=>`<div class="dropdown-item" onclick="addPersonToRow(${ri},'${s.n}(${s.j})')">${s.n}(${s.j})</div>`).join('')
-    : '<div class="dropdown-item text-slate-300">派遣庫為空</div>')
-    +`<div class="dropdown-item text-red-500 font-bold" onclick="document.getElementById('personDropdown').style.display='none'">[ 取消 ]</div>`;
+    : '<div class="dropdown-item text-slate-300">派遣庫為空</div>');
   e.stopPropagation();
 }
 function addPersonToRow(ri,lbl){
