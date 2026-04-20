@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>執行製作旗艦控管台 v53 - 安全雲端版</title>
+<title>執行製作旗艦控管台 v52</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -11,138 +11,959 @@
 *, *::before, *::after { box-sizing: border-box; }
 body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; padding-bottom: 80px; }
 
-/* ===== PASSWORD GATE ===== */
-#passwordGate { display: flex; position: fixed; inset: 0; z-index: 9999; background: linear-gradient(135deg, #0078D4 0%, #1e3a5f 100%); align-items: center; justify-content: center; transition: opacity 0.4s; }
-#passwordGate.hidden { opacity: 0; pointer-events: none; }
-.password-container { background: white; border-radius: 24px; padding: 48px 40px; max-width: 420px; width: 90%; box-shadow: 0 40px 80px rgba(0,0,0,0.25); text-align: center; }
-.password-title { font-size: 28px; font-weight: 900; color: #1e293b; margin-bottom: 8px; }
-.password-input { width: 100%; padding: 14px 16px; font-size: 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-weight: 600; outline: none; text-align: center; letter-spacing: 4px; }
-.password-btn { width: 100%; padding: 14px 20px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; margin-top: 20px; }
-.password-error { display: none; color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 12px; }
-.password-error.show { display: block; }
-
-/* [其餘原有的 CSS 樣式已簡略，請保留你原有的樣式...] */
+/* HEADER */
 .app-header { background: var(--blue); color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 1000; }
 .header-input { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #fff; outline: none; }
-.hidden { display: none !important; }
+.hdr-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; color: white; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.hdr-btn:hover { background: rgba(255,255,255,0.28); }
+.hdr-btn.active { background: rgba(255,255,255,0.92); color: var(--blue); }
+
+/* SWITCH */
+.switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.3); transition: .4s; border-radius: 20px; }
+.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background: #22c55e; }
+input:checked + .slider:before { transform: translateX(22px); }
+
+/* STAFF BOARD */
+#staffBoard { background: linear-gradient(135deg,#1e3a5f 0%,#0078D4 100%); padding: 12px 16px; }
+.board-card { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); border-radius: 8px; padding: 6px 14px; text-align: center; min-width: 88px; }
+.board-card .job { font-size: 9px; font-weight: 900; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 1px; }
+.board-card .name { font-size: 14px; font-weight: 900; color: #fff; }
+.board-card.standby { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.4); }
+.board-card.standby .job { color: rgba(134,239,172,0.8); }
+
+/* ADMIN */
+.admin-ctrl { display: none !important; }
+.admin-mode .admin-ctrl { display: block !important; }
+.locked-mode .admin-ctrl { display: none !important; }
+
+/* PRO TABLE */
+.pro-table { width: 100%; border-collapse: collapse; background: white; border: 2.5px solid #000; }
+.pro-table th { background: #f8fafc; padding: 11px 12px; border: 1.5px solid #000; font-weight: 900; font-size: 13px; }
+.pro-table td { border: 1.5px solid #000; padding: 10px 12px; vertical-align: middle; }
+.pro-table tbody tr:hover { background: #fafafa; }
+.pro-table tbody tr.is-current { background: #f0fdf4 !important; border-left: 4px solid #22c55e; }
+.pro-table tbody tr.is-past { opacity: 0.45; }
+.time-display { font-size: 13px; font-weight: 900; color: var(--blue); }
+.time-edit { display: none; gap: 4px; margin-top: 4px; }
+.admin-mode:not(.locked-mode) .time-edit { display: flex; }
+.t-input { border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 2px 4px; font-size: 11px; outline: none; }
+.unit-input { width: 100%; font-weight: 900; font-size: 15px; outline: none; background: transparent; }
+.desc-input { width: 100%; font-size: 13px; color: #64748b; outline: none; background: transparent; }
+.len-badge { display: inline-block; background: #eff6ff; border: 1px solid #bfdbfe; color: var(--blue); border-radius: 12px; padding: 1px 8px; font-size: 11px; font-weight: 900; }
+.drag-handle { cursor: grab; color: #cbd5e1; font-size: 16px; user-select: none; padding: 0 4px; }
+.drag-handle:active { cursor: grabbing; }
+tr.dragging { opacity: 0.4; background: #e0f2fe !important; }
+tr.drag-over { border-top: 3px solid var(--blue); }
+
+/* PERSON CHIP */
+.person-chip { display: inline-flex; align-items: center; gap: 3px; background: var(--blue); color: #fff; font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 12px; }
+.person-chip i { cursor: pointer; font-style: normal; opacity: 0.7; }
+.person-chip i:hover { opacity: 1; }
+.standby-chip { background: #16a34a; }
+
+/* DROPDOWN */
+.dropdown-menu { display: none; position: fixed; background: white; border: 1px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 3000; width: 190px; border-radius: 8px; overflow: hidden; }
+.dropdown-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.dropdown-item:hover { background: #f0f7ff; color: var(--blue); }
+
+/* EQUIP */
+.section-box { background: #fff; border: 2.5px solid #000; margin-top: 16px; overflow: hidden; box-shadow: 4px 4px 0 rgba(0,0,0,0.08); }
+.section-title { background: #000; color: #fff; padding: 8px 15px; font-size: 13px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
+.equip-label { background: #f8fafc; width: 90px; text-align: center; font-weight: 900; font-size: 13px; border-right: 1.5px solid #000; vertical-align: top; padding-top: 16px; }
+.equip-tag { display: inline-flex; align-items: center; background: #fff; border: 2px solid #000; padding: 3px 8px; border-radius: 4px; font-size: 14px; font-weight: 900; gap: 4px; box-shadow: 2px 2px 0 #000; margin: 3px; }
+.equip-name-input { background: transparent; border: none; outline: none; font-weight: 900; min-width: 2ch; max-width: 20ch; }
+.qty-input { width: 36px; background: #000; border: none; border-radius: 2px; text-align: center; color: #fff; font-weight: 900; font-size: 12px; padding: 1px 2px; }
+
+/* IMG */
+.img-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.img-box { width: 140px; height: 140px; position: relative; border: 2.5px solid #000; background: #eee; overflow: hidden; }
+.img-box img { width: 100%; height: 100%; object-fit: cover; }
+.img-del { position: absolute; top: 0; right: 0; background: #ef4444; color: #fff; width: 20px; height: 20px; text-align: center; line-height: 20px; cursor: pointer; font-size: 11px; font-weight: 900; }
+
+/* MOBILE */
+#mobileView { display: none; }
+.m-card { background: white; border-radius: 14px; border-left: 6px solid var(--blue); padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); position: relative; }
+.m-card.is-current { border-left-color: #22c55e; background: #f0fdf4; }
+.m-card.is-past { opacity: 0.45; }
+.m-time-badge { display: inline-block; background: var(--blue); color: #fff; border-radius: 20px; padding: 3px 12px; font-size: 12px; font-weight: 900; margin-bottom: 8px; }
+.m-card.is-current .m-time-badge { background: #22c55e; }
+.m-unit { font-size: 20px; font-weight: 900; color: #1e293b; margin-bottom: 2px; }
+.m-desc { font-size: 14px; color: #64748b; margin-bottom: 8px; }
+
+/* CHECKIN */
+#checkinPanel { display: none; }
+.badge-in { background: #dcfce7; color: #16a34a; font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 20px; }
+.badge-out { background: #f1f5f9; color: #94a3b8; font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 20px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes pulse-o { 0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.5);}50%{box-shadow:0 0 0 8px rgba(249,115,22,0);} }
+.pulse-o { animation: pulse-o 2s infinite; }
+
+/* PROJECT MODAL */
+#projectModal,#reportModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 5000; width: 95%; max-width: 520px; background: white; border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.25); padding: 24px; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 4999; }
+
+/* AI MODAL */
+#aiModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 5000; width: 95%; max-width: 560px; background: white; border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.25); padding: 24px; }
+.ai-thinking span { display: inline-block; width: 7px; height: 7px; background: var(--blue); border-radius: 50%; animation: bounce 1.2s infinite; margin: 0 2px; }
+.ai-thinking span:nth-child(2) { animation-delay: .2s; }
+.ai-thinking span:nth-child(3) { animation-delay: .4s; }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)} }
+
+/* LOCK OVERLAY */
+#lockOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 4000; align-items: center; justify-content: center; }
+#lockOverlay.show { display: flex; }
+.lock-card { background: white; border-radius: 20px; padding: 28px 32px; text-align: center; max-width: 320px; width: 90%; }
+
+/* PRINT */
+@media print {
+  @page { size: A4 landscape; margin: 0.6cm; }
+  .no-print, .admin-ctrl, button, .switch, #staffBoard, #checkinPanel, #aiModal, #projectModal, #reportModal, .modal-overlay, #lockOverlay { display: none !important; }
+  body { background: white; padding: 0; font-size: 11pt; }
+  .app-header { position: static; background: white !important; color: black !important; border-bottom: 2px solid black; }
+  .header-input { color: black !important; background: transparent !important; border: none !important; font-size: 12pt !important; }
+  .pro-table { border: 2px solid #000 !important; page-break-inside: avoid; }
+  .pro-table th { background: #f0f0f0 !important; color: black !important; font-size: 10pt; padding: 6px 8px; }
+  .pro-table td { font-size: 10pt; padding: 6px 8px; border: 1px solid #000 !important; }
+  .unit-input, .desc-input { font-size: 10pt !important; }
+  .pro-table tbody tr.is-past { opacity: 1 !important; }
+  .section-box { page-break-inside: avoid; margin-top: 10px; }
+  .section-title { background: #333 !important; }
+  .equip-tag { box-shadow: 1px 1px 0 #000 !important; font-size: 10pt; }
+}
+
+/* PROGRESS BAR */
+.progress-bar-wrap { height: 3px; background: #e2e8f0; position: relative; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: #22c55e; transition: width 0.5s ease; }
 </style>
 </head>
 <body class="admin-mode">
 
-<div id="passwordGate">
-  <div class="password-container">
-    <span class="text-5xl mb-4 block">🛡️</span>
-    <div class="password-title">執行製作控管台</div>
-    <div class="text-slate-500 mb-6 font-bold">請輸入雲端資料庫密碼</div>
-    <input type="password" id="passwordInput" class="password-input" placeholder="******" onkeydown="if(event.key==='Enter')verifyAndSync()">
-    <button onclick="verifyAndSync()" id="loginBtn" class="password-btn">同步資料並啟動</button>
-    <div class="password-error" id="passwordError">❌ 密碼錯誤或資料庫連線失敗</div>
+<!-- MODAL OVERLAY -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()"></div>
+
+<!-- ===== HEADER ===== -->
+<header class="app-header shadow-2xl no-print">
+  <div class="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+    <div class="flex-1 w-full min-w-0">
+      <div class="flex gap-2 mb-1.5 flex-wrap">
+        <input type="date" id="eventDate" class="header-input text-xs" onchange="saveData()">
+        <input type="time" id="eventTime" class="header-input text-xs" onchange="saveData()">
+        <span id="displayWeek" class="text-white/60 text-xs font-bold self-center">---</span>
+        <!-- 進度條文字 -->
+        <span id="progressText" class="text-white/50 text-xs font-bold self-center hidden"></span>
+      </div>
+      <input type="text" id="eventName" class="header-input border-none bg-transparent w-full font-black text-lg p-0 placeholder-white/40" placeholder="輸入專案名稱" onblur="saveData()">
+    </div>
+    <div class="flex items-center gap-2 flex-wrap shrink-0">
+      <button onclick="openProjectModal()" class="hdr-btn flex items-center gap-1">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+        專案
+      </button>
+      <button id="checkinBtn" onclick="toggleCheckin()" class="hdr-btn pulse-o flex items-center gap-1">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>簽到
+      </button>
+      <button id="mobileBtn" onclick="toggleMobileView()" class="hdr-btn">手機版</button>
+      <button onclick="toggleLock()" id="lockBtn" class="hdr-btn flex items-center gap-1">
+        <svg id="lockIcon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 018 0v4m-4 4v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+        鎖定
+      </button>
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] font-bold text-white/60">編輯</span>
+        <label class="switch"><input type="checkbox" id="adminToggle" checked onchange="toggleAdmin(this.checked)"><span class="slider"></span></label>
+      </div>
+      <button onclick="window.print()" class="hdr-btn no-print" style="background:rgba(239,68,68,0.8);border-color:rgba(239,68,68,0.5)">匯出 PDF</button>
+    </div>
+  </div>
+  <!-- 活動進度條 -->
+  <div class="progress-bar-wrap mt-2 max-w-7xl mx-auto w-full no-print">
+    <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+  </div>
+</header>
+
+<!-- ===== 當日分工看板 ===== -->
+<div id="staffBoard" class="no-print">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center gap-3">
+        <span class="text-[9px] font-black text-white/40 uppercase tracking-widest">當日分工</span>
+        <span id="boardName" class="text-[11px] text-white/60 font-bold"></span>
+      </div>
+      <div class="flex items-center gap-2 no-print">
+        <button onclick="generateReport()" class="text-[10px] font-bold text-white/60 hover:text-white border border-white/20 px-2 py-0.5 rounded transition">📊 執行報告</button>
+        <button onclick="exportCSV()" class="text-[10px] font-bold text-white/60 hover:text-white border border-white/20 px-2 py-0.5 rounded transition">⬇ 匯出 CSV</button>
+      </div>
+    </div>
+    <div id="staffBoardCards" class="flex flex-wrap gap-2">
+      <div class="text-white/25 text-xs font-bold">尚未設定分工</div>
+    </div>
   </div>
 </div>
 
-<div id="appMain" class="hidden">
-    <header class="app-header shadow-2xl no-print">
-        <div class="max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div class="flex-1 w-full min-w-0">
-                <div class="flex gap-2 mb-1.5 flex-wrap">
-                    <input type="date" id="eventDate" class="header-input text-xs" onchange="saveData()">
-                    <input type="time" id="eventTime" class="header-input text-xs" onchange="saveData()">
-                    <span id="displayWeek" class="text-white/60 text-xs font-bold self-center">系統已連線</span>
-                </div>
-                <input type="text" id="eventName" class="header-input border-none bg-transparent w-full font-black text-lg p-0 placeholder-white/40" placeholder="載入專案中..." onblur="saveData()">
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="logout()" class="text-xs bg-white/10 px-3 py-1 rounded">登出</button>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto p-4">
-        <div class="bg-white p-5 rounded-xl border-2 border-slate-200">
-            <p class="text-slate-400 font-bold text-center">資料同步中心已就緒</p>
-            </div>
-    </main>
+<!-- ===== 簽到面板 ===== -->
+<div id="checkinPanel" class="max-w-7xl mx-auto px-4 pt-4 no-print">
+  <div class="bg-white rounded-xl border border-slate-200 shadow overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-orange-50 to-white">
+      <div class="flex items-center gap-2">
+        <span class="text-orange-500">📋</span>
+        <div><div class="font-black text-slate-800 text-sm">長官簽到即時狀態</div><div id="checkinMeta" class="text-[10px] text-slate-400 font-bold">點擊重新整理載入</div></div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="fetchCheckin()" id="refreshBtn" class="pulse-o bg-orange-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-orange-600 transition">
+          <svg id="refreshIcon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>重新整理
+        </button>
+        <a href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" target="_blank" class="bg-slate-100 text-slate-600 text-[11px] font-bold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition">開啟 ↗</a>
+      </div>
+    </div>
+    <div class="flex border-b">
+      <div class="flex-1 py-3 text-center border-r"><div id="countTotal" class="text-2xl font-black text-slate-700">—</div><div class="text-[9px] text-slate-400 font-bold uppercase">總人數</div></div>
+      <div class="flex-1 py-3 text-center border-r"><div id="countIn" class="text-2xl font-black text-green-500">—</div><div class="text-[9px] text-slate-400 font-bold uppercase">已簽到</div></div>
+      <div class="flex-1 py-3 text-center"><div id="countOut" class="text-2xl font-black text-slate-300">—</div><div class="text-[9px] text-slate-400 font-bold uppercase">未簽到</div></div>
+    </div>
+    <div id="checkinList" class="p-3 space-y-2 max-h-60 overflow-y-auto"><div class="text-center text-slate-300 text-sm py-5 font-bold">請按重新整理載入資料</div></div>
+  </div>
 </div>
 
+<!-- ===== MAIN ===== -->
+<main class="max-w-7xl mx-auto p-4">
+
+  <!-- AI 助理 -->
+  <section class="admin-ctrl no-print bg-gradient-to-r from-blue-50 to-white border border-blue-200 rounded-xl p-4 mb-5 flex items-center justify-between" style="box-shadow:0 0 12px rgba(0,120,212,0.1)">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl">🤖</div>
+      <div><div class="text-xs font-black text-blue-900">AI 流程助理</div><div class="text-[9px] text-blue-400 font-bold uppercase">貼上文字或截圖，自動產生流程表</div></div>
+    </div>
+    <button onclick="openAIModal()" class="bg-blue-600 text-white text-[10px] font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition shadow">開始自動輸入</button>
+  </section>
+
+  <!-- 桌面版 -->
+  <div id="desktopView">
+    <!-- 派遣設定 -->
+    <section class="admin-ctrl no-print bg-white p-5 rounded-xl border-2 border-slate-200 mb-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">派遣設定 / Personnel</div>
+        <div class="flex gap-2">
+          <button onclick="applyLastConfig()" class="text-[10px] font-bold px-2 py-1 rounded border border-green-200 text-green-600 hover:bg-green-50">♻ 套用上次</button>
+          <button onclick="toggleManualInput()" id="manualBtn" class="text-[10px] font-bold px-2 py-1 rounded border border-slate-200 text-slate-500 hover:bg-slate-50">✏️ 手動新增</button>
+        </div>
+      </div>
+      <div class="mb-1.5">
+        <div class="text-[9px] text-slate-300 font-black uppercase tracking-widest mb-1">① 選職稱</div>
+        <div id="jobOptions" class="flex flex-wrap gap-1"></div>
+      </div>
+      <div class="mb-3">
+        <div class="text-[9px] text-slate-300 font-black uppercase tracking-widest mb-1">② 選人員（可加入全程待命）</div>
+        <div id="nameOptions" class="flex flex-wrap gap-1"></div>
+      </div>
+      <div id="manualInputArea" style="display:none" class="border-t border-dashed border-slate-200 pt-3 space-y-3 mb-3">
+        <div>
+          <div class="text-[9px] text-slate-300 font-black uppercase mb-1">新增職稱</div>
+          <div class="flex gap-2"><input id="newJobInput" type="text" placeholder="如：翻譯、司機" maxlength="10" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400" onkeydown="if(event.key==='Enter')addCustomJob()"><button onclick="addCustomJob()" class="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700">＋ 新增</button></div>
+          <div id="customJobTags" class="flex flex-wrap gap-1 mt-1.5"></div>
+        </div>
+        <div>
+          <div class="text-[9px] text-slate-300 font-black uppercase mb-1">新增人員</div>
+          <div class="flex gap-2"><input id="newNameInput" type="text" placeholder="如：小美、阿明" maxlength="10" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-400" onkeydown="if(event.key==='Enter')addCustomName()"><button onclick="addCustomName()" class="bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-green-700">＋ 新增</button></div>
+          <div id="customNameTags" class="flex flex-wrap gap-1 mt-1.5"></div>
+        </div>
+      </div>
+      <div class="border-t border-slate-100 pt-3">
+        <div class="text-[9px] text-slate-300 font-black uppercase tracking-widest mb-2">目前派遣庫</div>
+        <div id="staffList" class="flex flex-wrap gap-2"></div>
+      </div>
+    </section>
+
+    <!-- 流程表 -->
+    <div class="overflow-x-auto shadow-xl rounded-sm">
+      <table class="pro-table">
+        <thead>
+          <tr>
+            <th class="w-8 admin-ctrl text-center"></th>
+            <th class="w-52 text-center">時間區間 (分)</th>
+            <th class="w-48">執行單元</th>
+            <th>詳細說明</th>
+            <th class="w-48 text-right">負責人員</th>
+            <th class="w-10 admin-ctrl text-center"></th>
+          </tr>
+        </thead>
+        <tbody id="rundownBody"></tbody>
+      </table>
+    </div>
+    <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 border-4 border-dashed border-slate-300 rounded-xl font-black text-slate-400 hover:bg-white transition no-print">+ 增加流程單元</button>
+  </div>
+
+  <!-- 手機版 -->
+  <div id="mobileView">
+    <div id="mobileRundown" class="space-y-3"></div>
+    <button onclick="addRow()" class="admin-ctrl w-full py-4 mt-3 border-4 border-dashed border-slate-300 rounded-xl font-black text-slate-400 mb-4 no-print">+ 增加單元</button>
+    <a href="https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec" target="_blank" class="pulse-o flex items-center justify-center gap-2 bg-orange-500 text-white font-bold py-4 rounded-xl text-base shadow-lg mb-4 no-print">📱 長官簽到即時平台</a>
+  </div>
+
+  <!-- 器材清單 -->
+  <div class="section-box">
+    <div class="section-title"><span>器材清單 / EQUIPMENT CHECKLIST</span></div>
+    <table class="w-full">
+      <tr><td class="equip-label">服務台</td><td class="p-4"><div id="list-service" class="flex flex-wrap"></div><button onclick="addItem('service')" class="admin-ctrl text-blue-600 text-[11px] mt-3 font-black no-print">+ 增加</button></td></tr>
+      <tr style="border-top:1.5px solid #000"><td class="equip-label">舞　台</td><td class="p-4"><div id="list-stage" class="flex flex-wrap"></div><button onclick="addItem('stage')" class="admin-ctrl text-orange-600 text-[11px] mt-3 font-black no-print">+ 增加</button></td></tr>
+    </table>
+  </div>
+
+  <!-- 備註 & 照片 -->
+  <div class="section-box">
+    <div class="section-title">
+      <span>備註及照片驗收 / VALIDATION</span>
+      <button onclick="document.getElementById('imgInput').click()" class="admin-ctrl bg-white text-black px-3 py-1 rounded text-[10px] font-black no-print">📷 上傳照片</button>
+      <input type="file" id="imgInput" class="hidden" accept="image/*" multiple onchange="handleImgs(event)">
+    </div>
+    <div class="p-5">
+      <textarea id="eventNotes" class="w-full min-h-[90px] text-base font-bold outline-none bg-transparent resize-none leading-relaxed border-b border-slate-200 mb-4" placeholder="輸入備註..." onblur="saveData()"></textarea>
+      <div id="imgGallery" class="img-grid"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ===== 專案管理 Modal ===== -->
+<div id="projectModal">
+  <div class="flex justify-between items-center mb-4 border-b pb-3">
+    <div class="font-black text-slate-800">📁 專案管理</div>
+    <button onclick="closeAllModals()" class="text-slate-300 hover:text-red-500 text-xl leading-none">✕</button>
+  </div>
+  <div class="mb-4">
+    <div class="text-[10px] font-black text-slate-400 uppercase mb-2">建立新專案</div>
+    <div class="flex gap-2">
+      <input id="newProjectName" type="text" placeholder="輸入專案名稱..." class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400" onkeydown="if(event.key==='Enter')createProject()">
+      <button onclick="createProject()" class="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700">建立</button>
+    </div>
+  </div>
+  <div class="text-[10px] font-black text-slate-400 uppercase mb-2">所有專案</div>
+  <div id="projectList" class="space-y-2 max-h-72 overflow-y-auto"></div>
+</div>
+
+<!-- ===== 執行報告 Modal ===== -->
+<div id="reportModal">
+  <div class="flex justify-between items-center mb-4 border-b pb-3">
+    <div class="font-black text-slate-800">📊 執行報告</div>
+    <div class="flex gap-2">
+      <button onclick="printReport()" class="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-700">列印</button>
+      <button onclick="closeAllModals()" class="text-slate-300 hover:text-red-500 text-xl leading-none">✕</button>
+    </div>
+  </div>
+  <div id="reportContent" class="text-sm space-y-3 max-h-[70vh] overflow-y-auto"></div>
+</div>
+
+<!-- ===== AI Modal ===== -->
+<div id="aiModal">
+  <div class="flex justify-between items-center mb-4 border-b pb-3">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white">🤖</div>
+      <div><div class="font-black text-slate-800 text-sm">AI 流程助理</div><div class="text-[9px] text-slate-400">由 Claude 自動解析活動草案</div></div>
+    </div>
+    <button onclick="closeAllModals()" class="text-slate-300 hover:text-red-500 text-xl leading-none">✕</button>
+  </div>
+  <div id="aiInputArea">
+    <div class="text-[10px] font-bold text-slate-400 mb-1">方式一：貼上文字草案</div>
+    <textarea id="aiInput" class="w-full h-32 p-3 bg-slate-50 rounded-xl text-sm outline-none border border-slate-200 focus:border-blue-400 resize-none" placeholder="例：&#10;09:00 公司出發/器材裝載 30分鐘&#10;09:30 進場佈置/音響、特效 50分鐘"></textarea>
+    <div class="text-[10px] font-bold text-slate-400 mt-3 mb-1">方式二：上傳流程截圖</div>
+    <label class="flex items-center justify-center gap-2 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl py-3 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition">
+      <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <span id="fileLabel" class="text-sm font-bold text-slate-400">點擊選擇圖片</span>
+      <input type="file" id="aiImageInput" class="hidden" accept="image/*" onchange="handleAIImage(this)">
+    </label>
+    <div id="imagePreview" class="hidden mt-2 rounded-lg overflow-hidden border border-slate-200"><img id="previewImg" class="w-full max-h-28 object-contain bg-slate-50"></div>
+    <button onclick="runAI()" id="runAIBtn" class="w-full mt-4 bg-blue-600 text-white font-black py-3 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>AI 自動分析並填入流程
+    </button>
+  </div>
+  <div id="aiOutputArea" style="display:none">
+    <div class="text-[10px] font-bold text-slate-400 mb-2">AI 解析結果預覽</div>
+    <div id="aiOutput" class="bg-slate-50 rounded-xl p-3 border border-slate-200 max-h-56 overflow-y-auto text-sm"></div>
+    <div class="flex gap-2 mt-4">
+      <button onclick="applyAIResult()" class="flex-1 bg-green-600 text-white font-black py-3 rounded-xl hover:bg-green-700">✓ 套用到流程表</button>
+      <button onclick="resetAIModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200">重新輸入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 鎖定 OVERLAY -->
+<div id="lockOverlay">
+  <div class="lock-card">
+    <div class="text-4xl mb-3">🔒</div>
+    <div class="font-black text-slate-800 text-lg mb-1">已鎖定編輯</div>
+    <div class="text-slate-400 text-sm mb-4">防止誤觸修改</div>
+    <button onclick="unlockEdit()" class="w-full bg-blue-600 text-white font-black py-2.5 rounded-xl hover:bg-blue-700">解除鎖定</button>
+  </div>
+</div>
+
+<div id="personDropdown" class="dropdown-menu"></div>
+
 <script>
-// ⚠️ 這是你提供的 GAS 網址
-const DB_URL = "https://script.google.com/macros/s/AKfycbyA4CAwOIQljBWzVQlVhDpQloBW6oo7DGKAU6O70C-BQ2SzSKQ73O4h6eGwFz7Q3DY5uQ/exec";
-let AUTH_PWD = "";
+const CHECKIN_URL = "https://script.google.com/macros/s/AKfycby35-QOWq7DV9JTwmuYgTvOWlhGor5gVncs7EwCcC7aHDthP6aCzgf5pCcwfeTI613lDw/exec";
+const DEFAULT_JOBS  = ["控場","音響","服務台","儀式","攝影","機動","視訊","料理"];
+const DEFAULT_NAMES = ["江哥","瑩驊","維憶","芳瑜","智明","鐵仁","柏緯","崧瑋"];
+let JOBS = [...DEFAULT_JOBS], NAMES = [...DEFAULT_NAMES];
+let selectedJob = "", isMobileView = false, checkinOpen = false, isLocked = false;
+let aiParsedRundown = [], uploadedImageBase64 = null;
+let currentProjectId = "default";
 
-// 1. 登入並同步資料
-async function verifyAndSync() {
-    const pwd = document.getElementById('passwordInput').value;
-    const btn = document.getElementById('loginBtn');
-    const err = document.getElementById('passwordError');
+/* ===== TIME UTILS ===== */
+function addMinutes(t, m) {
+  if (!t) return "00:00";
+  const [hh,mm] = t.split(':').map(Number);
+  const total = hh*60 + mm + parseInt(m||0);
+  return `${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+}
+function diffMinutes(s, e) {
+  const [h1,m1]=s.split(':').map(Number), [h2,m2]=e.split(':').map(Number);
+  const d=(h2*60+m2)-(h1*60+m1); return d<0?d+1440:d;
+}
+function toMinutes(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
 
-    if (!pwd) return;
-
-    btn.innerText = "驗證中...";
-    btn.disabled = true;
-    err.classList.remove('show');
-
-    try {
-        const response = await fetch(DB_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "load", password: pwd })
-        });
-        
-        const result = await response.json();
-
-        if (result.success) {
-            AUTH_PWD = pwd; // 暫存密碼供存檔使用
-            document.getElementById('passwordGate').classList.add('hidden');
-            document.getElementById('appMain').classList.remove('hidden');
-            
-            // 如果雲端有資料則載入
-            if (result.data) {
-                applyDataToUI(result.data);
-            }
-        } else {
-            throw new Error(result.message);
-        }
-    } catch (e) {
-        err.classList.add('show');
-        btn.innerText = "重新驗證";
-        btn.disabled = false;
-    }
+/* ===== DEFAULT DATA ===== */
+function makeDefaultRundown() {
+  const rows = [
+    {s:"08:00",l:30,u:"公司出發",d:"器材裝載、人員集合"},
+    {s:"08:30",l:60,u:"進場佈置",d:"音響、特效、座椅、舞台背景"},
+    {s:"09:30",l:20,u:"主持人綵排",d:"流程確認、點燈儀式走位"},
+    {s:"09:50",l:10,u:"貴賓媒體接待",d:"邀請媒體簽到、引導就座"},
+    {s:"10:00",l:30,u:"正式活動開始",d:"開場儀式、致詞、儀式進行"},
+    {s:"10:30",l:15,u:"活動結束/散場",d:"媒體聯訪、場地整理"}
+  ];
+  return rows.map(r=>({...r, e:addMinutes(r.s,r.l), persons:[], standbyAll:false}));
 }
 
-// 2. 替代原本的 saveData 邏輯
-async function saveData() {
-    if (!AUTH_PWD) return;
+let localData = {
+  eventDate:"2026-05-22", eventTime:"09:00", eventName:"2026 執行製作控管台",
+  staff:[], rundown:makeDefaultRundown(),
+  equip:{service:[{n:"簽到表",q:1},{n:"QR Code 立牌",q:2},{n:"對講機",q:4}],stage:[{n:"音響系統",q:1},{n:"無線麥克風",q:4},{n:"活動帆布",q:1}]},
+  images:[], notes:""
+};
 
-    const currentPayload = {
-        name: document.getElementById('eventName').value,
-        date: document.getElementById('eventDate').value,
-        time: document.getElementById('eventTime').value,
-        // 其他欄位如 rundown, staff 等可在此擴充
-    };
+/* ===== PROJECT MANAGEMENT ===== */
+function getProjects() { return JSON.parse(localStorage.getItem('v52_projects')||'{}'); }
+function saveProjects(p) { localStorage.setItem('v52_projects',JSON.stringify(p)); }
 
-    // 發送到雲端存檔
-    fetch(DB_URL, {
-        method: "POST",
-        body: JSON.stringify({
-            action: "save",
-            password: AUTH_PWD,
-            payload: currentPayload
-        })
+function openProjectModal() {
+  renderProjectList();
+  document.getElementById('projectModal').style.display='block';
+  document.getElementById('modalOverlay').style.display='block';
+}
+function renderProjectList() {
+  const projects = getProjects();
+  const el = document.getElementById('projectList');
+  const ids = Object.keys(projects);
+  if (!ids.length) { el.innerHTML='<div class="text-slate-300 text-sm text-center py-4">尚無其他專案</div>'; return; }
+  el.innerHTML = ids.map(id => {
+    const p = projects[id];
+    const isCurrent = id === currentProjectId;
+    return `<div class="flex items-center justify-between p-3 rounded-lg border ${isCurrent?'border-blue-300 bg-blue-50':'border-slate-200'} hover:border-blue-200 transition">
+      <div>
+        <div class="font-black text-slate-800 text-sm">${p.eventName||'未命名'}</div>
+        <div class="text-[10px] text-slate-400">${p.eventDate||''}</div>
+      </div>
+      <div class="flex gap-2">
+        ${!isCurrent?`<button onclick="switchProject('${id}')" class="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-lg hover:bg-blue-700">切換</button>`:'<span class="text-blue-600 text-xs font-bold px-3 py-1">目前</span>'}
+        <button onclick="deleteProject('${id}')" class="text-red-300 hover:text-red-500 text-lg leading-none px-1">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function createProject() {
+  const name = document.getElementById('newProjectName').value.trim();
+  if (!name) return;
+  const id = 'proj_' + Date.now();
+  const projects = getProjects();
+  const newData = JSON.parse(JSON.stringify(localData));
+  newData.eventName = name; newData.rundown = makeDefaultRundown();
+  newData.staff = []; newData.notes = ''; newData.images = [];
+  projects[id] = newData;
+  saveProjects(projects);
+  document.getElementById('newProjectName').value='';
+  switchProject(id);
+  renderProjectList();
+}
+function switchProject(id) {
+  saveCurrentProject();
+  const projects = getProjects();
+  if (!projects[id]) return;
+  currentProjectId = id;
+  localData = projects[id];
+  localStorage.setItem('v52_currentProject', id);
+  renderAll();
+  closeAllModals();
+}
+function deleteProject(id) {
+  if (!confirm('確定刪除此專案？')) return;
+  const projects = getProjects();
+  delete projects[id];
+  saveProjects(projects);
+  if (id === currentProjectId) { currentProjectId='default'; }
+  renderProjectList();
+}
+function saveCurrentProject() {
+  const projects = getProjects();
+  projects[currentProjectId] = JSON.parse(JSON.stringify(localData));
+  saveProjects(projects);
+}
+
+/* ===== LOCK ===== */
+function toggleLock() {
+  isLocked = !isLocked;
+  document.getElementById('lockOverlay').classList.toggle('show', isLocked);
+  document.getElementById('lockBtn').classList.toggle('active', isLocked);
+}
+function unlockEdit() {
+  isLocked = false;
+  document.getElementById('lockOverlay').classList.remove('show');
+  document.getElementById('lockBtn').classList.remove('active');
+}
+
+/* ===== STAFF BOARD ===== */
+function renderStaffBoard() {
+  const el = document.getElementById('staffBoardCards');
+  document.getElementById('boardName').textContent = localData.eventName||'';
+  el.innerHTML = localData.staff.length
+    ? localData.staff.map(s=>`
+        <div class="board-card${s.standby?' standby':''}">
+          <div class="job">${s.j}${s.standby?' · 全程':'·'}</div>
+          <div class="name">${s.n}</div>
+        </div>`).join('')
+    : '<div class="text-white/25 text-xs font-bold">尚未設定分工</div>';
+}
+
+/* ===== PROGRESS BAR ===== */
+function updateProgress() {
+  const now = new Date(), nowMin = now.getHours()*60+now.getMinutes();
+  if (!localData.rundown.length) return;
+  const first = toMinutes(localData.rundown[0].s);
+  const last = toMinutes(localData.rundown[localData.rundown.length-1].e||addMinutes(localData.rundown[localData.rundown.length-1].s,localData.rundown[localData.rundown.length-1].l));
+  const total = last - first;
+  const elapsed = Math.max(0, Math.min(total, nowMin - first));
+  const pct = total > 0 ? Math.round(elapsed/total*100) : 0;
+  document.getElementById('progressBar').style.width = pct+'%';
+  if (pct > 0 && pct < 100) {
+    document.getElementById('progressText').textContent = `進度 ${pct}%`;
+    document.getElementById('progressText').classList.remove('hidden');
+  } else {
+    document.getElementById('progressText').classList.add('hidden');
+  }
+}
+
+/* ===== ADMIN / VIEW ===== */
+function toggleAdmin(c) { document.body.classList.toggle('admin-mode',c); renderAll(); }
+function toggleMobileView() {
+  isMobileView=!isMobileView;
+  document.getElementById('desktopView').style.display=isMobileView?'none':'block';
+  document.getElementById('mobileView').style.display=isMobileView?'block':'none';
+  const btn=document.getElementById('mobileBtn');
+  btn.textContent=isMobileView?'桌面版':'手機版';
+  btn.classList.toggle('active',isMobileView);
+  renderAll();
+}
+function closeAllModals() {
+  ['projectModal','reportModal','aiModal'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('modalOverlay').style.display='none';
+}
+
+/* ===== MANUAL INPUT ===== */
+function toggleManualInput() {
+  const a=document.getElementById('manualInputArea'),btn=document.getElementById('manualBtn');
+  const open=a.style.display==='none'||a.style.display==='';
+  a.style.display=open?'block':'none';
+  btn.classList.toggle('bg-blue-50',open); btn.classList.toggle('text-blue-600',open);
+  if(open)document.getElementById('newJobInput').focus();
+}
+function addCustomJob(){const v=document.getElementById('newJobInput').value.trim();if(!v||JOBS.includes(v))return;JOBS.push(v);saveCustomLists();document.getElementById('newJobInput').value='';renderAll();renderCustomTags();}
+function addCustomName(){const v=document.getElementById('newNameInput').value.trim();if(!v||NAMES.includes(v))return;NAMES.push(v);saveCustomLists();document.getElementById('newNameInput').value='';renderAll();renderCustomTags();}
+function removeCustomJob(j){JOBS=JOBS.filter(x=>x!==j);if(selectedJob===j)selectedJob='';saveCustomLists();renderAll();renderCustomTags();}
+function removeCustomName(n){NAMES=NAMES.filter(x=>x!==n);saveCustomLists();renderAll();renderCustomTags();}
+function renderCustomTags(){
+  const jT=document.getElementById('customJobTags'),nT=document.getElementById('customNameTags');
+  if(jT)jT.innerHTML=JOBS.filter(j=>!DEFAULT_JOBS.includes(j)).map(j=>`<span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">${j}<span class="cursor-pointer hover:text-red-500 ml-0.5" onclick="removeCustomJob('${j}')">✕</span></span>`).join('');
+  if(nT)nT.innerHTML=NAMES.filter(n=>!DEFAULT_NAMES.includes(n)).map(n=>`<span class="inline-flex items-center gap-1 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">${n}<span class="cursor-pointer hover:text-red-500 ml-0.5" onclick="removeCustomName('${n}')">✕</span></span>`).join('');
+}
+function saveCustomLists(){localStorage.setItem('v52_jobs',JSON.stringify(JOBS));localStorage.setItem('v52_names',JSON.stringify(NAMES));}
+
+/* ===== APPLY LAST CONFIG ===== */
+function applyLastConfig() {
+  const last = localStorage.getItem('v52_lastStaff');
+  if (!last) return alert('尚無上次配置記錄');
+  if (!confirm('套用上次活動的人員配置？')) return;
+  localData.staff = JSON.parse(last);
+  renderAll(); saveData();
+}
+
+/* ===== RENDER ALL ===== */
+function renderAll() {
+  const isAdmin = document.body.classList.contains('admin-mode');
+  const now = new Date(), nowMin = now.getHours()*60+now.getMinutes();
+  document.getElementById('eventDate').value=localData.eventDate;
+  document.getElementById('eventTime').value=localData.eventTime||'09:00';
+  document.getElementById('eventName').value=localData.eventName;
+  document.getElementById('eventNotes').value=localData.notes||'';
+  const d=new Date(localData.eventDate);
+  document.getElementById('displayWeek').textContent=isNaN(d.getTime())?'':['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][d.getDay()];
+
+  renderStaffBoard();
+  updateProgress();
+
+  document.getElementById('jobOptions').innerHTML=JOBS.map(j=>
+    `<button class="px-2.5 py-1.5 border-2 text-[11px] font-black rounded-lg transition ${selectedJob===j?'bg-blue-600 text-white border-blue-600':'bg-white text-slate-500 border-slate-200 hover:border-blue-300'}" onclick="selectedJob='${j}';renderAll()">${j}</button>`
+  ).join('');
+  document.getElementById('nameOptions').innerHTML=NAMES.map(n=>
+    `<button class="px-2.5 py-1.5 border-2 text-[11px] font-black rounded-lg bg-white text-slate-500 border-slate-200 hover:border-slate-400 transition" onclick="addStaff('${n}',false)">${n}</button>
+     <button class="px-1.5 py-1.5 border-2 text-[10px] font-black rounded-lg bg-green-50 text-green-600 border-green-200 hover:bg-green-100 transition" title="${n} 全程待命" onclick="addStaff('${n}',true)">⚑</button>`
+  ).join('');
+  document.getElementById('staffList').innerHTML=localData.staff.map((s,i)=>
+    `<div class="px-3 py-1 rounded-full text-[11px] font-black flex items-center gap-1.5 ${s.standby?'bg-green-100 text-green-800':'bg-blue-100 text-blue-800'}">
+      ${s.standby?'⚑ ':''}${s.n}<span class="opacity-50">(${s.j})</span>
+      ${isAdmin?`<span class="cursor-pointer hover:text-red-500 ml-0.5" onclick="localData.staff.splice(${i},1);renderAll();saveData()">✕</span>`:''}
+    </div>`
+  ).join('');
+
+  // 桌面流程表
+  document.getElementById('rundownBody').innerHTML=localData.rundown.map((row,i)=>{
+    const [sh,sm]=row.s.split(':').map(Number);
+    const [eh,em]=(row.e||addMinutes(row.s,row.l)).split(':').map(Number);
+    const startMin=sh*60+sm, endMin=eh*60+em;
+    const isCur=nowMin>=startMin&&nowMin<endMin;
+    const isPast=nowMin>=endMin;
+    const standbys=localData.staff.filter(s=>s.standby);
+    return `<tr data-idx="${i}" class="${isCur?'is-current':isPast?'is-past':''}" draggable="${isAdmin?'true':'false'}">
+      <td class="admin-ctrl text-center w-8"><span class="drag-handle" title="拖曳排序">⠿</span></td>
+      <td class="text-center">
+        <div class="time-display">${row.s} → ${row.e||'?'} <span class="len-badge">${row.l}m</span>${isCur?' <span style="color:#16a34a;font-size:11px">●進行中</span>':''}</div>
+        <div class="time-edit">
+          <input type="time" class="t-input w-24" value="${row.s}" oninput="updateRow(${i},'s',this.value)">
+          <input type="number" class="t-input w-14" value="${row.l}" placeholder="分" oninput="updateRow(${i},'l',this.value)">
+        </div>
+      </td>
+      <td><input class="unit-input" value="${row.u||''}" onblur="updateField(${i},'u',this.value)" placeholder="執行單元"></td>
+      <td><input class="desc-input" value="${row.d||''}" onblur="updateField(${i},'d',this.value)" placeholder="詳細說明..."></td>
+      <td class="text-right">
+        <div class="flex flex-wrap justify-end gap-1 min-h-[20px] ${isAdmin?'cursor-pointer':''}" onclick="${isAdmin?`showPersonDrop(event,${i})`:''}">
+          ${standbys.map(s=>`<span class="person-chip standby-chip">${s.n}</span>`).join('')}
+          ${(row.persons||[]).map((p,pi)=>`<span class="person-chip">${p}${isAdmin?`<i onclick="event.stopPropagation();localData.rundown[${i}].persons.splice(${pi},1);renderAll();saveData()">✕</i>`:''}</span>`).join('')||(!standbys.length?'<span class="text-slate-200 text-xs">+ 指派</span>':'')}
+        </div>
+      </td>
+      <td class="admin-ctrl text-center"><button class="text-red-300 hover:text-red-600 text-lg" onclick="localData.rundown.splice(${i},1);renderAll();saveData()">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  initDragSort();
+
+  // 手機版
+  document.getElementById('mobileRundown').innerHTML=localData.rundown.map((row,i)=>{
+    const [sh,sm]=row.s.split(':').map(Number);
+    const [eh,em]=(row.e||'00:00').split(':').map(Number);
+    const isCur=nowMin>=sh*60+sm&&nowMin<eh*60+em;
+    const isPast=nowMin>=eh*60+em;
+    const standbys=localData.staff.filter(s=>s.standby);
+    return `<div class="m-card${isCur?' is-current':isPast?' is-past':''}">
+      <span class="m-time-badge">${row.s} → ${row.e} (${row.l}m)${isCur?' ● 進行中':''}</span>
+      <div class="m-unit">${row.u||''}</div>
+      ${row.d?`<div class="m-desc">${row.d}</div>`:''}
+      <div class="flex flex-wrap gap-1">
+        ${standbys.map(s=>`<span class="person-chip standby-chip">${s.n}</span>`).join('')}
+        ${(row.persons||[]).map(p=>`<span class="person-chip">${p}</span>`).join('')}
+      </div>
+      ${isAdmin?`<button class="absolute top-3 right-3 text-red-200 text-2xl" onclick="localData.rundown.splice(${i},1);renderAll();saveData()">✕</button>`:''}
+    </div>`;
+  }).join('');
+
+  // 器材
+  ['service','stage'].forEach(type=>{
+    document.getElementById(`list-${type}`).innerHTML=(localData.equip[type]||[]).map((item,idx)=>`
+      <div class="equip-tag">
+        <input class="equip-name-input" value="${item.n}" size="${item.n.length+1}" oninput="this.size=Math.max(2,this.value.length+1)" onblur="this.size=Math.max(2,this.value.length+1);localData.equip['${type}'][${idx}].n=this.value;saveData()">
+        <span class="text-slate-300 font-bold text-xs">×</span>
+        <input type="number" class="qty-input" value="${item.q}" onchange="localData.equip['${type}'][${idx}].q=this.value;saveData()">
+        ${isAdmin?`<span class="text-red-400 cursor-pointer font-black" onclick="localData.equip['${type}'].splice(${idx},1);renderAll();saveData()">✕</span>`:''}
+      </div>`).join('');
+  });
+
+  document.getElementById('imgGallery').innerHTML=localData.images.map((img,i)=>`
+    <div class="img-box"><img src="${img}">${isAdmin?`<div class="img-del" onclick="localData.images.splice(${i},1);saveData();renderAll()">✕</div>`:''}</div>`).join('');
+}
+
+/* ===== DRAG & DROP SORT ===== */
+let dragSrcIdx = null;
+function initDragSort() {
+  const rows = document.querySelectorAll('#rundownBody tr[data-idx]');
+  rows.forEach(row => {
+    row.addEventListener('dragstart', e => { dragSrcIdx=parseInt(row.dataset.idx); row.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    row.addEventListener('dragend', () => { row.classList.remove('dragging'); document.querySelectorAll('#rundownBody tr').forEach(r=>r.classList.remove('drag-over')); });
+    row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('drag-over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault(); row.classList.remove('drag-over');
+      const targetIdx = parseInt(row.dataset.idx);
+      if (dragSrcIdx===null||dragSrcIdx===targetIdx) return;
+      const moved = localData.rundown.splice(dragSrcIdx,1)[0];
+      localData.rundown.splice(targetIdx,0,moved);
+      // 骨牌重算時間
+      for(let j=1;j<localData.rundown.length;j++){
+        localData.rundown[j].s=localData.rundown[j-1].e;
+        localData.rundown[j].e=addMinutes(localData.rundown[j].s,localData.rundown[j].l);
+      }
+      dragSrcIdx=null; renderAll(); saveData();
     });
-    console.log("已自動同步至 Google 雲端");
+  });
 }
 
-// 3. 輔助函式：將資料填回 UI
-function applyDataToUI(data) {
-    if (data.name) document.getElementById('eventName').value = data.name;
-    if (data.date) document.getElementById('eventDate').value = data.date;
-    if (data.time) document.getElementById('eventTime').value = data.time;
+/* ===== UPDATE ROW ===== */
+function updateRow(i, field, val) {
+  let row=localData.rundown[i];
+  if(field==='l'){row.l=parseInt(val)||0;row.e=addMinutes(row.s,row.l);}
+  else if(field==='s'){row.s=val;row.e=addMinutes(row.s,row.l);}
+  for(let j=i+1;j<localData.rundown.length;j++){
+    localData.rundown[j].s=localData.rundown[j-1].e;
+    localData.rundown[j].e=addMinutes(localData.rundown[j].s,localData.rundown[j].l);
+  }
+  renderAll();saveData();
+}
+function updateField(i,field,val){localData.rundown[i][field]=val;saveData();}
+
+/* ===== STAFF & PERSONS ===== */
+function addStaff(n, standby=false) {
+  if(!selectedJob)return alert("請先點選職稱");
+  if(!n)return;
+  localData.staff.push({n,j:selectedJob,standby});renderAll();saveData();
+}
+function addRow(){
+  const last=localData.rundown[localData.rundown.length-1];
+  const start=last?last.e:"09:00";
+  localData.rundown.push({s:start,e:addMinutes(start,10),l:10,u:"",d:"",persons:[]});
+  renderAll();saveData();
+}
+function addItem(type){localData.equip[type].push({n:"新項目",q:1});renderAll();saveData();}
+
+function showPersonDrop(e,ri){
+  const m=document.getElementById('personDropdown');
+  m.style.display='block';
+  m.style.top=`${e.clientY+8}px`;
+  m.style.left=`${Math.min(e.clientX,window.innerWidth-200)}px`;
+  const nonStandby=localData.staff.filter(s=>!s.standby);
+  m.innerHTML=(nonStandby.length
+    ? nonStandby.map(s=>`<div class="dropdown-item" onclick="addPersonToRow(${ri},'${s.n}(${s.j})')">${s.n}(${s.j})</div>`).join('')
+    : '<div class="dropdown-item text-slate-300">派遣庫為空</div>')
+    +`<div class="dropdown-item text-red-500 font-bold" onclick="document.getElementById('personDropdown').style.display='none'">[ 取消 ]</div>`;
+  e.stopPropagation();
+}
+function addPersonToRow(ri,lbl){
+  if(!localData.rundown[ri].persons)localData.rundown[ri].persons=[];
+  if(!localData.rundown[ri].persons.includes(lbl))localData.rundown[ri].persons.push(lbl);
+  renderAll();saveData();
+  document.getElementById('personDropdown').style.display='none';
+}
+document.addEventListener('click',()=>document.getElementById('personDropdown').style.display='none');
+
+/* ===== CHECKIN ===== */
+function toggleCheckin(){
+  checkinOpen=!checkinOpen;
+  document.getElementById('checkinPanel').style.display=checkinOpen?'block':'none';
+  document.getElementById('checkinBtn').classList.toggle('active',checkinOpen);
+  if(checkinOpen)fetchCheckin();
+}
+async function fetchCheckin(){
+  const icon=document.getElementById('refreshIcon'),list=document.getElementById('checkinList');
+  icon.classList.add('spin');document.getElementById('refreshBtn').disabled=true;
+  list.innerHTML='<div class="text-center text-slate-300 text-sm py-5">載入中...</div>';
+  try{
+    const res=await fetch(CHECKIN_URL+"?action=getList",{mode:'cors'});
+    renderCheckinList(await res.json());
+  }catch(e){
+    list.innerHTML=`<div class="text-center py-5"><div class="text-slate-400 text-sm font-bold mb-2">⚠️ 無法直接讀取資料</div><div class="text-slate-300 text-xs mb-3">需在 GAS 加入 CORS 支援</div><a href="${CHECKIN_URL}" target="_blank" class="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-lg inline-block">前往簽到頁面 ↗</a></div>`;
+    document.getElementById('checkinMeta').textContent='連線失敗';
+  }finally{icon.classList.remove('spin');document.getElementById('refreshBtn').disabled=false;}
+}
+function renderCheckinList(data){
+  const records=Array.isArray(data)?data:(data.records||data.data||[]);
+  const list=document.getElementById('checkinList');
+  if(!records.length){list.innerHTML='<div class="text-center text-slate-300 text-sm py-5">目前尚無簽到記錄</div>';return;}
+  const signedIn=records.filter(r=>r.signed||r.checkin||r.status==='in'||r.time||r.簽到時間);
+  document.getElementById('countTotal').textContent=records.length;
+  document.getElementById('countIn').textContent=signedIn.length;
+  document.getElementById('countOut').textContent=records.length-signedIn.length;
+  const now=new Date();
+  document.getElementById('checkinMeta').textContent=`更新：${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  list.innerHTML=records.map(r=>{
+    const name=r.name||r.姓名||r.Name||'未知';
+    const time=r.time||r.簽到時間||r.Time||'';
+    const isIn=!!(r.signed||r.checkin||r.status==='in'||time);
+    return`<div class="flex items-center justify-between bg-white rounded-lg border border-slate-100 px-4 py-2.5"><div><div class="font-black text-slate-800 text-sm">${name}</div>${time?`<div class="text-[11px] text-slate-400">⏰ ${time}</div>`:'<div class="text-[11px] text-slate-200">尚未簽到</div>'}</div><span class="${isIn?'badge-in':'badge-out'}">${isIn?'✓ 已簽到':'未到'}</span></div>`;
+  }).join('');
 }
 
-function logout() {
-    location.reload();
+/* ===== EXPORT CSV ===== */
+function exportCSV() {
+  const BOM='\uFEFF';
+  let csv=BOM+'開始時間,結束時間,長度(分),執行單元,詳細說明,負責人員\n';
+  localData.rundown.forEach(r=>{
+    const persons=[...localData.staff.filter(s=>s.standby).map(s=>s.n+'(待命)'),...(r.persons||[])].join('、');
+    csv+=`${r.s},${r.e||''},${r.l},"${(r.u||'').replace(/"/g,'""')}","${(r.d||'').replace(/"/g,'""')}","${persons}"\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=`${localData.eventName||'活動'}_流程表.csv`;
+  a.click(); URL.revokeObjectURL(url);
 }
 
-// [其餘你原本控制表格新增、刪除、手機版切換的 JavaScript 函式貼在此處]
+/* ===== GENERATE REPORT ===== */
+function generateReport() {
+  const now=new Date();
+  const totalRows=localData.rundown.length;
+  const totalMin=localData.rundown.reduce((a,r)=>a+(parseInt(r.l)||0),0);
+  const staffCount=localData.staff.length;
+  const standbys=localData.staff.filter(s=>s.standby);
+
+  document.getElementById('reportContent').innerHTML=`
+    <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+      <div class="font-black text-blue-900 text-base mb-1">${localData.eventName||'活動名稱'}</div>
+      <div class="text-blue-600 text-sm">${localData.eventDate} ${localData.eventTime||''}</div>
+    </div>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-200"><div class="text-2xl font-black text-slate-700">${totalRows}</div><div class="text-[10px] text-slate-400 font-bold uppercase">流程單元</div></div>
+      <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-200"><div class="text-2xl font-black text-slate-700">${totalMin}</div><div class="text-[10px] text-slate-400 font-bold uppercase">總時長(分)</div></div>
+      <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-200"><div class="text-2xl font-black text-slate-700">${staffCount}</div><div class="text-[10px] text-slate-400 font-bold uppercase">派遣人員</div></div>
+    </div>
+    <div>
+      <div class="font-black text-slate-700 text-sm mb-2">👥 人員配置</div>
+      <div class="flex flex-wrap gap-2">
+        ${localData.staff.map(s=>`<div class="px-3 py-1 rounded-full text-xs font-black ${s.standby?'bg-green-100 text-green-700':'bg-blue-100 text-blue-700'}">${s.standby?'⚑ ':''}${s.n}(${s.j})</div>`).join('')||'<div class="text-slate-300 text-xs">無派遣人員</div>'}
+      </div>
+    </div>
+    <div>
+      <div class="font-black text-slate-700 text-sm mb-2">📋 流程摘要</div>
+      <div class="space-y-1.5">
+        ${localData.rundown.map(r=>`
+          <div class="flex gap-3 py-1.5 border-b border-slate-100">
+            <span class="text-blue-600 font-black text-xs w-28 shrink-0">${r.s} → ${r.e||''}</span>
+            <div class="flex-1">
+              <div class="font-bold text-slate-800 text-xs">${r.u||''}</div>
+              ${r.d?`<div class="text-slate-400 text-xs">${r.d}</div>`:''}
+            </div>
+            <div class="text-[10px] text-slate-400 shrink-0">${(r.persons||[]).join('、')||''}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    ${localData.notes?`<div><div class="font-black text-slate-700 text-sm mb-2">📝 備註</div><div class="text-slate-500 text-sm bg-slate-50 rounded-lg p-3">${localData.notes}</div></div>`:''}
+    <div class="text-[10px] text-slate-300 text-right">報告產生時間：${now.toLocaleString('zh-TW')}</div>
+  `;
+  document.getElementById('reportModal').style.display='block';
+  document.getElementById('modalOverlay').style.display='block';
+}
+function printReport() {
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>執行報告</title><style>body{font-family:sans-serif;padding:20px;}</style></head><body>${document.getElementById('reportContent').innerHTML}</body></html>`);
+  w.document.close(); w.print();
+}
+
+/* ===== AI ===== */
+function openAIModal(){document.getElementById('aiModal').style.display='block';document.getElementById('modalOverlay').style.display='block';resetAIModal();}
+function resetAIModal(){
+  document.getElementById('aiInputArea').style.display='block';
+  document.getElementById('aiOutputArea').style.display='none';
+  document.getElementById('aiInput').value='';
+  document.getElementById('fileLabel').textContent='點擊選擇圖片';
+  document.getElementById('imagePreview').classList.add('hidden');
+  document.getElementById('runAIBtn').disabled=false;
+  document.getElementById('runAIBtn').innerHTML='<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> AI 自動分析並填入流程';
+  uploadedImageBase64=null; aiParsedRundown=[];
+}
+function handleAIImage(input){
+  if(!input.files||!input.files[0])return;
+  const f=input.files[0];
+  document.getElementById('fileLabel').textContent=f.name;
+  const r=new FileReader();
+  r.onload=e=>{uploadedImageBase64=e.target.result.split(',')[1];document.getElementById('previewImg').src=e.target.result;document.getElementById('imagePreview').classList.remove('hidden');};
+  r.readAsDataURL(f);
+}
+function handleImgs(e){for(let f of e.target.files){const r=new FileReader();r.onload=ev=>{localData.images.push(ev.target.result);saveData();renderAll();};r.readAsDataURL(f);}}
+async function runAI(){
+  const text=document.getElementById('aiInput').value.trim();
+  if(!text&&!uploadedImageBase64){alert("請輸入文字或上傳圖片");return;}
+  const btn=document.getElementById('runAIBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="ai-thinking"><span></span><span></span><span></span></span> 分析中...';
+  document.getElementById('aiOutputArea').style.display='block';
+  document.getElementById('aiOutput').innerHTML='<div class="ai-thinking py-4 justify-center flex"><span></span><span></span><span></span></div>';
+  const prompt=`你是活動流程表助手。解析以下內容，回傳純 JSON 陣列，不要任何其他文字或markdown。
+格式：[{"s":"HH:MM","l":分鐘數,"u":"執行單元","d":"說明"},...]
+規則：若原文有/分隔，/前為u，/後為d；無/則d為空字串；l為整數分鐘。
+${text?`活動草案：\n${text}`:'（請依圖片解析）'}`;
+  try{
+    const messages=uploadedImageBase64?[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:uploadedImageBase64}},{type:"text",text:prompt}]}]:[{role:"user",content:prompt}];
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages})});
+    const data=await res.json();
+    const raw=(data.content||[]).map(c=>c.text||'').join('');
+    const match=raw.match(/\[[\s\S]*?\]/);
+    if(!match)throw new Error("無法解析回傳格式");
+    aiParsedRundown=JSON.parse(match[0]);
+    document.getElementById('aiOutput').innerHTML=aiParsedRundown.map(r=>`
+      <div class="flex gap-3 py-1.5 border-b border-slate-100 last:border-0">
+        <span class="text-blue-600 font-black text-xs shrink-0 w-20">${r.s} (${r.l}m)</span>
+        <div><div class="font-bold text-slate-800 text-xs">${r.u}</div>${r.d?`<div class="text-slate-400 text-xs">${r.d}</div>`:''}</div>
+      </div>`).join('');
+  }catch(err){
+    document.getElementById('aiOutput').innerHTML=`<div class="text-red-400 text-sm font-bold py-2">⚠️ 解析失敗：${err.message}</div>`;
+  }finally{btn.disabled=false;btn.innerHTML='⚡ 重新分析';}
+}
+function applyAIResult(){
+  if(!aiParsedRundown.length)return;
+  let cursor=aiParsedRundown[0]?.s||"09:00";
+  localData.rundown=aiParsedRundown.map(r=>{const s=r.s||cursor,l=parseInt(r.l)||10,e=addMinutes(s,l);cursor=e;return{s,e,l,u:r.u||'',d:r.d||'',persons:[]};});
+  saveData();renderAll();closeAllModals();
+}
+
+/* ===== SAVE / LOAD ===== */
+function saveData(){
+  localData.eventDate=document.getElementById('eventDate').value;
+  localData.eventTime=document.getElementById('eventTime').value;
+  localData.eventName=document.getElementById('eventName').value;
+  localData.notes=document.getElementById('eventNotes').value;
+  // 記錄人員配置供下次套用
+  if(localData.staff.length) localStorage.setItem('v52_lastStaff',JSON.stringify(localData.staff));
+  localStorage.setItem('v52_data',JSON.stringify(localData));
+  saveCurrentProject();
+}
+
+window.onload=()=>{
+  // 還原專案
+  const lastProjId=localStorage.getItem('v52_currentProject');
+  const projects=getProjects();
+  if(lastProjId&&projects[lastProjId]){
+    currentProjectId=lastProjId;
+    localData=projects[lastProjId];
+  } else {
+    const saved=localStorage.getItem('v52_data');
+    if(saved){
+      const p=JSON.parse(saved);
+      if(p.rundown){p.rundown=p.rundown.map(row=>{
+        if(!row.e)row.e=addMinutes(row.s,row.l||0);
+        if(row.d===undefined){const pts=(row.u||'').split('/');row.u=pts[0].trim();row.d=pts.slice(1).join('/').trim();}
+        if(!row.persons)row.persons=[];
+        if(!row.equip&&row.equipment){row.equip={service:(row.equipment.service||[]).map(n=>({n,q:1})),stage:(row.equipment.stage||[]).map(n=>({n,q:1}))};}
+        return row;
+      });}
+      localData=p;
+    }
+  }
+  const sj=localStorage.getItem('v52_jobs'),sn=localStorage.getItem('v52_names');
+  if(sj)JOBS=JSON.parse(sj); if(sn)NAMES=JSON.parse(sn);
+  if(window.innerWidth<=600){
+    isMobileView=true;
+    document.getElementById('desktopView').style.display='none';
+    document.getElementById('mobileView').style.display='block';
+    document.getElementById('mobileBtn').textContent='桌面版';
+    document.getElementById('mobileBtn').classList.add('active');
+  }
+  renderAll();
+  // 每分鐘自動更新進行中高亮
+  setInterval(()=>{renderAll();}, 60000);
+};
 </script>
 </body>
 </html>
