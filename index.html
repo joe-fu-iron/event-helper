@@ -67,28 +67,28 @@ input:checked + .slider:before { transform: translateX(22px); }
 .pro-table { width: 100%; border-collapse: collapse; background: white; border: 2.5px solid #000; }
 .pro-table th { background: #f8fafc; padding: 11px 12px; border: 1.5px solid #000; font-weight: 900; font-size: 13px; }
 .pro-table td { border: 1.5px solid #000; padding: 10px 12px; vertical-align: middle; }
-.pro-table tbody tr { transition: opacity 0.3s ease; }
+.pro-table tbody tr { transition: all 0.3s ease; }
 .pro-table tbody tr:hover { background: #fafafa; }
-.pro-table tbody tr.is-current { background: white !important; opacity: 1; }
-.pro-table tbody tr.is-future { opacity: 1; }
-.pro-table tbody tr.is-past { opacity: 0.45; }
-.time-display { font-size: 13px; font-weight: 900; color: var(--blue); }
+.pro-table tbody tr.is-current { background: white !important; }
+.pro-table tbody tr.is-future { background: white; }
+.pro-table tbody tr.is-past { background: #d1d5db; }
+.time-display { font-size: 13px; font-weight: 900; color: #0078D4; }
 .time-edit { display: none; gap: 4px; margin-top: 4px; }
 .admin-mode:not(.locked-mode) .time-edit { display: flex; }
 .t-input { border: 1.5px solid #cbd5e1; border-radius: 4px; padding: 2px 4px; font-size: 11px; outline: none; }
-.unit-input { width: 100%; font-weight: 900; font-size: 15px; outline: none; background: transparent; }
-.desc-input { width: 100%; font-size: 13px; color: #64748b; outline: none; background: transparent; }
-.len-badge { display: inline-block; background: #eff6ff; border: 1px solid #bfdbfe; color: var(--blue); border-radius: 12px; padding: 1px 8px; font-size: 11px; font-weight: 900; }
+.unit-input { width: 100%; font-weight: 900; font-size: 15px; outline: none; background: transparent; color: #111827; }
+.desc-input { width: 100%; font-size: 13px; color: #111827; outline: none; background: transparent; font-weight: 500; }
+.len-badge { display: inline-block; background: #ffffff; border: 1.5px solid #0078D4; color: #0078D4; border-radius: 12px; padding: 1px 8px; font-size: 11px; font-weight: 900; }
 .drag-handle { cursor: grab; color: #cbd5e1; font-size: 16px; user-select: none; padding: 0 4px; }
 .drag-handle:active { cursor: grabbing; }
 tr.dragging { opacity: 0.4; background: #e0f2fe !important; }
 tr.drag-over { border-top: 3px solid var(--blue); }
 
 /* PERSON CHIP */
-.person-chip { display: inline-flex; align-items: center; gap: 3px; background: var(--blue); color: #fff; font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 12px; }
-.person-chip i { cursor: pointer; font-style: normal; opacity: 0.7; }
+.person-chip { display: inline-flex; align-items: center; gap: 3px; background: #0078D4; color: #ffffff; font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 12px; }
+.person-chip i { cursor: pointer; font-style: normal; opacity: 0.8; }
 .person-chip i:hover { opacity: 1; }
-.standby-chip { background: #16a34a; }
+.standby-chip { background: #16a34a; color: #ffffff; }
 
 /* DROPDOWN */
 .dropdown-menu { display: none; position: fixed; background: white; border: 1px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 3000; width: 220px; border-radius: 8px; overflow: hidden; max-height: 320px; display: flex; flex-direction: column; }
@@ -115,11 +115,11 @@ tr.drag-over { border-top: 3px solid var(--blue); }
 #mobileView { display: none; }
 .m-card { background: white; border-radius: 14px; border-left: 6px solid var(--blue); padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); position: relative; }
 .m-card.is-current { border-left-color: #22c55e; background: #f0fdf4; }
-.m-card.is-past { opacity: 0.45; }
+.m-card.is-past { background: #d1d5db; }
 .m-time-badge { display: inline-block; background: var(--blue); color: #fff; border-radius: 20px; padding: 3px 12px; font-size: 12px; font-weight: 900; margin-bottom: 8px; }
 .m-card.is-current .m-time-badge { background: #22c55e; }
-.m-unit { font-size: 20px; font-weight: 900; color: #1e293b; margin-bottom: 2px; }
-.m-desc { font-size: 14px; color: #64748b; margin-bottom: 8px; }
+.m-unit { font-size: 20px; font-weight: 900; color: #111827; margin-bottom: 2px; }
+.m-desc { font-size: 14px; color: #111827; margin-bottom: 8px; font-weight: 500; }
 
 /* CHECKIN */
 #checkinPanel { display: none; }
