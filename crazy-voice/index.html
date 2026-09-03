@@ -12,63 +12,42 @@
 <body>
 <div class="wrap"><div class="card">
   <h1>CRAZY AI 語音指揮官</h1>
-  <div class="muted">和 AI 自然對談。CRAZY 會釐清需求，確認後再送回工作系統執行。</div>
+  <div class="muted">使用裝置內建語音辨識，說完後可檢查文字，再送回 CRAZY 執行。</div>
   <div id="orb" class="orb">✦</div>
-  <button id="startBtn" onclick="startConversation()">開始 AI 語音對談</button>
-  <button id="stopBtn" class="secondary" onclick="stopConversation()" disabled>結束對談</button>
+  <button id="startBtn" onclick="startListening()">開始語音輸入</button>
+  <button id="stopBtn" class="secondary" onclick="stopListening()" disabled>停止聆聽</button>
   <textarea id="text" placeholder="也可以輸入 CRAZY 指令，再按送回執行。"></textarea>
   <button onclick="sendManual()">送回 CRAZY 執行</button>
   <button class="secondary" onclick="goBack()">返回 CRAZY</button>
-  <div id="status" class="status">AI 語音待命</div>
-  <div id="transcript" class="transcript">對談內容會顯示在這裡。</div>
-  <div class="small">新增工作、行程、專案等寫入操作，AI 會先要求你明確確認。</div>
+  <div id="status" class="status">語音輸入待命</div>
+  <div id="transcript" class="transcript">辨識內容會顯示在這裡。</div>
+  <div class="small">語音辨識與朗讀由目前裝置的瀏覽器提供，不會使用 OpenAI API 或 Cloud Run。</div>
 </div></div>
-<audio id="remoteAudio" autoplay></audio>
 <script>
 const qs=new URLSearchParams(location.search);
 const returnUrl=qs.get('return')||'';
-const backendUrl=qs.get('backend')||localStorage.getItem('crazyRealtimeBackend')||'';
-let pc=null,dc=null,localStream=null;
-const writePattern=/^(新增工作|新增行程|新增專案|記錄缺漏)/;
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+let recognition=null,listening=false,finalText='';
 const $=id=>document.getElementById(id);
 function setStatus(t){$('status').textContent=t}
-function addTranscript(who,text){if(!text)return;const box=$('transcript');if(box.textContent==='對談內容會顯示在這裡。')box.textContent='';box.textContent+=(box.textContent?'\n':'')+who+'：'+text;box.scrollTop=box.scrollHeight}
-async function startConversation(){
-  if(!backendUrl){setStatus('尚未設定安全後端網址。部署 Cloud Run 後，在網址加入 ?backend=後端網址。');return}
-  $('startBtn').disabled=true;setStatus('正在連接 AI 語音服務…');
-  try{
-    pc=new RTCPeerConnection();
-    pc.ontrack=e=>{$('remoteAudio').srcObject=e.streams[0]};
-    localStream=await navigator.mediaDevices.getUserMedia({audio:true});
-    localStream.getTracks().forEach(track=>pc.addTrack(track,localStream));
-    dc=pc.createDataChannel('oai-events');dc.onmessage=handleEvent;
-    dc.onopen=()=>{setStatus('AI 已上線，請直接說話。');$('orb').classList.add('live');$('stopBtn').disabled=false};
-    dc.onclose=()=>stopConversation('語音連線已結束。');
-    const offer=await pc.createOffer();await pc.setLocalDescription(offer);
-    const response=await fetch(backendUrl.replace(/\/$/,'')+'/session',{method:'POST',headers:{'Content-Type':'application/sdp'},body:offer.sdp});
-    if(!response.ok)throw new Error(await response.text());
-    await pc.setRemoteDescription({type:'answer',sdp:await response.text()});
-  }catch(e){stopConversation('連線失敗：'+(e.message||e))}
+function speak(text){if(!('speechSynthesis' in window))return;window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text);utterance.lang='zh-TW';utterance.rate=1;window.speechSynthesis.speak(utterance)}
+function renderTranscript(interim=''){const text=[finalText,interim].filter(Boolean).join('');$('transcript').textContent=text||'辨識內容會顯示在這裡。';$('text').value=text}
+function startListening(){
+  if(!SpeechRecognition){setStatus('此瀏覽器不支援語音辨識，請改用 Chrome、Edge 或手動輸入。');speak('此瀏覽器不支援語音辨識，請改用手動輸入。');return}
+  if(listening)return;
+  finalText=$('text').value.trim();
+  recognition=new SpeechRecognition();recognition.lang='zh-TW';recognition.continuous=true;recognition.interimResults=true;
+  recognition.onstart=()=>{listening=true;$('orb').classList.add('live');$('startBtn').disabled=true;$('stopBtn').disabled=false;setStatus('正在聆聽，請說出 CRAZY 指令…')};
+  recognition.onresult=e=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){const phrase=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=(finalText?' ':'')+phrase.trim();else interim+=phrase}renderTranscript(interim)};
+  recognition.onerror=e=>{const messages={not_allowed:'麥克風權限未開啟。',no_speech:'沒有聽到語音，請再試一次。',network:'語音辨識服務暫時無法連線。'};setStatus(messages[e.error]||('語音辨識錯誤：'+e.error))};
+  recognition.onend=()=>{listening=false;$('orb').classList.remove('live');$('startBtn').disabled=false;$('stopBtn').disabled=true;if(finalText){setStatus('辨識完成，請確認文字後送回 CRAZY。');speak('辨識完成，請確認文字。')}else if(!$('status').textContent.includes('錯誤'))setStatus('語音輸入已停止。')};
+  try{recognition.start()}catch(e){setStatus('無法啟動語音辨識：'+e.message)}
 }
-function handleEvent(message){
-  const event=JSON.parse(message.data);
-  if(event.type==='conversation.item.input_audio_transcription.completed')addTranscript('你',event.transcript);
-  if(event.type==='response.audio_transcript.done')addTranscript('CRAZY',event.transcript);
-  if(event.type==='response.function_call_arguments.done')handleCommand(event);
-  if(event.type==='error')setStatus('AI 錯誤：'+(event.error?.message||'未知錯誤'));
-}
-function handleCommand(event){
-  try{
-    const args=JSON.parse(event.arguments||'{}');const command=String(args.command||'').trim();
-    if(!command)throw new Error('AI 未提供指令');
-    if(writePattern.test(command)&&args.confirmed!==true){setStatus('安全檢查：寫入指令尚未取得明確確認。');return}
-    addTranscript('執行',command);setStatus('正在送回 CRAZY 執行：'+command);setTimeout(()=>sendBack(command),700);
-  }catch(e){setStatus('無法解析 CRAZY 指令：'+e.message)}
-}
-function stopConversation(message){if(localStream)localStream.getTracks().forEach(t=>t.stop());if(dc)dc.close();if(pc)pc.close();localStream=null;dc=null;pc=null;$('orb').classList.remove('live');$('startBtn').disabled=false;$('stopBtn').disabled=true;if(message)setStatus(message)}
+function stopListening(){if(recognition&&listening)recognition.stop()}
 function sendManual(){const command=$('text').value.trim();if(!command){setStatus('還沒有指令內容。');return}sendBack(command)}
-function sendBack(command){if(!returnUrl){setStatus('缺少 CRAZY 返回網址，請從 CRAZY 的語音按鈕進入此頁。');return}const url=new URL(returnUrl);url.searchParams.set('cmd',command);url.searchParams.set('source','realtime-voice');location.href=url.toString()}
+function sendBack(command){if(!returnUrl){setStatus('缺少 CRAZY 返回網址，請從 CRAZY 的語音按鈕進入此頁。');return}const url=new URL(returnUrl);url.searchParams.set('cmd',command);url.searchParams.set('source','device-voice');setStatus('正在送回 CRAZY 執行：'+command);speak('正在送回 CRAZY 執行');setTimeout(()=>{location.href=url.toString()},500)}
 function goBack(){if(returnUrl)location.href=returnUrl;else history.back()}
 </script>
 </body>
 </html>
+
