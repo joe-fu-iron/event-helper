@@ -1,0 +1,1478 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover"
+  >
+
+  <title>AI 指揮官 CRAZY</title>
+
+  <style>
+    :root {
+      --bg: #061018;
+      --panel: #0c2230;
+      --line: #285a72;
+      --txt: #ecfaff;
+      --muted: #9dc6d7;
+      --accent: #48d8ff;
+      --ok: #69eca2;
+      --danger: #ff7b87;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(
+          circle at top,
+          #12384f,
+          #061018 45%,
+          #03080c
+        );
+      color: var(--txt);
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans TC",
+        sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 9;
+      background: #050c12eb;
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #214b60;
+      padding: 13px 15px;
+    }
+
+    .brand {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand h1 {
+      font-size: 19px;
+      margin: 0;
+    }
+
+    .status {
+      font-size: 11px;
+      color: var(--ok);
+    }
+
+    main {
+      max-width: 1180px;
+      margin: auto;
+      padding: 13px 13px 90px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 11px;
+    }
+
+    .card {
+      grid-column: span 12;
+      background:
+        linear-gradient(
+          180deg,
+          #102d3edb,
+          #091923f5
+        );
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 13px;
+    }
+
+    .half {
+      grid-column: span 6;
+    }
+
+    h2,
+    h3 {
+      margin: 0 0 9px;
+    }
+
+    .muted,
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+    }
+
+    .kpi,
+    .item {
+      background: #071720;
+      border: 1px solid #214c62;
+      border-radius: 11px;
+      padding: 9px;
+    }
+
+    .kpi b {
+      font-size: 21px;
+      display: block;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .row {
+      display: flex;
+      gap: 7px;
+    }
+
+    .row > * {
+      flex: 1;
+    }
+
+    input {
+      width: 100%;
+      background: #07141d;
+      border: 1px solid #2b6079;
+      color: var(--txt);
+      border-radius: 10px;
+      padding: 11px;
+      font-size: 15px;
+    }
+
+    button {
+      background: #12394e;
+      border: 1px solid #397793;
+      color: var(--txt);
+      padding: 10px 11px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    .primary {
+      background: #125676;
+    }
+
+    .reply {
+      white-space: pre-wrap;
+      background: #071820;
+      border-left: 3px solid var(--accent);
+      padding: 10px;
+      border-radius: 8px;
+      min-height: 44px;
+      margin-top: 8px;
+    }
+
+    .progress {
+      height: 8px;
+      background: #07141b;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .bar {
+      height: 100%;
+      background:
+        linear-gradient(
+          90deg,
+          #48d8ff,
+          #6ce7a9
+        );
+    }
+
+    .voice {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .voice-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #596b75;
+    }
+
+    .listening .voice-dot {
+      background: var(--danger);
+      box-shadow:
+        0 0 0 6px rgba(255,123,135,.13);
+    }
+
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 8;
+      background: #050c12f5;
+      border-top: 1px solid #214c62;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+    }
+
+    nav button {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      font-size: 11px;
+      color: #add1df;
+      padding: 13px 3px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 780px) {
+      .half {
+        grid-column: span 12;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .row.stack-mobile {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="brand">
+    <h1>CRAZY // 工作指揮中心</h1>
+    <div id="core" class="status">
+      ● CONNECTING
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+
+    <section class="card">
+      <h2 id="hello">
+        晚安，指揮官。
+      </h2>
+
+      <div class="muted">
+        CRAZY 已進入一般指令模式，可直接輸入或說出工作內容。
+      </div>
+
+      <div
+        class="kpis"
+        style="margin-top:11px"
+      >
+
+        <div class="kpi">
+          <b id="kp">0</b>
+          <span class="muted">
+            進行中專案
+          </span>
+        </div>
+
+        <div class="kpi">
+          <b id="kt">0</b>
+          <span class="muted">
+            工作
+          </span>
+        </div>
+
+        <div class="kpi">
+          <b id="ka">0</b>
+          <span class="muted">
+            缺漏提醒
+          </span>
+        </div>
+
+        <div class="kpi">
+          <b id="ku">0</b>
+          <span class="muted">
+            Gmail 未讀
+          </span>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="card">
+
+      <h3>連線狀態</h3>
+
+      <div class="row stack-mobile">
+
+        <div class="item">
+          <b>試算表</b>
+          <div
+            id="ss"
+            class="meta"
+          >
+            檢查中…
+          </div>
+        </div>
+
+        <div class="item">
+          <b>Calendar</b>
+          <div
+            id="cal"
+            class="meta"
+          >
+            檢查中…
+          </div>
+        </div>
+
+        <div class="item">
+          <b>Tasks</b>
+          <div
+            id="gt"
+            class="meta"
+          >
+            檢查中…
+          </div>
+        </div>
+
+        <div class="item">
+          <b>Gmail / Drive</b>
+          <div
+            id="gd"
+            class="meta"
+          >
+            檢查中…
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <section class="card">
+
+      <h3>CRAZY 指令中心</h3>
+
+      <div class="row stack-mobile">
+
+        <input
+          id="cmd"
+          placeholder="例如：新增工作 整理後龍成果報告"
+          onkeydown="
+            if(event.key==='Enter'){
+              run();
+            }
+          "
+        >
+
+        <button
+          class="primary"
+          onclick="run()"
+        >
+          執行
+        </button>
+
+        <button
+          id="vb"
+          onclick="openVoice()"
+        >
+          🎙️ 語音
+        </button>
+
+      </div>
+
+      <div
+        id="vs"
+        class="voice muted"
+        style="margin-top:8px"
+      >
+        <span class="voice-dot"></span>
+        <span>語音由獨立安全頁面處理</span>
+      </div>
+
+      <div
+        id="reply"
+        class="reply"
+      >
+        CRAZY 已待命。
+      </div>
+
+    </section>
+
+    <section
+      class="card half view"
+      data-v="home"
+    >
+
+      <h3>現在最重要</h3>
+
+      <div
+        id="priority"
+        class="list"
+      ></div>
+
+      <button
+        onclick="scan()"
+        style="margin-top:8px"
+      >
+        掃描缺漏
+      </button>
+
+    </section>
+
+    <section
+      class="card half view"
+      data-v="home"
+    >
+
+      <h3>每日摘要</h3>
+
+      <div
+        id="brief"
+        class="reply"
+      >
+        載入中…
+      </div>
+
+      <button
+        onclick="briefNow()"
+        style="margin-top:8px"
+      >
+        更新摘要
+      </button>
+
+    </section>
+
+    <section
+      class="card view hidden"
+      data-v="projects"
+    >
+
+      <h3>專案中心</h3>
+
+      <div
+        id="projects"
+        class="list"
+      ></div>
+
+    </section>
+
+    <section
+      class="card view hidden"
+      data-v="tasks"
+    >
+
+      <h3>工作中心</h3>
+
+      <div
+        id="tasks"
+        class="list"
+      ></div>
+
+    </section>
+
+    <section
+      class="card view hidden"
+      data-v="schedule"
+    >
+
+      <h3>未來 7 天行程</h3>
+
+      <div
+        id="agenda"
+        class="list"
+      ></div>
+
+    </section>
+
+    <section
+      class="card view hidden"
+      data-v="mail"
+    >
+
+      <h3>Gmail 收件匣</h3>
+
+      <div
+        id="mail"
+        class="list"
+      ></div>
+
+    </section>
+
+    <section
+      class="card view hidden"
+      data-v="docs"
+    >
+
+      <h3>文件中心</h3>
+
+      <div class="row">
+
+        <input
+          id="dq"
+          placeholder="搜尋 Google Drive 文件"
+        >
+
+        <button onclick="docs()">
+          搜尋
+        </button>
+
+      </div>
+
+      <div
+        id="dl"
+        class="list"
+        style="margin-top:9px"
+      ></div>
+
+    </section>
+
+  </div>
+</main>
+
+<nav>
+
+  <button onclick="show('home')">
+    戰情
+  </button>
+
+  <button onclick="show('projects')">
+    專案
+  </button>
+
+  <button onclick="show('tasks')">
+    工作
+  </button>
+
+  <button onclick="show('schedule')">
+    行程
+  </button>
+
+  <button onclick="show('mail')">
+    Gmail
+  </button>
+
+  <button onclick="show('docs')">
+    文件
+  </button>
+
+</nav>
+
+<script>
+
+const INITIAL_COMMAND =
+  <?!= JSON.stringify(initialCommand || '') ?>;
+
+const APP_URL =
+  <?!= JSON.stringify(appUrl || '') ?>;
+
+const VOICE_URL =
+  <?!= JSON.stringify(voiceUrl || '') ?>;
+
+const core = document.getElementById("core");
+const ss = document.getElementById("ss");
+const cal = document.getElementById("cal");
+const gt = document.getElementById("gt");
+const gd = document.getElementById("gd");
+const ku = document.getElementById("ku");
+const brief = document.getElementById("brief");
+const agenda = document.getElementById("agenda");
+const mail = document.getElementById("mail");
+const projects = document.getElementById("projects");
+const priority = document.getElementById("priority");
+const tasks = document.getElementById("tasks");
+const cmd = document.getElementById("cmd");
+const reply = document.getElementById("reply");
+const dq = document.getElementById("dq");
+const dl = document.getElementById("dl");
+const hello = document.getElementById("hello");
+
+let st = {
+  projects: [],
+  localTasks: [],
+  alerts: []
+};
+
+let gas =
+  typeof google !== "undefined" &&
+  google.script &&
+  google.script.run;
+
+
+/* =========================
+   Apps Script 呼叫
+========================= */
+
+function call(
+  name,
+  argument,
+  success,
+  failure
+) {
+
+  if (!gas) {
+
+    if (failure) {
+      failure({
+        message: "LOCAL"
+      });
+    }
+
+    return;
+  }
+
+  let runner =
+    google.script.run
+      .withSuccessHandler(
+        success || function(){}
+      )
+      .withFailureHandler(
+        failure || err
+      );
+
+  if (
+    argument === undefined
+  ) {
+
+    runner[name]();
+
+  } else {
+
+    runner[name](
+      argument
+    );
+
+  }
+
+}
+
+
+function err(e) {
+
+  reply.textContent =
+    "執行失敗："
+    +
+    (
+      e.message ||
+      e
+    );
+
+}
+
+
+/* =========================
+   初始化
+========================= */
+
+function boot() {
+
+  if (!gas) {
+
+    core.textContent =
+      "● LOCAL PREVIEW";
+
+    return;
+
+  }
+
+
+  call(
+    "apiBootstrap",
+    undefined,
+
+    function(r) {
+
+      st = r;
+
+      core.textContent =
+        "● CORE ONLINE";
+
+      try {
+
+      ss.textContent =
+        r.status.sheets.connected
+        ?
+        "已連線："
+        +
+        r.status.sheets.name
+        :
+        "未連線";
+
+
+      cal.textContent =
+        r.status.calendar.connected
+        ?
+        "已連線："
+        +
+        r.status.calendar.name
+        :
+        "未連線";
+
+
+      gt.textContent =
+        r.status.tasks.connected
+        ?
+        "已連線："
+        +
+        r.status.tasks.title
+        :
+        "未連線";
+
+
+      gd.textContent =
+        (
+          r.status.gmail.connected
+          ?
+          "Gmail✓ "
+          :
+          "Gmail× "
+        )
+        +
+        (
+          r.status.drive.connected
+          ?
+          "Drive✓"
+          :
+          "Drive×"
+        );
+
+
+      ku.textContent =
+        r.status.gmail.unread || 0;
+
+
+      brief.textContent =
+        r.dailyBrief || "";
+
+
+      render();
+
+      agendaNow();
+
+      mailNow();
+
+      runInitialCommand();
+
+      } catch (e) {
+
+        reply.textContent =
+          "初始化資料顯示失敗：" +
+          (e.message || e);
+
+        console.error(e);
+
+      }
+
+    }
+
+  );
+
+}
+
+
+/* =========================
+   畫面
+========================= */
+
+function render() {
+
+  kp.textContent =
+    (
+      st.projects || []
+    )
+    .filter(
+      x =>
+        String(
+          x.status
+        )
+        !==
+        "完成"
+    )
+    .length;
+
+
+  kt.textContent =
+    (
+      st.localTasks || []
+    )
+    .filter(
+      x =>
+        !bool(
+          x.done
+        )
+    )
+    .length;
+
+
+  ka.textContent =
+    (
+      st.alerts || []
+    )
+    .filter(
+      x =>
+        !bool(
+          x.resolved
+        )
+    )
+    .length;
+
+
+  projects.innerHTML =
+    (
+      st.projects || []
+    )
+    .map(
+      p =>
+      `
+      <div class="item">
+
+        <b>
+          ${esc(p.name)}
+        </b>
+
+        <div class="meta">
+          ${esc(p.status)}
+          ｜
+          ${Number(p.progress || 0)}%
+        </div>
+
+        <div class="progress">
+
+          <div
+            class="bar"
+            style="
+              width:
+              ${
+                Math.min(
+                  100,
+                  Math.max(
+                    0,
+                    Number(
+                      p.progress || 0
+                    )
+                  )
+                )
+              }%
+            "
+          >
+          </div>
+
+        </div>
+
+        <div class="meta">
+          下一步：
+          ${esc(
+            p.next ||
+            "未設定"
+          )}
+        </div>
+
+      </div>
+      `
+    )
+    .join("");
+
+
+  let alerts =
+    (
+      st.alerts || []
+    )
+    .filter(
+      x =>
+        !bool(
+          x.resolved
+        )
+    );
+
+
+  priority.innerHTML =
+    alerts
+    .slice(
+      0,
+      7
+    )
+    .map(
+      x =>
+      `
+      <div class="item">
+
+        <b>
+          ${esc(x.text)}
+        </b>
+
+        <div class="meta">
+          ${esc(
+            x.project ||
+            ""
+          )}
+          ｜
+          ${esc(
+            x.source ||
+            ""
+          )}
+        </div>
+
+      </div>
+      `
+    )
+    .join("")
+    ||
+    `
+    <div class="item">
+      目前沒有高優先提醒。
+    </div>
+    `;
+
+
+  tasks.innerHTML =
+    (
+      st.localTasks || []
+    )
+    .filter(
+      x =>
+        !bool(
+          x.done
+        )
+    )
+    .map(
+      t =>
+      `
+      <div class="item">
+
+        <b>
+          ${esc(t.title)}
+        </b>
+
+        <div class="meta">
+          ${esc(
+            t.project ||
+            "一般"
+          )}
+        </div>
+
+      </div>
+      `
+    )
+    .join("")
+    ||
+    `
+    <div class="item">
+      CRAZY 工作庫沒有未完成工作。
+    </div>
+    `;
+
+}
+
+
+/* =========================
+   執行指令
+========================= */
+
+function run() {
+
+  let command =
+    cmd.value.trim();
+
+
+  if (!command) {
+
+    return;
+
+  }
+
+
+  reply.textContent =
+    "CRAZY 執行中…";
+
+
+  call(
+    "apiRunCommand",
+    command,
+
+    function(r) {
+
+      reply.textContent =
+        r.reply ||
+        "完成";
+
+
+      cmd.value =
+        "";
+
+
+      boot();
+
+    }
+
+  );
+
+}
+
+
+/* =========================
+   缺漏
+========================= */
+
+function scan() {
+
+  reply.textContent =
+    "掃描中…";
+
+
+  call(
+    "apiScanGaps",
+    undefined,
+
+    function(r) {
+
+      st.alerts =
+        r.alerts || [];
+
+
+      reply.textContent =
+        "掃描完成。";
+
+
+      render();
+
+    }
+
+  );
+
+}
+
+
+/* =========================
+   摘要
+========================= */
+
+function briefNow() {
+
+  brief.textContent =
+    "整理中…";
+
+
+  call(
+    "apiDailyBrief",
+    undefined,
+
+    function(r) {
+
+      brief.textContent =
+        r.text ||
+        "沒有摘要";
+
+    }
+
+  );
+
+}
+
+
+/* =========================
+   行程
+========================= */
+
+function agendaNow() {
+
+  call(
+    "apiListAgenda",
+    7,
+
+    function(r) {
+
+      agenda.innerHTML =
+        (
+          r.events || []
+        )
+        .map(
+          e =>
+          `
+          <div class="item">
+
+            <b>
+              ${esc(e.title)}
+            </b>
+
+            <div class="meta">
+              ${
+                new Date(
+                  e.start
+                )
+                .toLocaleString(
+                  "zh-TW"
+                )
+              }
+            </div>
+
+          </div>
+          `
+        )
+        .join("")
+        ||
+        `
+        <div class="item">
+          未來 7 天沒有行程。
+        </div>
+        `;
+
+    }
+
+  );
+
+}
+
+
+/* =========================
+   Gmail
+========================= */
+
+function mailNow() {
+
+  call(
+    "apiInboxSummary",
+    20,
+
+    function(r) {
+
+      mail.innerHTML =
+        (
+          r.threads || []
+        )
+        .map(
+          m =>
+          `
+          <div class="item">
+
+            <b>
+              ${
+                m.unread
+                ?
+                "● "
+                :
+                ""
+              }
+
+              ${esc(m.subject)}
+            </b>
+
+            <div class="meta">
+              ${esc(m.from)}
+              ｜
+              ${
+                new Date(
+                  m.date
+                )
+                .toLocaleString(
+                  "zh-TW"
+                )
+              }
+            </div>
+
+            <div class="meta">
+              ${esc(m.snippet)}
+            </div>
+
+          </div>
+          `
+        )
+        .join("")
+        ||
+        `
+        <div class="item">
+          沒有郵件。
+        </div>
+        `;
+
+    }
+
+  );
+
+}
+
+
+/* =========================
+   Drive 文件
+========================= */
+
+function docs() {
+
+  let q =
+    dq.value.trim();
+
+
+  if (!q) {
+
+    return;
+
+  }
+
+
+  dl.innerHTML =
+    `
+    <div class="item">
+      搜尋中…
+    </div>
+    `;
+
+
+  google.script.run
+    .withSuccessHandler(
+      function(r) {
+
+        dl.innerHTML =
+          (
+            r.files || []
+          )
+          .map(
+            f =>
+            `
+            <div class="item">
+
+              <b>
+                ${esc(f.name)}
+              </b>
+
+              <div class="meta">
+                ${esc(f.mimeType)}
+              </div>
+
+              <button
+                onclick="
+                  readDoc(
+                    '${f.id}'
+                  )
+                "
+                style="
+                  margin-top:7px
+                "
+              >
+                讀取
+              </button>
+
+            </div>
+            `
+          )
+          .join("")
+          ||
+          `
+          <div class="item">
+            找不到文件。
+          </div>
+          `;
+
+      }
+    )
+    .withFailureHandler(
+      err
+    )
+    .apiSearchDriveFiles(
+      q,
+      30
+    );
+
+}
+
+
+/* =========================
+   文件內容
+========================= */
+
+function readDoc(id) {
+
+  reply.textContent =
+    "讀取文件中…";
+
+
+  google.script.run
+    .withSuccessHandler(
+      function(r) {
+
+        reply.textContent =
+          r.ok
+          ?
+          (
+            "文件："
+            +
+            r.file.name
+            +
+            "\n\n"
+            +
+            r.text
+          )
+          :
+          r.error;
+
+      }
+    )
+    .withFailureHandler(
+      err
+    )
+    .apiReadDriveText(
+      id,
+      15000
+    );
+
+}
+
+
+/* =========================
+   語音
+========================= */
+
+function openVoice() {
+
+  const url = new URL(VOICE_URL);
+
+  url.searchParams.set(
+    "return",
+    APP_URL || window.location.href
+  );
+
+  window.top.location.href =
+    url.toString();
+
+}
+
+
+let initialCommandHandled = false;
+
+
+function runInitialCommand() {
+
+  if (
+    initialCommandHandled
+    ||
+    !INITIAL_COMMAND
+  ) {
+
+    return;
+
+  }
+
+  initialCommandHandled = true;
+  cmd.value = INITIAL_COMMAND;
+  run();
+
+}
+
+
+/* =========================
+   頁面切換
+========================= */
+
+function show(view) {
+
+  document
+    .querySelectorAll(
+      ".view"
+    )
+    .forEach(
+      x =>
+        x.classList.toggle(
+          "hidden",
+          x.dataset.v !== view
+        )
+    );
+
+}
+
+
+/* =========================
+   工具
+========================= */
+
+function bool(v) {
+
+  return (
+    v === true
+    ||
+    String(v)
+      .toLowerCase()
+      ===
+      "true"
+    ||
+    String(v)
+      ===
+      "1"
+  );
+
+}
+
+
+function esc(s) {
+
+  return String(
+    s == null
+    ?
+    ""
+    :
+    s
+  )
+  .replace(
+    /[&<>"']/g,
+
+    function(m) {
+
+      return {
+
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+
+      }[m];
+
+    }
+  );
+
+}
+
+
+/* =========================
+   問候
+========================= */
+
+let h =
+  new Date()
+  .getHours();
+
+
+hello.textContent =
+  (
+    h < 12
+    ?
+    "早安"
+    :
+    h < 18
+    ?
+    "午安"
+    :
+    "晚安"
+  )
+  +
+  "，指揮官。";
+
+
+boot();
+
+</script>
+
+</body>
+</html>
