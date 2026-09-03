@@ -1,0 +1,76 @@
+CRAZY 語音橋接 GAS 修改
+
+1) Code.gs：把原本 doGet() 整段替換成：
+
+function doGet(e) {
+  initializeCrazy();
+
+  const template = HtmlService.createTemplateFromFile('Index');
+  template.initialCommand =
+    e && e.parameter && e.parameter.cmd
+      ? String(e.parameter.cmd)
+      : '';
+
+  template.appUrl =
+    ScriptApp.getService().getUrl() || '';
+
+  template.voiceUrl =
+    'https://joe-fu-iron.github.io/event-helper/crazy-voice/';
+
+  return template
+    .evaluate()
+    .setTitle('AI 指揮官 CRAZY')
+    .setXFrameOptionsMode(
+      HtmlService.XFrameOptionsMode.ALLOWALL
+    )
+    .addMetaTag(
+      'viewport',
+      'width=device-width,initial-scale=1,viewport-fit=cover'
+    );
+}
+
+2) Index.html：在 <script> 一開始加入：
+
+const INITIAL_COMMAND = <?!= JSON.stringify(initialCommand) ?>;
+const CRAZY_APP_URL = <?!= JSON.stringify(appUrl) ?>;
+const VOICE_URL = <?!= JSON.stringify(voiceUrl) ?>;
+let initialConsumed = false;
+
+3) Index.html：把原本 voice() 函式整段刪除，改成：
+
+function openVoice() {
+  if (!VOICE_URL || !CRAZY_APP_URL) {
+    reply.textContent = '語音入口網址尚未設定。';
+    return;
+  }
+
+  const target =
+    VOICE_URL +
+    '?return=' +
+    encodeURIComponent(CRAZY_APP_URL);
+
+  window.open(target, '_top');
+}
+
+4) Index.html：語音按鈕改成：
+
+<button id="vb" onclick="openVoice()">🎙️ 語音</button>
+
+5) Index.html：在 apiBootstrap 成功後，render(); agendaNow(); mailNow(); 的後面加入：
+
+if (INITIAL_COMMAND && !initialConsumed) {
+  initialConsumed = true;
+  cmd.value = INITIAL_COMMAND;
+  reply.textContent =
+    '收到語音指令：' +
+    INITIAL_COMMAND +
+    '\n正在執行…';
+  setTimeout(run, 250);
+}
+
+6) 儲存後：部署 → 管理部署作業 → 編輯 → 新版本 → 部署。
+
+7) GitHub Pages 若尚未開啟：event-helper → Settings → Pages → Deploy from a branch → main / (root) → Save。
+
+語音頁路徑：
+https://joe-fu-iron.github.io/event-helper/crazy-voice/
