@@ -1,0 +1,14 @@
+{
+  "name": "crazy-gas-deploy",
+  "private": true,
+  "scripts": {
+    "login": "clasp login",
+    "pull": "clasp pull",
+    "push": "clasp push",
+    "versions": "clasp versions",
+    "deployments": "clasp deployments"
+  },
+  "devDependencies": {
+    "@google/clasp": "latest"
+  }
+}
