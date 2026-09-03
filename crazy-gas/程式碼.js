@@ -533,6 +533,109 @@ function apiCreateCalendarEvent(payload) {
 }
 
 
+function apiCreateDailyWorkSeries_(title, startDate, endDate) {
+  const calendar = resolveCalendar_();
+  const firstEnd = new Date(startDate.getTime() + 3600000);
+  const existing = calendar
+    .getEvents(startDate, firstEnd)
+    .some(function(event) {
+      return event.getTitle() === title;
+    });
+
+  if (existing) {
+    return {
+      ok: true,
+      duplicate: true,
+      title: title
+    };
+  }
+
+  const until = new Date(endDate);
+  until.setHours(23, 59, 59, 999);
+
+  const recurrence = CalendarApp
+    .newRecurrence()
+    .addDailyRule()
+    .until(until);
+
+  const series = calendar.createEventSeries(
+    title,
+    startDate,
+    firstEnd,
+    recurrence,
+    {
+      description: '由 CRAZY 語音建立的每日重複工作'
+    }
+  );
+
+  series.addPopupReminder(30);
+
+  log_(
+    '新增每日工作 ' + title,
+    'calendar_series_create',
+    'ok',
+    series.getId()
+  );
+
+  return {
+    ok: true,
+    duplicate: false,
+    id: series.getId(),
+    title: title
+  };
+}
+
+
+function chineseNumber_(value) {
+  const text = String(value || '').trim();
+
+  if (/^\d+$/.test(text)) {
+    return Number(text);
+  }
+
+  const digits = {
+    '零': 0,
+    '〇': 0,
+    '一': 1,
+    '二': 2,
+    '兩': 2,
+    '三': 3,
+    '四': 4,
+    '五': 5,
+    '六': 6,
+    '七': 7,
+    '八': 8,
+    '九': 9
+  };
+
+  if (text === '十') {
+    return 10;
+  }
+
+  if (text.indexOf('十') >= 0) {
+    const parts = text.split('十');
+    return (parts[0] ? digits[parts[0]] : 1) * 10 +
+      (parts[1] ? digits[parts[1]] : 0);
+  }
+
+  return digits[text];
+}
+
+
+function normalizeVoiceCommand_(command) {
+  return String(command || '')
+    .replace(/帮/g, '幫')
+    .replace(/从/g, '從')
+    .replace(/开/g, '開')
+    .replace(/点/g, '點')
+    .replace(/钟/g, '鐘')
+    .replace(/号/g, '號')
+    .replace(/资料/g, '資料')
+    .replace(/[。！!]+$/g, '')
+    .trim();
+}
+
+
 /* =========================================================
  * Google Tasks
  * =======================================================*/
@@ -1578,10 +1681,9 @@ function buildDailyBrief_() {
 
 function apiRunCommand(command) {
   let c =
-    String(
-      command || ''
-    )
-    .trim();
+    normalizeVoiceCommand_(
+      command
+    );
 
   if (!c) {
     return {
@@ -1597,6 +1699,69 @@ function apiRunCommand(command) {
     'start',
     ''
   );
+
+  let recurringMatch = c.match(
+    /^(?:請)?(?:幫我)?(?:加入|新增)(?:一個)?工作[，,\s]*(?:從)?明天開始每天(?:早上|上午)?([零〇一二兩三四五六七八九十\d]+)點(?:鐘)?(?:一直)?到([零〇一二兩三四五六七八九十\d]+)月([零〇一二兩三四五六七八九十\d]+)(?:日|號)[，,\s]*(?:要)?(.+)$/
+  );
+
+  if (recurringMatch) {
+    const hour = chineseNumber_(recurringMatch[1]);
+    const month = chineseNumber_(recurringMatch[2]);
+    const day = chineseNumber_(recurringMatch[3]);
+    const title = recurringMatch[4].trim();
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() + 1);
+    startDate.setHours(hour, 0, 0, 0);
+    let endYear = startDate.getFullYear();
+
+    if (month < startDate.getMonth() + 1) {
+      endYear += 1;
+    }
+
+    const endDate = new Date(endYear, month - 1, day, 23, 59, 59, 999);
+
+    if (
+      !Number.isFinite(hour) ||
+      hour < 0 ||
+      hour > 23 ||
+      !Number.isFinite(month) ||
+      month < 1 ||
+      month > 12 ||
+      !Number.isFinite(day) ||
+      day < 1 ||
+      day > 31 ||
+      !title ||
+      endDate < startDate
+    ) {
+      return okReply_(
+        c,
+        '已理解為每日重複工作，但日期、時間或內容不完整，尚未建立。',
+        'recurring_work_invalid'
+      );
+    }
+
+    const result = apiCreateDailyWorkSeries_(
+      title,
+      startDate,
+      endDate
+    );
+
+    const rangeText =
+      Utilities.formatDate(startDate, CRAZY.TZ, 'yyyy/MM/dd HH:mm') +
+      ' 至 ' +
+      Utilities.formatDate(endDate, CRAZY.TZ, 'yyyy/MM/dd');
+
+    return okReply_(
+      c,
+      result.duplicate
+        ? '這項每日工作已存在，沒有重複新增：' + title + '｜' + rangeText
+        : '已建立每日重複工作：' + title + '｜' + rangeText,
+      result.duplicate
+        ? 'calendar_series_duplicate'
+        : 'calendar_series_create'
+    );
+  }
 
   if (
     /每日摘要|今日摘要|早報|工作摘要/
@@ -2755,3 +2920,4 @@ function deleteTriggersByHandler_(handler) {
       }
     );
 }
+
