@@ -1700,15 +1700,32 @@ function apiRunCommand(command) {
     ''
   );
 
-  let recurringMatch = c.match(
-    /^(?:請)?(?:幫我)?(?:加入|新增)(?:一個)?工作[，,\s]*(?:從)?明天開始每天(?:早上|上午)?([零〇一二兩三四五六七八九十\d]+)點(?:鐘)?(?:一直)?到([零〇一二兩三四五六七八九十\d]+)月([零〇一二兩三四五六七八九十\d]+)(?:日|號)[，,\s]*(?:要)?(.+)$/
-  );
+  const isRecurringWork =
+    /(?:加入|新增).*工作/.test(c) &&
+    /明天.*開始.*每天|明天開始每天/.test(c);
 
-  if (recurringMatch) {
-    const hour = chineseNumber_(recurringMatch[1]);
-    const month = chineseNumber_(recurringMatch[2]);
-    const day = chineseNumber_(recurringMatch[3]);
-    const title = recurringMatch[4].trim();
+  if (isRecurringWork) {
+    const hourMatch = c.match(
+      /每天[\s，,]*(?:早上|上午)?[\s，,]*([零〇一二兩三四五六七八九十\d]+)[\s]*點/
+    );
+    const endMatch = c.match(
+      /(?:一直[\s]*到|直到|到)[\s，,]*([零〇一二兩三四五六七八九十\d]+)[\s]*月[\s]*([零〇一二兩三四五六七八九十\d]+)[\s]*(?:日|號)/
+    );
+    const titleMatch = c.match(
+      /(?:要|內容(?:是|為)?)[：:，,\s]*(.+)$/
+    );
+    const hour = hourMatch
+      ? chineseNumber_(hourMatch[1])
+      : NaN;
+    const month = endMatch
+      ? chineseNumber_(endMatch[1])
+      : NaN;
+    const day = endMatch
+      ? chineseNumber_(endMatch[2])
+      : NaN;
+    const title = titleMatch
+      ? titleMatch[1].trim()
+      : '';
     const now = new Date();
     const startDate = new Date(now);
     startDate.setDate(startDate.getDate() + 1);
