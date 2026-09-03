@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CRAZY 語音入口</title>
+<style>
+:root{--bg:#061018;--panel:#0d2938;--line:#2d6d8b;--txt:#eefbff;--muted:#a6cddd;--accent:#4bdcff;--ok:#69eca2;--danger:#ff7b87}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#12384f,#061018 48%,#03080c);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;display:flex;align-items:center;justify-content:center;padding:22px}.wrap{width:min(680px,100%)}.card{background:linear-gradient(180deg,#102d3e,#091923);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 20px 60px #0007}h1{margin:0 0 8px;font-size:28px}.muted{color:var(--muted);font-size:14px}.orb{width:150px;height:150px;border-radius:50%;margin:28px auto;background:radial-gradient(circle,#4bdcff 0 10%,#17485e 11% 38%,#0a1b24 39%);border:2px solid #4bdcff;box-shadow:0 0 38px #4bdcff55;display:flex;align-items:center;justify-content:center;font-size:46px;user-select:none}.orb.listening{animation:pulse 1s infinite;box-shadow:0 0 55px #ff7b8788;border-color:var(--danger)}@keyframes pulse{50%{transform:scale(1.05)}}button,textarea{width:100%;border-radius:14px;font-size:18px}button{padding:15px;border:1px solid #4b91b0;background:#155e7e;color:white;font-weight:800;margin-top:10px}button.secondary{background:#12394e}textarea{min-height:120px;background:#071720;color:white;border:1px solid #326c86;padding:14px;resize:vertical;margin-top:14px}.status{margin-top:15px;padding:12px;border-left:4px solid var(--accent);background:#071820;border-radius:8px;white-space:pre-wrap}.hidden{display:none}.small{font-size:12px;margin-top:10px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+<h1>CRAZY 語音入口</h1>
+<div class="muted">在這個獨立 HTTPS 頁面取得麥克風權限，辨識完成後把文字送回 CRAZY。</div>
+<div id="orb" class="orb">🎙️</div>
+<button id="startBtn" onclick="startVoice()">開始說話</button>
+<textarea id="text" placeholder="辨識結果會出現在這裡；也可直接使用手機鍵盤的麥克風輸入。"></textarea>
+<button onclick="sendBack()">送回 CRAZY 執行</button>
+<button class="secondary" onclick="goBack()">返回 CRAZY</button>
+<div id="status" class="status">語音待命</div>
+<div class="small">提示：第一次使用請允許此網站使用麥克風。若瀏覽器不支援 Web Speech API，可直接點文字框並使用手機鍵盤的語音輸入。</div>
+</div></div>
+<script>
+const qs=new URLSearchParams(location.search);
+const returnUrl=qs.get('return')||'';
+let rec=null,listening=false;
+function setStatus(t){document.getElementById('status').textContent=t}
+function startVoice(){
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){setStatus('此瀏覽器不支援網頁語音辨識。請點下方文字框，使用手機鍵盤的麥克風輸入，再按「送回 CRAZY 執行」。');document.getElementById('text').focus();return}
+ if(listening&&rec){rec.stop();return}
+ rec=new SR();rec.lang='zh-TW';rec.interimResults=false;rec.continuous=false;rec.maxAlternatives=1;
+ rec.onstart=()=>{listening=true;document.getElementById('orb').classList.add('listening');document.getElementById('startBtn').textContent='停止';setStatus('正在聆聽…')};
+ rec.onend=()=>{listening=false;document.getElementById('orb').classList.remove('listening');document.getElementById('startBtn').textContent='開始說話'};
+ rec.onerror=e=>{setStatus('語音辨識失敗：'+e.error+'\n若是 not-allowed，請在瀏覽器網站設定中允許此頁面使用麥克風。')};
+ rec.onresult=e=>{const t=e.results[0][0].transcript.trim();document.getElementById('text').value=t;setStatus('辨識完成：'+t+'\n正在送回 CRAZY…');setTimeout(sendBack,500)};
+ try{rec.start()}catch(e){setStatus('無法啟動語音：'+e.message)}
+}
+function sendBack(){const t=document.getElementById('text').value.trim();if(!t){setStatus('還沒有指令內容。');return}if(!returnUrl){setStatus('缺少 CRAZY 返回網址，請從 CRAZY 的語音按鈕進入此頁。');return}const u=new URL(returnUrl);u.searchParams.set('cmd',t);u.searchParams.set('source','voice');location.href=u.toString()}
+function goBack(){if(returnUrl)location.href=returnUrl;else history.back()}
+</script>
+</body>
+</html>
