@@ -27,20 +27,23 @@
 const qs=new URLSearchParams(location.search);
 const returnUrl=qs.get('return')||'';
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-let recognition=null,listening=false,sessionActive=false,pendingCommand='',lastPhrase='',lastPhraseAt=0,restartTimer=0;
+let recognition=null,listening=false,sessionActive=false,pendingCommand='',lastPhrase='',lastPhraseAt=0,restartTimer=0,conversation=[];
 const $=id=>document.getElementById(id);
 function setStatus(t){$('status').textContent=t}
+function addTurn(who,text){conversation.push((who==='you'?'你：':'CRAZY：')+text);conversation=conversation.slice(-8);$('transcript').textContent=conversation.join('\n')}
+function preferredVoice(){const voices=speechSynthesis.getVoices();return voices.find(v=>/zh[-_]TW/i.test(v.lang)&&/natural|online|microsoft|google/i.test(v.name))||voices.find(v=>/zh[-_]TW/i.test(v.lang))||voices.find(v=>/^zh/i.test(v.lang))}
 function speak(text,thenListen=true){
   return new Promise(resolve=>{
     if(!('speechSynthesis' in window)){resolve();if(thenListen)scheduleRestart();return}
     if(recognition&&listening){try{recognition.abort()}catch(e){}}
     window.speechSynthesis.cancel();
-    const utterance=new SpeechSynthesisUtterance(text);utterance.lang='zh-TW';utterance.rate=1;
+    addTurn('crazy',text);
+    const utterance=new SpeechSynthesisUtterance(text);utterance.lang='zh-TW';utterance.rate=.96;utterance.pitch=1.02;const voice=preferredVoice();if(voice)utterance.voice=voice;
     utterance.onend=utterance.onerror=()=>{resolve();if(thenListen)scheduleRestart()};
     window.speechSynthesis.speak(utterance);
   })
 }
-function renderTranscript(text,interim=''){$('transcript').textContent=[text,interim].filter(Boolean).join(' ')||'辨識內容會顯示在這裡。';if(text)$('text').value=text}
+function renderTranscript(text,interim=''){if(text){$('text').value=text;addTurn('you',text)}else if(interim){$('transcript').textContent=[...conversation,'你：'+interim+'…'].join('\n')}else if(!conversation.length)$('transcript').textContent='辨識內容會顯示在這裡。'}
 function startSession(){
   sessionActive=true;$('startBtn').disabled=true;$('stopBtn').disabled=false;
   setStatus('語音助理啟動中…');speak('CRAZY 語音助理已啟動，請說出指令。')
@@ -50,28 +53,30 @@ function startListening(){
   if(listening||!sessionActive)return;
   recognition=new SpeechRecognition();recognition.lang='zh-TW';recognition.continuous=false;recognition.interimResults=true;
   recognition.onstart=()=>{listening=true;$('orb').classList.add('live');setStatus(pendingCommand?'請說「確定」或「取消」…':'正在聆聽，請說出 CRAZY 指令…')};
-  recognition.onresult=e=>{let interim='',final='';for(let i=e.resultIndex;i<e.results.length;i++){const phrase=e.results[i][0].transcript.trim();if(e.results[i].isFinal)final+=(final?' ':'')+phrase;else interim+=phrase}renderTranscript(final,interim);if(final)handlePhrase(final)};
+  recognition.onresult=e=>{let interim='',final='',confidence=1;for(let i=e.resultIndex;i<e.results.length;i++){const phrase=e.results[i][0].transcript.trim();if(e.results[i].isFinal){final+=(final?' ':'')+phrase;confidence=Math.min(confidence,e.results[i][0].confidence||1)}else interim+=phrase}renderTranscript(final,interim);if(final){if(confidence<.45){setStatus('這句聽得不太清楚，請再說一次。');speak('抱歉，我剛才沒聽清楚，可以再說一次嗎？')}else handlePhrase(final)}};
   recognition.onerror=e=>{const messages={'not-allowed':'麥克風權限未開啟。','service-not-allowed':'語音辨識權限未開啟。','no-speech':'沒有聽到語音，繼續待命。',network:'語音辨識服務暫時無法連線。'};setStatus(messages[e.error]||('語音辨識錯誤：'+e.error));if(e.error==='not-allowed'||e.error==='service-not-allowed')stopSession()};
   recognition.onend=()=>{listening=false;$('orb').classList.remove('live');if(sessionActive&&!window.speechSynthesis.speaking)scheduleRestart()};
   try{recognition.start()}catch(e){setStatus('無法啟動語音辨識：'+e.message)}
 }
 function scheduleRestart(){clearTimeout(restartTimer);if(sessionActive)restartTimer=setTimeout(startListening,450)}
 function stopSession(){sessionActive=false;pendingCommand='';clearTimeout(restartTimer);window.speechSynthesis&&window.speechSynthesis.cancel();if(recognition&&listening){try{recognition.abort()}catch(e){}}$('orb').classList.remove('live');$('startBtn').disabled=false;$('stopBtn').disabled=true;setStatus('語音助理已結束。')}
-function cleanPhrase(text){return text.replace(/^\s*(嘿|嗨|hi)?\s*(crazy|克雷西|奎西|虧賊)[，,。.!！?？\s]*/i,'').trim()}
+function cleanPhrase(text){return text.replace(/^\s*(嘿|嗨|hi)?\s*(crazy|克雷西|奎西|虧賊)[，,。.!！?？\s]*/i,'').replace(/^(麻煩|請|可以幫我|幫我|我要|我想要)\s*/,'').replace(/[。！!]+$/,'').trim()}
 function isYes(text){return /^(確定|確認|是|對|好|好的|可以|執行|沒錯)[了啦喔哦]*$/i.test(text.replace(/[，,。.!！?？\s]/g,''))}
 function isNo(text){return /^(取消|不要|不用|不對|否|停止|算了)[了啦喔哦]*$/i.test(text.replace(/[，,。.!！?？\s]/g,''))}
 function needsConfirmation(command){return /(新增|建立|安排|加入|刪除|移除|取消.*(行程|工作|提醒|會議)|寄信|發信|傳送|發送|修改|變更|改成|標記.*完成|完成工作)/.test(command)}
+function acknowledgement(command){if(/(今天|今日).*(行程|日程)|查看.*今天/.test(command))return'好，我幫你看看今天的安排。';if(/(明天|後天).*(行程|日程)|查看.*(明天|後天)/.test(command))return'沒問題，我幫你查一下。';if(/(工作|待辦|任務)/.test(command))return'好，我幫你整理目前的工作。';if(/(信件|郵件|gmail)/i.test(command))return'好，我幫你查看信件。';return'好的，我來處理。'}
+function confirmationPrompt(command){if(/(新增|建立|安排|加入)/.test(command))return'我聽到的是「'+command+'」。要幫你新增嗎？請說確定或取消。';if(/(刪除|移除|取消)/.test(command))return'你要「'+command+'」。這可能會刪除資料，要繼續嗎？請說確定或取消。';if(/(寄信|發信|傳送|發送)/.test(command))return'我準備「'+command+'」。要送出嗎？請說確定或取消。';return'我聽到的是「'+command+'」。要執行嗎？請說確定或取消。'}
 function handlePhrase(raw){
   const now=Date.now(),phrase=cleanPhrase(raw);if(!phrase)return;
-  if(phrase===lastPhrase&&now-lastPhraseAt<2500)return;lastPhrase=phrase;lastPhraseAt=now;renderTranscript(phrase);
+  if(phrase===lastPhrase&&now-lastPhraseAt<2500)return;lastPhrase=phrase;lastPhraseAt=now;
   if(pendingCommand){
     if(isYes(phrase)){const command=pendingCommand;pendingCommand='';setStatus('已確認：'+command);speak('已確認，正在交給 CRAZY 執行。',false);setTimeout(()=>sendBack(command),650);return}
     if(isNo(phrase)){pendingCommand='';setStatus('已取消，繼續等待下一個指令。');speak('已取消，請說下一個指令。');return}
-    setStatus('等待確認：'+pendingCommand);speak('請回答確定或取消。');return
+    setStatus('等待確認：'+pendingCommand);speak('我還在等你的確認。要執行請說確定，不要執行請說取消。');return
   }
   if(/^(結束|停止聆聽|關閉語音助理)$/.test(phrase)){speak('語音助理已結束。',false);stopSession();return}
-  if(needsConfirmation(phrase)){pendingCommand=phrase;setStatus('等待語音確認：'+phrase);speak('你要'+phrase+'，請說確定或取消。');return}
-  setStatus('正在交給 CRAZY 查詢：'+phrase);speak('收到，正在查詢。',false);setTimeout(()=>sendBack(phrase),500)
+  if(needsConfirmation(phrase)){pendingCommand=phrase;setStatus('等待語音確認：'+phrase);speak(confirmationPrompt(phrase));return}
+  setStatus('正在交給 CRAZY 查詢：'+phrase);speak(acknowledgement(phrase),false);setTimeout(()=>sendBack(phrase),700)
 }
 function sendManual(){const command=$('text').value.trim();if(!command){setStatus('還沒有指令內容。');return}sendBack(command)}
 function sendBack(command){if(!returnUrl){setStatus('缺少 CRAZY 返回網址，請從 CRAZY 的語音按鈕進入此頁。');speak('缺少 CRAZY 返回網址。');return}const url=new URL(returnUrl);url.searchParams.set('cmd',command);url.searchParams.set('source','continuous-voice');setStatus('正在送回 CRAZY 執行：'+command);location.href=url.toString()}
